@@ -538,9 +538,13 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
                 os.rename(os.path.join(root, name), os.path.join(root, ".git"))
 
 
-def default_cmake_compile(project: VProject) -> None:
+def default_cmake_compile(
+    project: VProject, build_dir: tp.Optional[Path] = None
+) -> None:
     version_source = local.path(project.source_of_primary)
-    build_dir = version_source / "build"
+
+    if not build_dir:
+        build_dir = Path(version_source / "build")
     build_dir.mkdir(exist_ok=True)
     cc_compiler = bb.compiler.cc(project)
     cxx_compiler = bb.compiler.cxx(project)
@@ -549,7 +553,7 @@ def default_cmake_compile(project: VProject) -> None:
         with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
             cmake = local["cmake"]
             make = local["make"]
-            bb.watch(cmake)("..")
+            bb.watch(cmake)(version_source)
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     with local.cwd(version_source):

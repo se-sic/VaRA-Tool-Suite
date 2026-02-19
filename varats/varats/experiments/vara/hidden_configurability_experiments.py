@@ -7,6 +7,7 @@ from pathlib import Path
 
 import benchbuild as bb
 import benchbuild.extensions as bb_ext
+import numpy as np
 import yaml
 from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.utils import actions
@@ -629,6 +630,35 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
     NAME = "TimePatchedWorkloads"
     REPORT_SPEC = ReportSpecification(MPRTimeWLAggregate)
 
+    def __get_variations(self, patch_name) -> tp.Tuple[str, tp.List[tp.Any]]:
+        if patch_name not in PATCH_VARIATIONS[self.project.name]:
+            raise ValueError(
+                f"Patch {patch_name} does not have any variations defined for "
+                f"project {self.project.name}"
+            )
+
+        arg_name, values = PATCH_VARIATIONS[self.project.name][patch_name]
+
+        # In addition, sample 20 random values between the minimum and maximum value
+        rng = np.random.default_rng(seed=42)
+
+        if isinstance(values[0], int):
+            random_values = rng.integers(min(values), max(values) + 1, size=20)
+        elif isinstance(values[0], float):
+            # We want to sample floats with the same number of decimal places as the provided values
+            decimal_places = max(
+                len(str(value).split(".")[1]) for value in values
+            )
+            random_values = rng.uniform(min(values), max(values), size=20)
+            random_values = np.round(random_values, decimals=decimal_places)
+        else:
+            raise ValueError(
+                f"Unsupported value type {type(values[0])} for patch "
+                f"{patch_name} in project {self.project.name}"
+            )
+
+        return arg_name, values + random_values.tolist()
+
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
@@ -690,8 +720,7 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                     )
                     continue
 
-                arg_name, values = PATCH_VARIATIONS[project.name][
-                    patch.shortname]
+                arg_name, values = self.__get_variations(patch.shortname)
 
                 for value in values:
                     patch_steps.append(
