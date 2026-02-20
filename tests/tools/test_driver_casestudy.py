@@ -7,7 +7,6 @@ from click.testing import CliRunner
 
 from tests.helper_utils import (
     run_in_test_environment,
-    TEST_INPUTS_DIR,
     UnitTestFixtures,
 )
 from varats.paper.case_study import load_case_study_from_file

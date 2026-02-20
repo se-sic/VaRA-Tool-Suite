@@ -9,7 +9,6 @@ from tests.helper_utils import ConfigurationHelper
 from varats.base.configuration import (
     DummyConfiguration,
     ConfigurationImpl,
-    ConfigurationOptionImpl,
 )
 from varats.mapping.configuration_map import (
     ConfigurationMap,

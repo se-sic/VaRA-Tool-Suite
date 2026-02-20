@@ -1,27 +1,9 @@
 """Test SZZ quality metrics database module."""
-import typing as tp
 import unittest
-import unittest.mock as mock
-from collections import defaultdict
-from pathlib import Path
 
-from tests.helper_utils import TEST_INPUTS_DIR
-from varats.data.databases.blame_diff_metrics_database import (
-    id_from_paths,
-    compare_timestamps,
-    build_report_files_tuple,
-    build_report_pairs_tuple,
-    get_predecessor_report_file,
-    get_successor_report_file,
-)
 from varats.data.databases.szz_quality_metrics_database import (
     _calculate_szz_quality_score,
 )
-from varats.data.reports.blame_report import BlameReport
-from varats.mapping.commit_map import get_commit_map
-from varats.paper.case_study import load_case_study_from_file
-from varats.projects.discover_projects import initialize_projects
-from varats.revision.revisions import get_processed_revisions
 from varats.utils.git_util import CommitRepoPair
 
 

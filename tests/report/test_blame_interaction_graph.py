@@ -10,7 +10,6 @@ from varats.data.reports.blame_interaction_graph import (
     create_file_based_interaction_graph,
     get_author_data,
 )
-from varats.data.reports.blame_report import BlameReport
 from varats.experiments.vara.blame_report_experiment import (
     BlameReportExperiment,
 )
