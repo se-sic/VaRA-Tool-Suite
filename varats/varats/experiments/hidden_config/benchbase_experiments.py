@@ -1,3 +1,4 @@
+import shutil
 import typing as tp
 from pathlib import Path
 
@@ -19,18 +20,24 @@ from varats.experiment.experiment_util import (
     get_config_patch_steps,
     get_config_reverse_patch_steps,
 )
+from varats.experiment.steps.combinators import AlwaysOk
+from varats.experiment.steps.patch import ApplyPatch
+from varats.experiment.steps.recompile import ReCompile
 from varats.experiments.coverage.collect_coverages import (
     CollectCoverage,
     MergeCoverages,
     BuildWithCoverage,
 )
 from varats.experiments.hidden_config.database_utils import SupportsBenchbase
+from varats.experiments.hidden_config.hidden_config_utils import (
+    PATCH_VARIATIONS,
+    get_variations,
+    HIDDEN_CONFIG_REPS,
+)
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.varats_project import VProject
-from varats.projects.c_projects.postgres import PostgreSQL
-from varats.projects.c_projects.sqlite import SQLite
-from varats.projects.cpp_projects.mariadb import MariaDB
 from varats.provider.patch.patch_provider import PatchProvider
+from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 from varats.utils.git_util import ShortCommitHash
@@ -94,55 +101,53 @@ class BuildBenchbase(ProjectStep):
         return " " * indent + f"* {self.project.name}: Build BenchBase"
 
 
+def _run_benchbase(
+    project: tp.Union[VProject, SupportsBenchbase], workload: str
+) -> StepResult:
+    benchbase_exec_dir = project.builddir / "benchbase" / "target" / f"benchbase-{project.get_benchbase_profile_name()}"
+
+    with local.cwd(benchbase_exec_dir):
+        print(f"Running workload: {workload}")
+        # TODO: Customize configuration
+        config = {}
+        workload_config = project.render_workload_config(workload, config)
+
+        run_cmd = local["java"]["-jar", "benchbase.jar", "-b", workload, "-c",
+                                workload_config, "--create=true", "--load=true",
+                                "--execute=true"]
+
+        try:
+            # Start the database server
+            project.start_database_server()
+
+            # Run the benchmark
+            bb.watch(run_cmd)()
+            status = StepResult.OK
+        except ProcessExecutionError as e:
+            print(f"Error running BenchBase workload '{workload}': {e}")
+            status = StepResult.ERROR
+        finally:
+            # Stop the database server after benchmark
+            project.stop_database_server()
+
+        return status
+
+
 @AsOutputFolderStep("result_file")
 class RunBenchbase(ProjectStep):
     """Runs the BenchBase benchmark suite."""
 
-    @classmethod
-    def _run_benchbase(
-        cls, project: tp.Union[VProject, SupportsBenchbase], workload: str
-    ) -> StepResult:
-        benchbase_exec_dir = project.builddir / "benchbase" / "target" / f"benchbase-{project.get_benchbase_profile_name()}"
-
-        with local.cwd(benchbase_exec_dir):
-            print(f"Running workload: {workload}")
-            # TODO: Customize configuration
-            config = {}
-            workload_config = project.render_workload_config(workload, config)
-
-            run_cmd = local["java"]["-jar", "benchbase.jar", "-b", workload,
-                                    "-c", workload_config, "--create=true",
-                                    "--load=true", "--execute=true"]
-
-            try:
-                # Start the database server
-                project.start_database_server()
-
-                # Run the benchmark
-                bb.watch(run_cmd)()
-                status = StepResult.OK
-            except ProcessExecutionError as e:
-                print(f"Error running BenchBase workload '{workload}': {e}")
-                status = StepResult.ERROR
-            finally:
-                # Stop the database server after benchmark
-                project.stop_database_server()
-
-            return status
-
-    __DB_PROFILES = {
-        MariaDB: "mariadb",
-        PostgreSQL: "postgres",
-        SQLite: "sqlite",
-    }
-
     def __init__(
-        self, project: tp.Union[VProject, SupportsBenchbase], result_file: Path,
-        workload: str
+        self,
+        project: tp.Union[VProject, SupportsBenchbase],
+        result_file: Path,
+        workload: str,
+        reps: int = 1
     ):
         super().__init__(project)
         self.result_file = result_file
         self.__workload = workload
+        self._reps = reps
 
     def __call__(self) -> tp.Any:
         if not isinstance(self.project, SupportsBenchbase):
@@ -154,7 +159,8 @@ class RunBenchbase(ProjectStep):
 
         benchbase_exec_dir = self.project.builddir / "benchbase" / "target" / f"benchbase-{self.project.get_benchbase_profile_name()}"
 
-        self._run_benchbase(self.project, self.__workload)
+        for _ in range(self._reps):
+            _run_benchbase(self.project, self.__workload)
         # Zip up results
         try:
             with local.cwd(benchbase_exec_dir / "results"):
@@ -164,11 +170,14 @@ class RunBenchbase(ProjectStep):
             self.status = StepResult.ERROR
             return self.status
 
+        # Remove the results directory after zipping
+        shutil.rmtree(benchbase_exec_dir / "results", ignore_errors=True)
+
         self.status = StepResult.OK
         return self.status
 
     def __str__(self, indent: int = 0) -> str:
-        return " " * indent + f"* {self.project.name}: Run BenchBase (Workloads: {', '.join(_WORKLOADS)})"
+        return " " * indent + f"* {self.project.name}: Run BenchBase (Workload: {self.__workload}; Reps: {self._reps})"
 
 
 class BenchbaseBenchmark(FeatureExperiment, shorthand="BBB"):
@@ -220,13 +229,24 @@ class BenchbaseBenchmark(FeatureExperiment, shorthand="BBB"):
         return analysis_actions
 
 
+class MPBenchbaseReport(
+    MultiPatchReport,
+    shorthand="MP" + BenchBaseReportAggregate.SHORTHAND,
+    file_type="zip"
+):
+    """Multi-patch report for BenchBase benchmark results."""
+
+    def __init__(self, Path):
+        super().__init__(Path, BenchBaseReportAggregate)
+
+
 class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
     """Runs the BenchBase benchmark suite with a hidden configuration."""
 
     NAME = "BenchbaseHiddenConfig"
     DESCRIPTION = "Run the BenchBase benchmark suite with a hidden configuration"
     REPORT_SPEC = ReportSpecification(
-        ...
+        MPBenchbaseReport
     )  # TODO: Proper MPReport for benchbase
 
     def actions_for_project(self,
@@ -259,12 +279,75 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
         analysis_actions.append(Compile(project))
         analysis_actions.append(BuildBenchbase(project))
 
-        # TODO: Implement patch steps
+        # TODO: Baseline measurements
         db_binary = project.database_binary(
             ShortCommitHash(project.version_of_primary)
         )
 
-        analysis_actions.extend += get_config_reverse_patch_steps(project)
+        baseline_steps = []
+        baseline_steps.extend([
+            RunBenchbase(
+                project,
+                Path(
+                    MPBenchbaseReport.
+                    create_baseline_report_name(f"{db_binary.name}-{wl}")
+                ), wl, HIDDEN_CONFIG_REPS
+            ) for wl in _WORKLOADS
+        ])
+
+        # TODO: Implement patch steps
+        patch_steps = []
+
+        for patch in patches:
+            # Skip patches without variations
+            if patch.shortname not in PATCH_VARIATIONS[project.name]:
+                print(
+                    f"Skipping patch {patch.shortname} as it has no variations."
+                )
+                continue
+
+            arg_name, values = get_variations(project, patch.shortname)
+
+            for value in values:
+                patch_steps.append(
+                    ApplyPatch(project, patch, **{arg_name: value})
+                )
+                patch_steps.append(ReCompile(project))
+                patch_steps.extend([
+                    AlwaysOk(
+                        project,
+                        RunBenchbase(
+                            project,
+                            Path(
+                                MPBenchbaseReport.create_patched_report_name(
+                                    patch, f"{db_binary.name}-{wl}",
+                                    **{arg_name: value}
+                                )
+                            ), wl, HIDDEN_CONFIG_REPS
+                        )
+                    ) for wl in _WORKLOADS
+                ])
+
+                patch_steps.append(
+                    ApplyPatch(
+                        project, patch, reverse=True, **{arg_name: value}
+                    )
+                )
+
+        result_filepath = create_new_success_result_filepath(
+            self.get_handle(), self.REPORT_SPEC.main_report, project, db_binary,
+            get_current_config_id(project)
+        )
+
+        analysis_actions.append(
+            ZippedExperimentSteps(
+                result_filepath, baseline_steps + patch_steps
+            )
+        )
+
+        analysis_actions += get_config_reverse_patch_steps(project)
+
+        return analysis_actions
 
 
 class BenchbaseCoverage(FeatureExperiment, shorthand="BBC"):
