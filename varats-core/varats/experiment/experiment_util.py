@@ -1,11 +1,13 @@
 """Utility module for BenchBuild experiments."""
+import fcntl
 import os
 import random
-import shutil
 import tempfile
 import textwrap
+import time
 import traceback
 import typing as tp
+import zipfile
 from abc import abstractmethod
 from collections import defaultdict
 from pathlib import Path
@@ -33,6 +35,7 @@ from varats.report.report import (
     ReportFilename,
 )
 from varats.utils.config import get_config_patches
+from varats.utils.filesystem_util import lock_file
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
@@ -513,9 +516,26 @@ class ZippedReportFolder(TempDir):
     ) -> None:
         # Don't create an empty zip archive.
         if os.listdir(self.name):
-            shutil.make_archive(
-                str(self.__result_report_name), "zip", Path(self.name)
-            )
+            archive_path = Path(str(self.__result_report_name) + ".zip")
+            with open(archive_path, 'a+b') as fh:
+                print("trying to acquire lock for zipping report folder...")
+                fcntl.flock(fh, fcntl.LOCK_EX)
+                print("lock acquired, zipping report folder...")
+                try:
+                    with zipfile.ZipFile(
+                        archive_path,
+                        mode='a',
+                        compression=zipfile.ZIP_DEFLATED
+                    ) as zf:
+                        for root, _, files in os.walk(self.name):
+                            for fname in files:
+                                full_path = os.path.join(root, fname)
+                                arcname = os.path.relpath(full_path, self.name)
+                                zf.write(full_path, arcname)
+                    fh.flush()
+                    os.fsync(fh.fileno())
+                finally:
+                    fcntl.flock(fh, fcntl.LOCK_UN)
 
         super().__exit__(exc_type, exc_value, exc_traceback)
 
