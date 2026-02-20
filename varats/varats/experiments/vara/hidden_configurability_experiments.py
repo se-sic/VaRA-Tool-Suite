@@ -547,6 +547,105 @@ PATCH_VARIATIONS = {
             ("enc_chunk_size", [2**x for x in range(7, 18) if 2**x != 16384]),
         "dec_chunk_size":
             ("dec_chunk_size", [2**x for x in range(7, 18) if 2**x != 16384]),
+    },
+    "postgres": {
+        "analyse_min_tracks": (
+            "min_tracks", [
+                5, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400,
+                500
+            ]
+        ),
+        "blocklist_cnt": (
+            "blocklist_cnt",
+            [2, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50, 100]
+        ),
+        "bufpage_multi_delete":
+            ("nitems", [3, 4, 5, 6, 7, 8, 9, 10, 14, 20, 30, 40, 50, 100]),
+        "clause_threshold": (
+            "clause_threshold",
+            [10, 20, 30, 40, 50, 60, 70, 80, 90, 150, 200, 300, 400, 500]
+        ),
+        "colinfo_hash":
+            ("min_cols", [2**x for x in range(1, 16) if 2**x != 32]),
+        "like_hist_heuristic": (
+            "num_entries", [
+                10, 20, 30, 40, 50, 60, 70, 80, 90, 150, 200, 300, 400, 500,
+                1000, 5000
+            ]
+        ),
+        "max_buffered_tuples": (
+            "max_tuples",
+            [10, 50, 100, 200, 300, 400, 500, 2000, 3000, 4000, 5000, 10000]
+        ),
+        "max_empty_blocks": (
+            "max_empty_blocks", [
+                2, 3, 4, 5, 6, 7, 8, 9, 15, 20, 30, 40, 50, 100, 200, 300, 400,
+                500
+            ]
+        ),
+        "max_free_contexts": (
+            "max_free_contexts", [
+                10, 20, 30, 40, 50, 60, 70, 80, 90, 150, 200, 300, 400, 500,
+                1000, 5000
+            ]
+        ),
+        "max_inval_msg":
+            ("max_inval_msg", [2**x for x in range(1, 16) if 2**x != 32]),
+        "max_num_msg":
+            ("max_num_messages", [2**x for x in range(1, 16) if 2**x != 4096]),
+        "max_partition_buffers": (
+            "max_partition_buffers", [2**x for x in range(1, 12) if 2**x != 32]
+        ),
+        "max_spins": (
+            "max_spins",
+            [20, 50, 100, 200, 300, 400, 500, 2000, 3000, 4000, 5000, 10000]
+        ),
+        "max_writeall_buffers": (
+            "max_writeall_buffers", [2**x for x in range(1, 16) if 2**x != 16]
+        ),
+        "min_alloc": ("min_alloc", [2**x for x in range(1, 16) if 2**x != 32]),
+        "min_size_soap": (
+            "min_size_soap", [
+                3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 20, 30, 40, 50, 100,
+                500
+            ]
+        ),
+        "min_spins": (
+            "min_spins", [
+                5, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 150, 200, 300, 400,
+                500, 600, 700, 800, 900
+            ]
+        ),
+        "nt_rels_hash": ("nrels", [2**x for x in range(1, 16) if 2**x != 64]),
+        "num_blocks": ("n_blocks", [2**x for x in range(1, 16) if 2**x != 8]),
+        "num_seg_bins":
+            ("num_seg_bins", [2**x for x in range(1, 16) if 2**x != 16]),
+        "num_tries": (
+            "num_tries", [
+                10, 20, 30, 40, 60, 70, 80, 90, 100, 150, 200, 300, 400, 500,
+                1000
+            ]
+        ),
+        "page_read_penalty":
+            ("read_penalty", [1.1, 1.25, 1.5, 1.75, 2.5, 3, 4, 5, 10]),
+        "page_write_penalty":
+            ("write_penalty", [1.1, 1.25, 1.5, 1.75, 2.5, 3, 4, 5, 10]),
+        "ref_cnt_size":
+            ("ref_cnt_size", [2**x for x in range(1, 16) if 2**x != 8]),
+        "selec_factor":
+            ("selec_factor", [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]),
+        "stringinfo_min_length":
+            ("min_space", [2**x for x in range(1, 16) if 2**x != 16]),
+        "sync_scan_nelem": (
+            "sync_scan_nelem",
+            [5, 10, 15, 25, 30, 40, 50, 75, 100, 150, 200, 300, 400, 500]
+        ),
+        "xlog_distance_factor":
+            ("factor", [1.05, 1.15, 1.25, 1.5, 2, 2.5, 3, 3.5, 4, 5, 10]),
+        "xlog_insert_logs":
+            ("xlog_insert_locks", [2**x for x in range(1, 16) if 2**x != 8]),
+        "xlog_min_buffers":
+            ("xlog_min_buffers", [2**x for x in range(1, 16) if 2**x != 8]),
     }
 }
 
