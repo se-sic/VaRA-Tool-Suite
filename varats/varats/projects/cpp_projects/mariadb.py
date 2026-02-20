@@ -141,9 +141,16 @@ class MariaDB(VProject):
                 combinations = case._elem.attrib["combinations"]  # pylint: disable=protected-access
 
                 test_results[f"{suite_name}.{test_name},{combinations}"
-                            ] = MTR_RESULT_MAPPING[case._elem.attrib["result"]]  # pylint: disable=protected-access
+                            ] = MTR_RESULT_MAPPING[case._elem.attrib["status"]]  # pylint: disable=protected-access
 
         return test_results
+
+    @property
+    def id(self) -> str:
+        """We need to override the default id from benchbuild, as it contains
+        the @ symbol which causes issues with the test suite of mariadb."""
+        version_str = str(self.revision)
+        return f"{self.name}-{self.group}-{version_str}"
 
     def run_testsuite(
         self,
@@ -171,7 +178,9 @@ class MariaDB(VProject):
 
         with local.cwd(build_dir):
             test_command = test_binary[
-                "--mem", "--force",
+                "--mem",
+                "--force",
+                "--max-test-fail=1000",  # We want to get as many results as possible, so we set a high limit for test failures
                 f"--parallel={get_number_of_jobs(bb_cfg())}",
                 f"--xml-report={test_report_path.absolute()}"]
 
@@ -187,8 +196,13 @@ class MariaDB(VProject):
             if tests_to_run:
                 # Tests that need to be run are simply passed as arguments
                 test_command = test_command[*tests_to_run]
-
-            bb.watch(test_command)()
+            try:
+                bb.watch(test_command)(
+                    retcode=None
+                )  # mtr returns 1 if any test failed, but we want to continue to parse the report
+            except Exception as e:
+                print(f"Test command failed with error: {e}")
+                print(f"Continuing to parse test report at {test_report_path}")
 
             # Parse test results
             return self._parse_test_report(test_report_path)
@@ -216,7 +230,17 @@ class MariaDB(VProject):
             # If there are no combinations, the test name is just <suite_name>.<test_name>
             # If there are combinations, generate one test name for each combination in the format <suite_name>.<test_name>,<combination>
             test_names = []
-            for line in result.stdout.splitlines():
+
+            lines = result.splitlines()
+
+            # The first couple of lines contain output from the test harness
+            # The test names are printed after a line that starts with "Installing system database..."
+            while lines:
+                line = lines.pop(0)
+                if line.startswith("Installing system database..."):
+                    break
+
+            for line in result.splitlines():
                 if not line.strip():
                     continue
 

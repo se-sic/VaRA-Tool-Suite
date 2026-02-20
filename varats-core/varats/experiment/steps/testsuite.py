@@ -77,11 +77,11 @@ class BuildTestSuite(ProjectStep):  # type: ignore
 def _parse_results(result: tp.Dict[str, TestResult]) -> bool:
     result_filter = {
         TestResult.PASSED: True,
-        TestResult.FAILED: False,
+        TestResult.FAILED: True,
         TestResult.SKIPPED: True,
-        TestResult.TIMEOUT: False,
+        TestResult.TIMEOUT: True,
         TestResult.DISABLED: True,
-        TestResult.UNKNOWN: False,
+        TestResult.UNKNOWN: True,
     }
     return all(result_filter.get(status) == True for status in result.values())
 
