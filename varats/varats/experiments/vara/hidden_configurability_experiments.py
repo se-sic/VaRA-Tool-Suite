@@ -645,7 +645,60 @@ PATCH_VARIATIONS = {
         "xlog_insert_logs":
             ("xlog_insert_locks", [2**x for x in range(1, 16) if 2**x != 8]),
         "xlog_min_buffers":
-            ("xlog_min_buffers", [2**x for x in range(1, 16) if 2**x != 8]),
+            ("min_buffers", [2**x for x in range(1, 16) if 2**x != 8]),
+    },
+    "mariadb": {
+        "array_exp_factor":
+            ("expansion_factor", [2**x for x in range(1, 16) if 2**x != 2]),
+        "array_min_capacity": (
+            "min_capacity", [
+                5, 10, 15, 25, 30, 40, 50, 60, 70, 80, 90, 150, 200, 300, 400,
+                500
+            ]
+        ),
+        "best_timer_cycles": (
+            "best_timer_cycles", [
+                5, 10, 15, 25, 30, 40, 50, 60, 70, 80, 90, 150, 200, 300, 400,
+                500
+            ]
+        ),
+        "item_buf_size":
+            ("buf_size", [2**x for x in range(1, 16) if 2**x != 64]),
+        "max_cols_fk": (
+            "max_cols", [50, 100, 150, 200, 300, 400, 600, 700, 800, 900, 1000]
+        ),
+        "max_ha": ("max_ha", [2**x for x in range(1, 16) if 2**x != 64]),
+        "max_skips": (
+            "max_skips", [
+                2, 3, 4, 5, 6, 7, 8, 9, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100,
+                200
+            ]
+        ),
+        "overhead_cycles": (
+            "overhead_cycles", [
+                5, 10, 15, 25, 30, 40, 50, 60, 70, 80, 90, 150, 200, 300, 400,
+                500
+            ]
+        ),
+        "sp_instr_buf_size":
+            ("buf_size", [2**x for x in range(1, 16) if 2**x != 512]),
+        "sql_prepare_buf_size":
+            ("buf_size", [2**x for x in range(1, 16) if 2**x != 256]),
+        "sql_select_buf_size":
+            ("buf_size", [2**x for x in range(1, 16) if 2**x != 64]),
+        "sql_string_buf_size":
+            ("buf_size", [2**x for x in range(1, 16) if 2**x != 256]),
+        "sql_table_buf_size": (
+            "buf_size", [50, 100, 150, 200, 300, 400, 600, 700, 800, 900, 1000]
+        ),
+        "sql_view_buf_size":
+            ("buf_size", [2**x for x in range(1, 16) if 2**x != 4096]),
+        "sql_view_buf_size_is":
+            ("buf_size", [2**x for x in range(1, 16) if 2**x != 4096]),
+        "table_buf_size":
+            ("buf_size", [2**x for x in range(1, 16) if 2**x != 1024]),
+        "unireg_buf_size":
+            ("buf_size", [2**x for x in range(1, 16) if 2**x != 64]),
     }
 }
 
