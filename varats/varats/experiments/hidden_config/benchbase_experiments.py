@@ -21,7 +21,7 @@ from varats.experiment.experiment_util import (
     get_config_reverse_patch_steps,
 )
 from varats.experiment.steps.combinators import AlwaysOk
-from varats.experiment.steps.patch import ApplyPatch
+from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
 from varats.experiments.coverage.collect_coverages import (
     CollectCoverage,
@@ -329,9 +329,7 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
                 ])
 
                 patch_steps.append(
-                    ApplyPatch(
-                        project, patch, reverse=True, **{arg_name: value}
-                    )
+                    RevertPatch(project, patch, **{arg_name: value})
                 )
 
         result_filepath = create_new_success_result_filepath(
