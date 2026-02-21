@@ -19,6 +19,7 @@ from varats.experiments.hidden_config.database_utils import (
     BENCHBASE_EXTRA_FILES_DIR,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     RevisionBinaryMap,
@@ -50,7 +51,8 @@ class MariaDB(VProject):
             refspec="origin/HEAD",
             limit=None,
             shallow=False
-        )
+        ),
+        PatchVariationSource()
     ]
 
     def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
