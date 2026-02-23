@@ -323,6 +323,13 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
             arg_name = next(iter(patch_variations))
             values: tp.List[int] = list(patch_variations[arg_name])
 
+            if arg_name not in patch.arguments:
+                print(
+                    f"Warning: Patch '{patch.shortname}' does not define argument '{arg_name}'."
+                )
+                print(f"Available arguments: {patch.arguments}")
+                continue
+
             values.extend(sample_variations(values, 1))
 
             for value in values:
