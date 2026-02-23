@@ -158,7 +158,6 @@ def create_configuration_map_from_yaml_doc(
             "PatchVariationConfiguration": PatchVariationConfiguration
         }[raw_config_type]
 
-    print(f"{yaml_doc=}")
     for config_id in sorted(yaml_doc):
         parsed_config = concrete_config_type.create_configuration_from_str(
             yaml_doc[config_id]

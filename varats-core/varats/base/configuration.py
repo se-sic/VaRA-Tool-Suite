@@ -6,6 +6,8 @@ import typing as tp
 from copy import deepcopy
 from dataclasses import dataclass
 
+from frozendict import frozendict
+
 
 class ConfigurationOption:
     """A configuration option for a software project."""
@@ -470,12 +472,18 @@ class PatchVariationConfiguration(Configuration):
     Mostly built to speed up execution of experiment with many patch variations.
     """
 
-    def __init__(self, variations: tp.Dict[str, tp.Tuple[str, tp.Any]]):
-        print(f"{variations=}")
+    def __init__(self, variations: tp.Dict[str, tp.Dict[str, tp.List]]):
+        # Convert variations such that all the lists are converted to tuples to make them hashable
+        values = {
+            name: {
+                key: tuple(value) if isinstance(value, list) else value
+                for key, value in variation.items()
+            } for name, variation in variations.items()
+        }
+
         self.__variations: tp.Set[ConfigurationOption] = {
-            ConfigurationOptionImpl(name, tuple([value[0],
-                                                 tuple(value[1])]))
-            for name, value in variations.items()
+            ConfigurationOptionImpl(name, frozendict(value))
+            for name, value in values.items()
         }
 
     @staticmethod

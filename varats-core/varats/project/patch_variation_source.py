@@ -62,19 +62,13 @@ class PatchVariationSource(bb.source.FetchableSource):  # type: ignore
     def versions_with_context(self, ctx: Revision) -> tp.Sequence[Variant]:
         """Computes the list of variants for given revision, multiplex with the
         config ids that should be explored.."""
-
-        #TODO: Implement me
         paper_config = get_paper_config()
-        print(f"{paper_config=}")
         case_study = paper_config.get_case_studies(ctx.project_cls.NAME)[0]
 
-        print(f"{case_study=}")
         config_map = load_configuration_map_for_case_study(
             paper_config, case_study, PatchVariationConfiguration
         )
-        print(f"{config_map=}")
 
         config_ids = config_map.ids()
-        print(f"{config_ids=}")
 
         return [Variant(self, str(config_id)) for config_id in config_ids]
