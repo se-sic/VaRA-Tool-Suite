@@ -2,7 +2,11 @@ import typing as tp
 
 import numpy as np
 
+from varats.base.configuration import PatchVariationConfiguration
+from varats.paper.paper_config import get_paper_config
+from varats.project.patch_variation_source import get_current_variation_id
 from varats.project.varats_project import VProject
+from varats.utils.config import load_configuration_map_for_case_study
 
 HIDDEN_CONFIG_REPS = 10
 # Mapping of patches per project to possible variations
@@ -295,6 +299,52 @@ PATCH_VARIATIONS = {
         "unireg_buf_size": ("buf_size", [32, 128]),
     }
 }
+
+
+def get_variation_config(
+    project: VProject
+) -> tp.Optional[PatchVariationConfiguration]:
+    # Get patch variation config
+    variation_id = get_current_variation_id(project)
+    if variation_id is None:
+        return None
+
+    paper_config = get_paper_config()
+    case_studies = paper_config.get_case_studies(cs_name=project.name)
+
+    if len(case_studies) > 1:
+        raise AssertionError(
+            "Cannot handle multiple case studies of the same project."
+        )
+
+    case_study = case_studies[0]
+
+    config_map = load_configuration_map_for_case_study(
+        paper_config, case_study, PatchVariationConfiguration
+    )
+
+    variation = config_map.get_configuration(variation_id)
+
+    return variation
+
+
+def sample_variations(values: tp.List[tp.Any],
+                      num_samples: int = 20) -> tp.List[tp.Any]:
+    rng = np.random.default_rng(seed=42)
+
+    if isinstance(values[0], int):
+        random_values = rng.integers(min(values), max(values) + 1, size=20)
+    elif isinstance(values[0], float):
+        # We want to sample floats with the same number of decimal places as the provided values
+        decimal_places = max(len(str(value).split(".")[1]) for value in values)
+        random_values = rng.uniform(min(values), max(values), size=20)
+        random_values = np.round(random_values, decimals=decimal_places)
+    else:
+        raise ValueError(
+            f"Unsupported value type {type(values[0])} for during sampling"
+        )
+
+    return random_values.tolist()
 
 
 def get_variations(project: VProject,

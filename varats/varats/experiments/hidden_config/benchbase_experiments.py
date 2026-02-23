@@ -19,6 +19,7 @@ from varats.experiment.experiment_util import (
     ZippedExperimentSteps,
     get_config_patch_steps,
     get_config_reverse_patch_steps,
+    create_stable_success_result_filepath,
 )
 from varats.experiment.steps.combinators import AlwaysOk
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
@@ -33,10 +34,12 @@ from varats.experiments.hidden_config.hidden_config_utils import (
     PATCH_VARIATIONS,
     get_variations,
     HIDDEN_CONFIG_REPS,
+    get_variation_config,
+    sample_variations,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.varats_project import VProject
-from varats.provider.patch.patch_provider import PatchProvider
+from varats.provider.patch.patch_provider import PatchProvider, Patch
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
@@ -298,15 +301,27 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
         # TODO: Implement patch steps
         patch_steps = []
 
-        for patch in patches:
-            # Skip patches without variations
-            if patch.shortname not in PATCH_VARIATIONS[project.name]:
+        variations = {
+            o.name: o.value for o in get_variation_config(project).options()
+        }
+
+        # Filter patches based on the variations specified in the configuration
+        patches_filtered: tp.List[Patch] = [
+            patch for patch in patches if patch.shortname in variations
+        ]
+
+        for patch in patches_filtered:
+            patch_variations = variations[patch.shortname]
+
+            if len(patch_variations) != 2:
                 print(
-                    f"Skipping patch {patch.shortname} as it has no variations."
+                    f"Warning: Patch '{patch.shortname}' does not match expected format."
                 )
                 continue
+            arg_name = patch_variations[0]
+            values: tp.List[int] = list(patch_variations[1])
 
-            arg_name, values = get_variations(project, patch.shortname)
+            values.extend(sample_variations(values, 1))
 
             for value in values:
                 patch_steps.append(
@@ -332,7 +347,7 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
                     RevertPatch(project, patch, **{arg_name: value})
                 )
 
-        result_filepath = create_new_success_result_filepath(
+        result_filepath = create_stable_success_result_filepath(
             self.get_handle(), self.REPORT_SPEC.main_report, project, db_binary,
             get_current_config_id(project)
         )

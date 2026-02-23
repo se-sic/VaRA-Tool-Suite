@@ -4,9 +4,9 @@ import os
 import random
 import tempfile
 import textwrap
-import time
 import traceback
 import typing as tp
+import uuid
 import zipfile
 from abc import abstractmethod
 from collections import defaultdict
@@ -705,6 +705,36 @@ def __create_new_result_filepath_impl(
         config_folder.mkdir(parents=True, exist_ok=True)
 
     return result_filepath
+
+
+def create_stable_success_result_filepath(
+    exp_handle: ExperimentHandle,
+    report_type: tp.Type[BaseReport],
+    project: VProject,
+    binary: ProjectBinaryWrapper,
+    config_id: tp.Optional[int] = None
+) -> ReportFilepath:
+    """
+    Create a result filepath for a successful report of the executed
+    experiment/project combination. The "stable" variant fixes the uuid, which
+    allows to run experiments in parallel with the ZippedReportFolder.
+
+    Args:
+        exp_handle: handle to the current experiment
+        report_type: type of the report
+        project: current project
+        binary: current binary
+        config_id: optional id to specify the used configuration
+
+    Returns: formatted success filepath
+    """
+    project.run_uuid = uuid.UUID(
+        hex="00000000-0000-0000-0000-000000000000", version=4
+    )  # type: ignore
+    return __create_new_result_filepath_impl(
+        exp_handle, report_type, project, binary, FileStatusExtension.SUCCESS,
+        config_id
+    )
 
 
 def create_new_success_result_filepath(
