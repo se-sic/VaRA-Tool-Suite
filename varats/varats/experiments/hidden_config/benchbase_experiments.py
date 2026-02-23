@@ -302,7 +302,8 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
         patch_steps = []
 
         variations = {
-            o.name: o.value for o in get_variation_config(project).options()
+            o.name: dict(o.value)
+            for o in get_variation_config(project).options()
         }
 
         # Filter patches based on the variations specified in the configuration
@@ -312,14 +313,15 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
 
         for patch in patches_filtered:
             patch_variations = variations[patch.shortname]
+            print(f"{patch_variations=}")
 
-            if len(patch_variations) != 2:
+            if len(patch_variations) != 1:
                 print(
-                    f"Warning: Patch '{patch.shortname}' does not match expected format."
+                    f"Warning: Patch '{patch.shortname}' defines more than one argument. This is not supported currently. Skipping this patch."
                 )
                 continue
-            arg_name = patch_variations[0]
-            values: tp.List[int] = list(patch_variations[1])
+            arg_name = next(iter(patch_variations))
+            values: tp.List[int] = list(patch_variations[arg_name])
 
             values.extend(sample_variations(values, 1))
 
