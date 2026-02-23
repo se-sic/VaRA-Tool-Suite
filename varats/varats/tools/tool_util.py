@@ -4,6 +4,7 @@ import typing as tp
 from functools import wraps
 from pathlib import Path
 
+from varats.tools.research_tools.benchbase import Benchbase
 from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.research_tool import ResearchTool
 from varats.tools.research_tools.szz_unleashed import SZZUnleashed
@@ -11,7 +12,8 @@ from varats.tools.research_tools.vara import VaRA
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import vara_cfg
 
-ResearchToolTy = tp.Union[tp.Type[VaRA], tp.Type[Phasar], tp.Type[SZZUnleashed]]
+ResearchToolTy = tp.Union[tp.Type[VaRA], tp.Type[Phasar], tp.Type[SZZUnleashed],
+                          tp.Type[Benchbase]]
 
 
 def get_research_tool_type(name: str) -> ResearchToolTy:
@@ -31,6 +33,9 @@ def get_research_tool_type(name: str) -> ResearchToolTy:
 
     if name == "szzunleashed":
         return SZZUnleashed
+
+    if name == "benchbase":
+        return Benchbase
 
     raise LookupError(f"Could not find research tool {name}")
 
@@ -69,7 +74,7 @@ def get_research_tool(
 
 def get_supported_research_tool_names() -> tp.List[str]:
     """Returns a list of all supported research tools."""
-    return ["phasar", "vara", "szzunleashed"]
+    return ["phasar", "vara", "szzunleashed", "benchbase"]
 
 
 def configuration_lookup_error_handler(
