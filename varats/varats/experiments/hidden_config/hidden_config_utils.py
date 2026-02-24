@@ -346,7 +346,12 @@ def sample_variations(values: tp.List[tp.Any],
             f"Unsupported value type {type(values[0])} for during sampling"
         )
 
-    return random_values.tolist()
+    # Erase duplicates from the random values and the provided values
+    unique_values = set(values)
+    unique_random_values = set(random_values)
+    unique_random_values = unique_random_values - unique_values
+
+    return list(unique_random_values)
 
 
 def get_variations(project: VProject,
