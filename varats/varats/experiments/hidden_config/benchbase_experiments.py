@@ -42,6 +42,7 @@ from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider, Patch
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
+from varats.tools.research_tools.benchbase import Benchbase
 from varats.utils.config import get_current_config_id
 from varats.utils.git_util import ShortCommitHash
 
@@ -52,7 +53,7 @@ _WORKLOADS = [
 ]
 
 
-class BuildBenchbase(ProjectStep):
+class SetupBenchbase(ProjectStep):
     """Builds the BenchBase benchmark suite."""
 
     def __init__(self, project: tp.Union[VProject, SupportsBenchbase]):
@@ -66,36 +67,19 @@ class BuildBenchbase(ProjectStep):
 
         self.project: tp.Union[VProject, SupportsBenchbase]
 
-        benchbase_repo_url = "https://github.com/cmu-db/benchbase.git"
-        git = local["git"]
-
         with local.cwd(self.project.builddir):
+            profile_archive = Benchbase.get_benchbase_target(
+                self.project.get_benchbase_profile_name()
+            )
+            benchbase_archive = f"benchbase-{self.project.get_benchbase_profile_name()}.tgz"
+            # Copy the archive to the build directory
+            shutil.copy(profile_archive, benchbase_archive)
             try:
-                if not Path("benchbase").exists():
-                    git("clone", "--depth", 1, benchbase_repo_url)
+                local["tar"]["-xvzf", benchbase_archive]()
             except ProcessExecutionError as e:
-                print(f"Error cloning BenchBase repository: {e}")
+                print(f"Error extracting BenchBase archive: {e}")
                 self.status = StepResult.ERROR
                 return self.status
-
-            with local.cwd("benchbase"):
-                mvnw = local["mvnw"]
-                try:
-                    mvnw(
-                        "clean", "package", "-P",
-                        self.project.get_benchbase_profile_name()
-                    )
-                except ProcessExecutionError as e:
-                    print(f"Error building BenchBase: {e}")
-
-                with local.cwd("target"):
-                    benchbase_archive = f"benchbase-{self.project.get_benchbase_profile_name()}.tgz"
-                    try:
-                        local["tar"]["-xvzf", benchbase_archive]()
-                    except ProcessExecutionError as e:
-                        print(f"Error extracting BenchBase archive: {e}")
-                        self.status = StepResult.ERROR
-                        return self.status
 
         self.status = StepResult.OK
         return self.status
@@ -107,9 +91,13 @@ class BuildBenchbase(ProjectStep):
 def _run_benchbase(
     project: tp.Union[VProject, SupportsBenchbase], workload: str
 ) -> StepResult:
-    benchbase_exec_dir = project.builddir / "benchbase" / "target" / f"benchbase-{project.get_benchbase_profile_name()}"
+    benchbase_exec_dir = project.builddir / f"benchbase-{project.get_benchbase_profile_name()}"
+    java_dir = Benchbase.get_java_dir()
 
-    with local.cwd(benchbase_exec_dir):
+    with local.cwd(benchbase_exec_dir), local.env(
+        PATH=str(java_dir.absolute()) + ":" + local.env["PATH"],
+        JAVA_HOME=str(java_dir.absolute())
+    ):
         print(f"Running workload: {workload}")
         # TODO: Customize configuration
         config = {}
@@ -160,7 +148,7 @@ class RunBenchbase(ProjectStep):
 
         self.project: tp.Union[VProject, SupportsBenchbase]
 
-        benchbase_exec_dir = self.project.builddir / "benchbase" / "target" / f"benchbase-{self.project.get_benchbase_profile_name()}"
+        benchbase_exec_dir = self.project.builddir / f"benchbase-{self.project.get_benchbase_profile_name()}"
 
         for _ in range(self._reps):
             _run_benchbase(self.project, self.__workload)
@@ -219,7 +207,7 @@ class BenchbaseBenchmark(FeatureExperiment, shorthand="BBB"):
 
         analysis_actions: tp.List[Step] = [
             Compile(project),
-            BuildBenchbase(project),
+            SetupBenchbase(project),
             ZippedExperimentSteps(
                 result_path, [
                     RunBenchbase(project, Path(f"rep_{r}.zip"), wl)
@@ -279,92 +267,97 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
 
         analysis_actions = get_config_patch_steps(project)
 
-        analysis_actions.append(Compile(project))
-        analysis_actions.append(BuildBenchbase(project))
+        analysis_actions.append(SetupBenchbase(project))
 
-        # TODO: Baseline measurements
         db_binary = project.database_binary(
             ShortCommitHash(project.version_of_primary)
         )
-
-        baseline_steps = []
-        baseline_steps.extend([
-            RunBenchbase(
-                project,
-                Path(
-                    MPBenchbaseReport.
-                    create_baseline_report_name(f"{db_binary.name}-{wl}")
-                ), wl, HIDDEN_CONFIG_REPS
-            ) for wl in _WORKLOADS
-        ])
-
-        # TODO: Implement patch steps
-        patch_steps = []
-
-        variations = {
-            o.name: dict(o.value)
-            for o in get_variation_config(project).options()
-        }
-
-        # Filter patches based on the variations specified in the configuration
-        patches_filtered: tp.List[Patch] = [
-            patch for patch in patches if patch.shortname in variations
-        ]
-
-        for patch in patches_filtered:
-            patch_variations = variations[patch.shortname]
-            print(f"{patch_variations=}")
-
-            if len(patch_variations) != 1:
-                print(
-                    f"Warning: Patch '{patch.shortname}' defines more than one argument. This is not supported currently. Skipping this patch."
-                )
-                continue
-            arg_name = next(iter(patch_variations))
-            values: tp.List[int] = list(patch_variations[arg_name])
-
-            if arg_name not in patch.arguments:
-                print(
-                    f"Warning: Patch '{patch.shortname}' does not define argument '{arg_name}'."
-                )
-                print(f"Available arguments: {patch.arguments}")
-                continue
-
-            values.extend(sample_variations(values, 1))
-
-            for value in values:
-                patch_steps.append(
-                    ApplyPatch(project, patch, **{arg_name: value})
-                )
-                patch_steps.append(ReCompile(project))
-                patch_steps.extend([
-                    AlwaysOk(
-                        project,
-                        RunBenchbase(
-                            project,
-                            Path(
-                                MPBenchbaseReport.create_patched_report_name(
-                                    patch, f"{db_binary.name}-{wl}",
-                                    **{arg_name: value}
-                                )
-                            ), wl, HIDDEN_CONFIG_REPS
-                        )
-                    ) for wl in _WORKLOADS
-                ])
-
-                patch_steps.append(
-                    RevertPatch(project, patch, **{arg_name: value})
-                )
 
         result_filepath = create_stable_success_result_filepath(
             self.get_handle(), self.REPORT_SPEC.main_report, project, db_binary,
             get_current_config_id(project)
         )
 
+        variations = {
+            o.name: dict(o.value)
+            for o in get_variation_config(project).options()
+        }
+
+        zipped_steps = []
+
+        if len(variations) == 0:
+            # Baseline case: No variations, only perform baseline measurements without applying any patches.
+            analysis_actions.append(Compile(project))
+
+            zipped_steps.extend([
+                RunBenchbase(
+                    project,
+                    Path(
+                        MPBenchbaseReport.
+                        create_baseline_report_name(f"{db_binary.name}-{wl}")
+                    ), wl, HIDDEN_CONFIG_REPS
+                ) for wl in _WORKLOADS
+            ])
+        else:
+            # Filter patches based on the variations specified in the configuration
+            patches_filtered: tp.List[Patch] = [
+                patch for patch in patches if patch.shortname in variations
+            ]
+
+            for patch in patches_filtered:
+                patch_variations = variations[patch.shortname]
+                print(f"{patch_variations=}")
+
+                if len(patch_variations) != 1:
+                    print(
+                        f"Warning: Patch '{patch.shortname}' defines more than one argument. This is not supported currently. Skipping this patch."
+                    )
+                    continue
+                arg_name = next(iter(patch_variations))
+                values: tp.List[int] = list(patch_variations[arg_name])
+
+                if arg_name not in patch.arguments:
+                    print(
+                        f"Warning: Patch '{patch.shortname}' does not define argument '{arg_name}'."
+                    )
+                    print(f"Available arguments: {patch.arguments}")
+                    continue
+
+                num_samples = 1 if project.name == "postgres" else 20
+                values.extend(sample_variations(values, num_samples))
+
+                for value in values:
+                    zipped_steps.append(
+                        ApplyPatch(project, patch, **{arg_name: value})
+                    )
+
+                    if len(zipped_steps) == 1:
+                        # First iteration, perform a full compile
+                        zipped_steps.append(Compile(project))
+                    else:
+                        zipped_steps.append(ReCompile(project))
+                    zipped_steps.extend([
+                        AlwaysOk(
+                            project,
+                            RunBenchbase(
+                                project,
+                                Path(
+                                    MPBenchbaseReport.
+                                    create_patched_report_name(
+                                        patch, f"{db_binary.name}-{wl}",
+                                        **{arg_name: value}
+                                    )
+                                ), wl, HIDDEN_CONFIG_REPS
+                            )
+                        ) for wl in _WORKLOADS
+                    ])
+
+                    zipped_steps.append(
+                        RevertPatch(project, patch, **{arg_name: value})
+                    )
+
         analysis_actions.append(
-            ZippedExperimentSteps(
-                result_filepath, baseline_steps + patch_steps
-            )
+            ZippedExperimentSteps(result_filepath, zipped_steps)
         )
 
         analysis_actions += get_config_reverse_patch_steps(project)
@@ -415,7 +408,7 @@ class BenchbaseCoverage(FeatureExperiment, shorthand="BBC"):
 
         steps: tp.MutableSequence[Step] = [
             BuildWithCoverage(project, project.compile),
-            BuildBenchbase(project),
+            SetupBenchbase(project),
         ]
 
         prefixes = []
@@ -426,7 +419,7 @@ class BenchbaseCoverage(FeatureExperiment, shorthand="BBC"):
         for workload in _WORKLOADS:
 
             def bound_run():
-                RunBenchbase._run_benchbase(project, workload)
+                _run_benchbase(project, workload)
 
             wl_result_file = f"{db_binary.name}_{workload}_0.zip"
 

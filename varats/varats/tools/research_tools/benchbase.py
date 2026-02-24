@@ -76,7 +76,7 @@ class Benchbase(ResearchTool[BenchbaseCodeBase]):
 
     @staticmethod
     def get_benchbase_target(profile: str) -> Path:
-        install_path = Benchbase.install_location() / f"benchbase-{profile}-tgz"
+        install_path = Benchbase.install_location() / f"benchbase-{profile}.tgz"
         if not install_path.exists():
             print(f"Benchbase target {install_path} does not exist.")
             return Path()
