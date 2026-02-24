@@ -1,4 +1,3 @@
-import pprint
 import re
 import textwrap
 import typing as tp
@@ -7,7 +6,6 @@ from pathlib import Path
 
 import benchbuild as bb
 import benchbuild.extensions as bb_ext
-import numpy as np
 import yaml
 from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.utils import actions
@@ -32,6 +30,7 @@ from varats.experiment.experiment_util import (
     ZippedReportFolder,
     get_config_reverse_patch_steps,
     WithEnvironment,
+    create_stable_success_result_filepath,
 )
 from varats.experiment.steps.combinators import OutputAdapter, AlwaysOk
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
@@ -54,6 +53,8 @@ from varats.experiments.hidden_config.database_utils import SupportsBenchbase
 from varats.experiments.hidden_config.hidden_config_utils import (
     PATCH_VARIATIONS,
     get_variations,
+    get_variations_as_dict,
+    sample_variations,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_precision import (
@@ -76,7 +77,7 @@ from varats.projects.cpp_projects.hyteg import HyTeg
 from varats.projects.cpp_projects.lepton import Lepton
 from varats.projects.cpp_projects.mariadb import MariaDB
 from varats.projects.cpp_projects.sevenZip import SevenZip
-from varats.provider.patch.patch_provider import PatchProvider
+from varats.provider.patch.patch_provider import PatchProvider, Patch
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.revision.revisions import get_processed_revisions_files
@@ -650,42 +651,79 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
 
         analysis_actions = get_config_patch_steps(project)
 
-        analysis_actions.append(PrepareTestSuite(project))
-        analysis_actions.append(BuildTestSuite(project))
-
         patch_steps = []
         fake_binary = ProjectBinaryWrapper(
             "TESTSUITE", Path(), BinaryType.EXECUTABLE
         )
 
-        result_file = create_new_success_result_filepath(
+        result_file = create_stable_success_result_filepath(
             self.get_handle(), MPTextReport, project, fake_binary,
             get_current_config_id(project)
         )
 
-        def adapt_test_step_output(test_step: RunTestSuite, tmp_dir: Path):
-            test_step.set_output_path(tmp_dir / test_step.output_path.name)
+        variations = get_variations_as_dict(project)
+        zipped_steps = []
 
-        for patch in patches:
-            # Skip patches without any variations
-            if patch.shortname not in PATCH_VARIATIONS[project.name]:
-                print(
-                    f"Skipping patch {patch.shortname} for project "
-                    f"{project.name} as it has no variations."
-                )
-                continue
+        if len(variations) == 0:
+            # Baseline step, test normal program behavior without any patch applied
+            analysis_actions.append(PrepareTestSuite(project))
+            analysis_actions.append(BuildTestSuite(project))
 
-            arg_name, values = get_variations(project, patch.shortname)
-
-            for value in values:
-                patch_steps.append(
-                    ApplyPatch(project, patch, **{arg_name: value})
-                )
-                patch_steps.append(BuildTestSuite(project))
-                patch_steps.append(
-                    AlwaysOk(
+            zipped_steps.append(
+                AlwaysOk(
+                    project,
+                    RunTestSuite(
                         project,
-                        OutputAdapter(
+                        Path(
+                            MultiPatchReport.
+                            create_baseline_report_name("testsuite")
+                        )
+                    )
+                )
+            )
+        else:
+            # Filter patches based on the variations specified in the configuration
+            patches_filtered: tp.List[Patch] = [
+                patch for patch in patches if patch.shortname in variations
+            ]
+
+            # Test specific patch variations
+            for patch in patches_filtered:
+                patch_variations = variations[patch.shortname]
+
+                if len(patch_variations) != 1:
+                    print(
+                        f"Warning: Patch '{patch.shortname}' defines more than one argument. This is not supported currently. Skipping this patch."
+                    )
+                    continue
+
+                arg_name = next(iter(patch_variations))
+                #TODO: Change me
+                values: tp.List[int] = list(patch_variations[arg_name])[:2]
+
+                if arg_name not in patch.arguments:
+                    print(
+                        f"Warning: Patch '{patch.shortname}' does not define argument '{arg_name}'."
+                    )
+                    print(f"Available arguments: {patch.arguments}")
+                    continue
+
+                # TODO: Change me
+                num_samples = 1
+                values.extend(sample_variations(values, num_samples))
+
+                for value in values:
+                    zipped_steps.append(
+                        ApplyPatch(project, patch, **{arg_name: value})
+                    )
+
+                    if len(zipped_steps) == 1:
+                        zipped_steps.append(PrepareTestSuite(project))
+
+                    zipped_steps.append(BuildTestSuite(project))
+
+                    zipped_steps.append(
+                        AlwaysOk(
                             project,
                             RunTestSuite(
                                 project,
@@ -694,33 +732,16 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
                                         patch, "testsuite", **{arg_name: value}
                                     )
                                 )
-                            ), adapt_test_step_output
+                            )
                         )
                     )
-                )
 
-                patch_steps.append(
-                    RevertPatch(project, patch, **{arg_name: value})
-                )
+                    zipped_steps.append(
+                        RevertPatch(project, patch, **{arg_name: value})
+                    )
 
         analysis_actions.append(
-            ZippedExperimentSteps(
-                result_file, [
-                    AlwaysOk(
-                        project,
-                        OutputAdapter(
-                            project,
-                            RunTestSuite(
-                                project,
-                                Path(
-                                    MultiPatchReport.
-                                    create_baseline_report_name("testsuite")
-                                )
-                            ), adapt_test_step_output
-                        )
-                    )
-                ] + patch_steps
-            )
+            ZippedExperimentSteps(result_file, zipped_steps)
         )
 
         analysis_actions.extend(get_config_reverse_patch_steps(project))

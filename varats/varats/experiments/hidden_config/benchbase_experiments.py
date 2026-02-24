@@ -31,11 +31,9 @@ from varats.experiments.coverage.collect_coverages import (
 )
 from varats.experiments.hidden_config.database_utils import SupportsBenchbase
 from varats.experiments.hidden_config.hidden_config_utils import (
-    PATCH_VARIATIONS,
-    get_variations,
     HIDDEN_CONFIG_REPS,
-    get_variation_config,
     sample_variations,
+    get_variations_as_dict,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.varats_project import VProject
@@ -278,10 +276,7 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
             get_current_config_id(project)
         )
 
-        variations = {
-            o.name: dict(o.value)
-            for o in get_variation_config(project).options()
-        }
+        variations = get_variations_as_dict(project)
 
         zipped_steps = []
 
@@ -306,7 +301,6 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
 
             for patch in patches_filtered:
                 patch_variations = variations[patch.shortname]
-                print(f"{patch_variations=}")
 
                 if len(patch_variations) != 1:
                     print(

@@ -328,6 +328,14 @@ def get_variation_config(
     return variation
 
 
+def get_variations_as_dict(
+    project: VProject
+) -> tp.Dict[str, tp.Dict[str, tp.Any]]:
+    return {
+        o.name: dict(o.value) for o in get_variation_config(project).options()
+    }
+
+
 def sample_variations(values: tp.List[tp.Any],
                       num_samples: int = 20) -> tp.List[tp.Any]:
     rng = np.random.default_rng(seed=42)
