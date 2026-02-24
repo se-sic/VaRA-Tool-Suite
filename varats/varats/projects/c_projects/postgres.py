@@ -12,6 +12,7 @@ from varats.experiments.hidden_config.database_utils import (
     BENCHBASE_WORKLOAD_CONFIG_DIR,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     verify_binaries,
@@ -50,7 +51,8 @@ class PostgreSQL(VProject):
             refspec="origin/HEAD",
             limit=None,
             shallow=False
-        )
+        ),
+        PatchVariationSource()
     ]
 
     @staticmethod
