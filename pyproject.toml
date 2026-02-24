@@ -116,6 +116,17 @@ markers = [
     "slow: this test is slow."
 ]
 
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.lint]
+select = ["I"]  # I = import-sorting rules only
+
+[tool.ruff.lint.isort]
+known-first-party = ["varats"]
+known-third-party = ["benchbuild"]
+
+
 [tool.mypy]
 warn_return_any = true
 warn_unused_configs = true
