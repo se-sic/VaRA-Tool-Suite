@@ -76,40 +76,40 @@ add_module_names = True
 # Import pandas without the type checking flag to avoid import errors.
 # The exact reason for these errors is unknown but might be related to
 # incompatible cython versions (https://github.com/cython/cython/issues/1953)
-import pandas  # isort:skip
-import numpy.typing as npt  # isort:skip
+import pandas  # ruff: isort:skip
+import numpy.typing as npt  # ruff: isort:skip
 
 # The _typeshed module is not available during docs build, hence, we import
 # modules that require this module before setting the type checking flag.
-import scipy.stats  # isort:skip
+import scipy.stats  # ruff: isort:skip
 
 # Matplotlib >=3.8 has a type-checking-flag-guarded import of a symbol that does
 # not exist in the shipped version.
-import matplotlib.pyplot  # isort:skip
+import matplotlib.pyplot  # ruff: isort:skip
 
 # The autodocs typehints plugin does not resolve circular imports caused by type
 # annotations, so we have to manually break the circles.
-import rich.console  # isort:skip
-import cryptography.hazmat.backends  # isort:skip
-import cryptography.hazmat.backends.openssl.backend  # isort:skip
-import cryptography.exceptions  # isort:skip
-import click  # isort:skip
-import git  # isort:skip
-import github  # isort:skip
-import pygit2  # isort:skip
-import urllib3.exceptions  # isort:skip
+import rich.console  # ruff: isort:skip
+import cryptography.hazmat.backends  # ruff: isort:skip
+import cryptography.hazmat.backends.openssl.backend  # ruff: isort:skip
+import cryptography.exceptions  # ruff: isort:skip
+import click  # ruff: isort:skip
+import git  # ruff: isort:skip
+import github  # ruff: isort:skip
+import pygit2  # ruff: isort:skip
+import urllib3.exceptions  # ruff: isort:skip
 
 # Some packages use new syntax for type checking that isn't available to us
 import jwt.algorithms
 
-import typing as tp  # isort:skip
+import typing as tp  # ruff: isort:skip
 
 tp.TYPE_CHECKING = True
-import varats.mapping.commit_map  # isort:skip
-import varats.containers.containers  # isort:skip
-import varats.experiment.experiment_util  # isort:skip
-import varats.plot.plot  # isort:skip
-import varats.table.table  # isort:skip
+import varats.mapping.commit_map  # ruff: isort:skip
+import varats.containers.containers  # ruff: isort:skip
+import varats.experiment.experiment_util  # ruff: isort:skip
+import varats.plot.plot  # ruff: isort:skip
+import varats.table.table  # ruff: isort:skip
 
 tp.TYPE_CHECKING = False
 
