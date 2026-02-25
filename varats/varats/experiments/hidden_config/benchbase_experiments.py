@@ -317,7 +317,7 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
                     print(f"Available arguments: {patch.arguments}")
                     continue
 
-                num_samples = 1 if project.name == "postgres" else 20
+                num_samples = 20
                 values.extend(sample_variations(values, num_samples))
 
                 for value in values:

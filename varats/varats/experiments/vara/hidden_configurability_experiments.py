@@ -522,51 +522,63 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
 
         analysis_actions = get_config_patch_steps(project)
 
-        analysis_actions.append(actions.Compile(project))
+        variations = get_variations_as_dict(project)
+        zipped_steps = []
 
-        for binary in _get_project_binaries(project):
-            if len(
-                workload_commands(
-                    project, binary, [
-                        WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL,
-                        WorkloadCategory.MEDIUM
-                    ]
-                )
-            ) == 0:
-                analysis_actions.append(
-                    Echo(
-                        f"Skipping binary {binary.name} as it has no workloads."
-                    )
-                )
-                continue
+        if len(variations) == 0:
+            # Baseline step, test normal program behavior without any patch applied
+            analysis_actions.append(actions.Compile(project))
 
-            result_filepath = create_new_success_result_filepath(
-                self.get_handle(), self.REPORT_SPEC.main_report, project,
-                binary, get_current_config_id(project)
-            )
+            zipped_steps.extend([
+                TimePatchedWorkloadsStep(
+                    project,
+                    binary,
+                    file_name=MPRTimeWLAggregate.create_baseline_report_name(
+                        binary.name
+                    ),
+                    report_file_ending=".txt",
+                    reps=NUM_REPETITIONS
+                ) for binary in _get_project_binaries(project)
+            ])
+        else:
+            # Filter patches based on the variations specified in the configuration
+            patches_filtered: tp.List[Patch] = [
+                patch for patch in patches if patch.shortname in variations
+            ]
 
-            if not isinstance(analysis_actions[-1], actions.Compile):
-                analysis_actions.append(ReCompile(project))
+            for patch in patches_filtered:
+                patch_variations = variations[patch.shortname]
 
-            patch_steps = []
-
-            for patch in patches:
-                # Skip patches without any variations
-                if patch.shortname not in PATCH_VARIATIONS[project.name]:
+                if len(patch_variations) != 1:
                     print(
-                        f"Skipping patch {patch.shortname} for project "
-                        f"{project.name} as it has no variations."
+                        f"Warning: Patch '{patch.shortname}' defines more than one argument. This is not supported currently. Skipping this patch."
                     )
                     continue
+                arg_name = next(iter(patch_variations))
+                values: tp.List[int] = list(patch_variations[arg_name])
 
-                arg_name, values = get_variations(project, patch.shortname)
+                if arg_name not in patch.arguments:
+                    print(
+                        f"Warning: Patch '{patch.shortname}' does not define argument '{arg_name}'."
+                    )
+                    print(f"Available arguments: {patch.arguments}")
+                    continue
+
+                num_samples = 20
+                values.extend(sample_variations(values, num_samples))
 
                 for value in values:
-                    patch_steps.append(
+                    zipped_steps.append(
                         ApplyPatch(project, patch, **{arg_name: value})
                     )
-                    patch_steps.append(ReCompile(project))
-                    patch_steps.append(
+
+                    if len(zipped_steps) == 1:
+                        # First iteration, perform a full compile
+                        zipped_steps.append(actions.Compile(project))
+                    else:
+                        zipped_steps.append(ReCompile(project))
+
+                    zipped_steps.extend([
                         AlwaysOk(
                             project,
                             TimePatchedWorkloadsStep(
@@ -581,27 +593,22 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                                 report_file_ending=".txt",
                                 reps=NUM_REPETITIONS
                             )
-                        )
-                    )
+                        ) for binary in _get_project_binaries(project)
+                    ])
 
-                    patch_steps.append(
+                    zipped_steps.append(
                         RevertPatch(project, patch, **{arg_name: value})
                     )
 
-            analysis_actions.append(
-                ZippedExperimentSteps(
-                    result_filepath, [
-                        TimePatchedWorkloadsStep(
-                            project,
-                            binary,
-                            file_name=MPRTimeWLAggregate.
-                            create_baseline_report_name(binary.name),
-                            report_file_ending=".txt",
-                            reps=NUM_REPETITIONS
-                        )
-                    ] + patch_steps
-                )
-            )
+        fake_binary = ProjectBinaryWrapper("ALL", Path(), BinaryType.EXECUTABLE)
+        result_filepath = create_stable_success_result_filepath(
+            self.get_handle(), MPRTimeWLAggregate, project, fake_binary,
+            get_current_config_id(project)
+        )
+
+        analysis_actions.append(
+            ZippedExperimentSteps(result_filepath, zipped_steps)
+        )
 
         analysis_actions.extend(get_config_reverse_patch_steps(project))
         analysis_actions.append(actions.Clean(project))
@@ -709,7 +716,7 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
                     continue
 
                 # TODO: Change me
-                num_samples = 1
+                num_samples = 20
                 values.extend(sample_variations(values, num_samples))
 
                 for value in values:
