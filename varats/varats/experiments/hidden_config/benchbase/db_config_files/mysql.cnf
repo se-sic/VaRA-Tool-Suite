@@ -1,0 +1,3 @@
+[mysqld]
+datadir = {{ data_dir }}
+default_time_zone = "+00:00"
