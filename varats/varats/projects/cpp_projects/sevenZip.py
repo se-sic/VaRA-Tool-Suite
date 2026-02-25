@@ -14,6 +14,7 @@ from varats.experiment.workload_util import (
     ConfigParams,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -57,6 +58,7 @@ class SevenZip(VProject):
             shallow=False
         ),
         FeatureSource(),
+        PatchVariationSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={

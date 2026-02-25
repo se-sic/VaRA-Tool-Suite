@@ -19,6 +19,7 @@ from varats.experiment.workload_util import (
     ConfigParams,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -59,6 +60,8 @@ class Bzip2(VProject):
             limit=None,
             shallow=False
         ),
+        FeatureSource(),
+        PatchVariationSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={
@@ -71,7 +74,6 @@ class Bzip2(VProject):
                 "countries-land-100m.geo.json"
             ]
         ),
-        FeatureSource(),
         HTTPMultiple(
             local="geo-maps-compr",
             remote={

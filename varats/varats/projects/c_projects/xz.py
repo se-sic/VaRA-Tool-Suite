@@ -18,6 +18,7 @@ from plumbum import local
 from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -69,6 +70,7 @@ class Xz(VProject):
             )
         ),
         FeatureSource(),
+        PatchVariationSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={

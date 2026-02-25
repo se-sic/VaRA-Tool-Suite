@@ -18,6 +18,7 @@ from varats.experiment.workload_util import (
     RSBinary,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
@@ -303,6 +304,7 @@ class FastDownward(VProject, ReleaseProviderHook):
             shallow=False
         ),
         FeatureSource(),
+        PatchVariationSource(),
         __PlanningFilesSource,
     ]
 
