@@ -60,8 +60,8 @@ class ApplyPatch(actions.ProjectStep):
         try:
             apply_patch(repo_handle, patch_path)
 
-        except ProcessExecutionError:
-            print("Applying patch failed")
+        except ProcessExecutionError as pee:
+            print(f"Applying patch failed: {pee}")
             self.status = StepResult.ERROR
 
         return self.status

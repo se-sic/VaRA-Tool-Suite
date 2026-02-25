@@ -127,10 +127,6 @@ class PostgreSQL(VProject):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                 meson = local["meson"]
                 bb.watch(meson)("setup", build_dir)
-                with local.cwd(build_dir):
-                    bb.watch(meson)(
-                        "test", "-q", "--print-errorlogs", "--suite", "setup"
-                    )
 
     def build_tests(self) -> None:
         """
@@ -139,8 +135,13 @@ class PostgreSQL(VProject):
         Should be called after prepare_test_environment() to build the tests.
         Once this method is called, the tests should be built and ready to run.
         """
-        # No further steps required, as meson setup already configures the tests
-        pass
+        version_source = local.path(self.source_of_primary)
+        build_dir = version_source / "build-tests"
+
+        meson = local["meson"]
+        with local.cwd(build_dir):
+            bb.watch(meson
+                    )("test", "-q", "--print-errorlogs", "--suite", "setup")
 
     def run_testsuite(
         self,

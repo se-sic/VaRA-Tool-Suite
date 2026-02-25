@@ -80,11 +80,11 @@ class MariaDB(VProject):
         default_cmake_compile(self)
 
     def recompile(self) -> None:
-        version_source = self.source_of(self.primary_source)
+        version_source = Path(self.source_of(self.primary_source))
 
-        with local.cwd(version_source):
+        with local.cwd(version_source / "build"):
             make = local["make"]
-            make("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     ###############################
     # SupportsTestSuites protocol #
@@ -106,8 +106,8 @@ class MariaDB(VProject):
         Should be called after prepare_test_environment() to build the tests.
         Once this method is called, the tests should be built and ready to run.
         """
-        # Nothing special needs to be done here, as prepare and build are the same for this project.
-        pass
+        # Recompile to ensure potential changes from e.g. patch variations are included in the test binaries
+        self.recompile()
 
     @staticmethod
     def _parse_test_report(test_report_path: Path) -> tp.Dict[str, TestResult]:

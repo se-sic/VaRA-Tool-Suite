@@ -122,7 +122,9 @@ class HyTeg(VProject):
 
         mkdir("-p", hyteg_source / "build")
 
-        update_all_submodules(hyteg_source, recursive=True, init=True)
+        update_all_submodules(
+            RepositoryHandle(hyteg_source), recursive=True, init=True
+        )
 
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
