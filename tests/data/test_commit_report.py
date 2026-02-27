@@ -351,7 +351,7 @@ class TestCommitReport(unittest.TestCase):
         )
 
 
-def testing_gen_commit_map() -> CommitMap:
+def _testing_gen_commit_map() -> CommitMap:
     """Generate a local commit map for testing."""
 
     initialize_projects()
@@ -372,7 +372,7 @@ class TestCommitMap(unittest.TestCase):
     def setUpClass(cls) -> None:
         """Setup file and CommitReport."""
 
-        cls.cmap = testing_gen_commit_map()
+        cls.cmap = _testing_gen_commit_map()
 
     def test_time_id(self) -> None:
         """Test time id look up."""
@@ -451,7 +451,7 @@ class MockCommitMap(CommitMap):
             self._hash_to_id_master[slices[1]] = int(slices[0])
 
 
-def testing_gen_mock_commit_map() -> CommitMap:
+def _testing_gen_mock_commit_map() -> CommitMap:
     """Generate a local commit map from a mock log for testing."""
 
     def commit_log_stream() -> tp.Generator[str, None, None]:
@@ -476,7 +476,7 @@ class TestCommitConnectionGenerators(unittest.TestCase):
         ):
             cls.commit_report = CommitReport(Path("fake_file_path"))
 
-        cls.cmap = testing_gen_mock_commit_map()
+        cls.cmap = _testing_gen_mock_commit_map()
 
     def test_gen_interactions_nodes(self) -> None:
         """Test generation of interaction node."""

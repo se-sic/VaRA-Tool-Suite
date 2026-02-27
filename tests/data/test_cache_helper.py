@@ -8,6 +8,7 @@ from tests.helper_utils import run_in_test_environment
 from varats.data.cache_helper import (
     build_cached_report_table,
     get_data_file_path,
+    CACHE_COL_TYPES,
 )
 from varats.utils.settings import vara_cfg
 
@@ -22,6 +23,10 @@ class TestCacheHelper(unittest.TestCase):
         "c": ("c", 1),
         "c2": ("c", 2),
     }
+    column_types = {
+        "entry": 'str',
+    }
+    column_types.update(CACHE_COL_TYPES)
 
     @run_in_test_environment()
     def test_get_data_file_path(self):
@@ -37,7 +42,9 @@ class TestCacheHelper(unittest.TestCase):
         project_name = "project"
 
         def create_empty_df():
-            return pd.DataFrame(columns=["entry"])
+            df = pd.DataFrame(columns=list(self.column_types.keys()))
+            df = df.astype(self.column_types)
+            return df
 
         def create_cache_entry_data(entry: str):
             return pd.DataFrame({"entry": entry}, index=[
