@@ -12,7 +12,6 @@ from varats.data.reports.hidden_configurability_report import (
 )
 from varats.data.reports.text_report import PlainTextReport
 from varats.experiments.vara.hidden_configurability_experiments import (
-    FindHiddenConfigurationPoints,
     _PROJECT_WORKLOADS,
     PATCH_VARIATIONS,
     TestPatchVariations,
@@ -38,7 +37,7 @@ from varats.utils.testsuite_utils import TestResult
 
 class HiddenVariabilityOverviewTable(Table, table_name="hv_overview"):
 
-    __EXCLUSION_REASONS = ["Filename", "Coverage", "Operand"]
+    __AUTOMATED_EXCLUSION_REASONS = ["Filename", "Coverage", "Operand"]
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -70,49 +69,91 @@ class HiddenVariabilityOverviewTable(Table, table_name="hv_overview"):
             new_row = {
                 "Case Study": case_study.project_name,
                 "Total (Unfiltered)": 0,
-                "Excluded (Filename)": 0,
-                "Excluded (Coverage)": 0,
-                "Total (Filtered)": 0
+                "Filtered (Automated)": 0,
+                "Filtered (Manual)": 0,
+                "Configuration Opportunities": 0
             }
 
             for kind in config_points:
-                points = [
-                    p for p in config_points[kind]
-                    if "Excluded (Operand)" not in p.tags
-                ]
+                points = config_points[kind]
 
                 new_row["Total (Unfiltered)"] += len(points)
 
-                fname_excluded = 0
-                cov_excluded = 0
-                rel_pts = 0
+                excl_auto = 0
+                excl_manual = 0
+                conf_opps = 0
 
                 for point in points:
-                    if "Excluded (Filename)" in point.tags:
-                        fname_excluded += 1
+                    if "conf_opp" in point.tags:
+                        conf_opps += 1
 
-                    if "Excluded (Coverage)" in point.tags:
-                        cov_excluded += 1
-
-                    if (
-                        "Excluded (Filename)" not in point.tags and
-                        "Excluded (Coverage)" not in point.tags
+                    if any(
+                        f"Excluded ({reason})" in point.tags
+                        for reason in self.__AUTOMATED_EXCLUSION_REASONS
                     ):
-                        rel_pts += 1
+                        excl_auto += 1
+                    # Manually filtered points have tags like "Excluded (<reason>)"
+                    elif any(
+                        tag.startswith("Excluded (") and tag.endswith(")")
+                        for tag in point.tags
+                    ):
+                        excl_manual += 1
 
-                new_row["Excluded (Filename)"] += fname_excluded
-                new_row["Excluded (Coverage)"] += cov_excluded
-                new_row["Total (Filtered)"] += rel_pts
+                new_row["Filtered (Automated)"] += excl_auto
+                new_row["Filtered (Manual)"] += excl_manual
+                new_row["Configuration Opportunities"] += conf_opps
 
-                new_row[
-                    kind
-                ] = f"{len(points)}/{fname_excluded}/{cov_excluded}/{rel_pts}"
+                if self.table_kwargs["per_category"]:
+                    new_row[
+                        kind
+                    ] = f"{len(points)}/{excl_auto}/{excl_manual}/{conf_opps}"
 
             table_data.append(new_row)
 
+        # Add dummy data for missing case studies to ensure consistent table structure
+        _missing_cs = [
+            "duckdb",
+            "mysql",
+            "noisepage",
+            "vireo",
+            "z3",
+            "CryptoMiniSat",
+            "CP-SAT",
+            "Cadical",
+            "MapleSAT",
+            "fmt",
+        ]
+
+        for cs in _missing_cs:
+            # Add a dummy row for case studies with currently missing data
+            table_data.append({
+                "Case Study": cs,
+                "Total (Unfiltered)": "N/A",
+                "Filtered (Automated)": "N/A",
+                "Filtered (Manual)": "N/A",
+                "Configuration Opportunities": "N/A"
+            })
+
         df = pd.DataFrame(table_data)
 
-        df.sort_values(by="Case Study", inplace=True)
+        # Sort by case study name, but put the missing ones at the end
+        df["Case Study"] = pd.Categorical(
+            df["Case Study"],
+            categories=[
+                cs["Case Study"]
+                for cs in table_data
+                if cs["Total (Unfiltered)"] != "N/A"
+            ] + [
+                cs["Case Study"]
+                for cs in table_data
+                if cs["Total (Unfiltered)"] == "N/A"
+            ],
+            ordered=True
+        )
+        df.sort_values("Case Study", inplace=True)
+
+        # Set case study name as index
+        df.set_index("Case Study", inplace=True)
 
         return dataframe_to_table(df, table_format, wrap_table=wrap_table)
 
@@ -126,6 +167,12 @@ class HiddenVariabilityOverviewTableGenerator(
             is_flag=True,
             default=False,
             help="Hide projects with zero hidden configurability points."
+        ),
+        make_cli_option(
+            "--per-category",
+            is_flag=True,
+            default=False,
+            help="Show breakdown of hidden configurability points by category."
         )
     ]
 ):
