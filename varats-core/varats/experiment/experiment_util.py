@@ -623,9 +623,15 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
 
         for child in self.actions:
             if isinstance(child, OutputFolderStep):
-                results.append(child.call_with_output_folder(tmp_folder))
+                r = child.call_with_output_folder(tmp_folder)
+                if r not in [StepResult.OK, StepResult.CAN_CONTINUE]:
+                    print(f"Child step {child} returned {r}")
+                results.append(r)
             else:
-                results.append(child())
+                r = child()
+                if r not in [StepResult.OK, StepResult.CAN_CONTINUE]:
+                    print(f"Child step {child} returned {r}")
+                results.append(r)
 
         return results
 

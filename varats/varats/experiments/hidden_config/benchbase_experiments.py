@@ -1,5 +1,6 @@
 import shutil
 import typing as tp
+from functools import partial
 from pathlib import Path
 
 import benchbuild as bb
@@ -208,9 +209,11 @@ class BenchbaseBenchmark(FeatureExperiment, shorthand="BBB"):
             SetupBenchbase(project),
             ZippedExperimentSteps(
                 result_path, [
-                    RunBenchbase(project, Path(f"rep_{r}.zip"), wl)
-                    for r in range(self._REPS)
-                    for wl in _WORKLOADS
+                    AlwaysOk(
+                        RunBenchbase(
+                            project, Path(f"{wl}.zip"), wl, self._REPS
+                        )
+                    ) for wl in _WORKLOADS
                 ]
             )
         ]
@@ -285,12 +288,15 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
             analysis_actions.append(Compile(project))
 
             zipped_steps.extend([
-                RunBenchbase(
-                    project,
-                    Path(
-                        MPBenchbaseReport.
-                        create_baseline_report_name(f"{db_binary.name}-{wl}")
-                    ), wl, HIDDEN_CONFIG_REPS
+                AlwaysOk(
+                    RunBenchbase(
+                        project,
+                        Path(
+                            MPBenchbaseReport.create_baseline_report_name(
+                                f"{db_binary.name}-{wl}"
+                            )
+                        ), wl, HIDDEN_CONFIG_REPS
+                    )
                 ) for wl in _WORKLOADS
             ])
         else:
@@ -332,7 +338,6 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
                         zipped_steps.append(ReCompile(project))
                     zipped_steps.extend([
                         AlwaysOk(
-                            project,
                             RunBenchbase(
                                 project,
                                 Path(
@@ -388,7 +393,7 @@ class BenchbaseCoverage(FeatureExperiment, shorthand="BBC"):
         )
 
         project.cflags.extend([
-            "-fprofile-instr-generate", "-fcoverage-mapping"
+            "-fprofile-instr-generate", "-fcoverage-mapping", "-fuse-ld=lld"
         ])
 
         db_binary = project.database_binary(
@@ -411,9 +416,7 @@ class BenchbaseCoverage(FeatureExperiment, shorthand="BBC"):
         bin_path = Path(project.source_of_primary) / db_binary.path
 
         for workload in _WORKLOADS:
-
-            def bound_run():
-                _run_benchbase(project, workload)
+            bound_run = partial(_run_benchbase, project, workload)
 
             wl_result_file = f"{db_binary.name}_{workload}_0.zip"
 

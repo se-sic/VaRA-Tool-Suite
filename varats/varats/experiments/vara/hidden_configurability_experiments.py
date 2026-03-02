@@ -11,7 +11,8 @@ from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.utils import actions
 from benchbuild.utils.actions import StepResult, Echo, Step
 from benchbuild.utils.cmd import git
-from plumbum import local
+from benchbuild.utils.settings import get_number_of_jobs
+from plumbum import local, ProcessExecutionError
 
 from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
@@ -32,7 +33,11 @@ from varats.experiment.experiment_util import (
     WithEnvironment,
     create_stable_success_result_filepath,
 )
-from varats.experiment.steps.combinators import OutputAdapter, AlwaysOk
+from varats.experiment.steps.combinators import (
+    OutputAdapter,
+    AlwaysOk,
+    IfThenElse,
+)
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
 from varats.experiment.steps.testsuite import (
@@ -110,6 +115,9 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
 
     def analyze(self) -> actions.StepResult:
         """This step detects hidden configurability points in the project."""
+        print(
+            f"Running HiddenConfigurabilityDetector for {self.project.name}..."
+        )
         binary = self.project.binaries[0]
 
         result_file = create_new_success_result_filepath(
@@ -156,16 +164,27 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
 
                 files.append(sm_path + "/" + line)
 
+        print(
+            f"Running HiddenConfigurabilityDetector for {len(files)} source code files..."
+        )
         # Run the HiddenConfigurabilityDetector
         hvf = local[VaRA.install_location() / "bin" /
                     "hidden-variability-finder"]
+
+        vara_lib_path = VaRA.install_location() / "lib"
+        hvf = hvf.with_env(LD_LIBRARY_PATH=str(vara_lib_path))
 
         with local.cwd(project_directory):
             run_cmd = hvf[f"--report-file={result_file}",
                           f"--root-dir={project_directory}"]
             run_cmd = run_cmd[files]
 
-            bb.watch(run_cmd)()
+            try:
+                bb.watch(run_cmd)()
+            except ProcessExecutionError as e:
+                print(
+                    f"Error while running HiddenConfigurabilityDetector for {self.project.name}: {e}"
+                )
 
         return actions.StepResult.OK
 
@@ -580,7 +599,6 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
 
                     zipped_steps.extend([
                         AlwaysOk(
-                            project,
                             TimePatchedWorkloadsStep(
                                 project,
                                 binary,
@@ -658,7 +676,6 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
 
         analysis_actions = get_config_patch_steps(project)
 
-        patch_steps = []
         fake_binary = ProjectBinaryWrapper(
             "TESTSUITE", Path(), BinaryType.EXECUTABLE
         )
@@ -673,12 +690,11 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
 
         if len(variations) == 0:
             # Baseline step, test normal program behavior without any patch applied
-            analysis_actions.append(PrepareTestSuite(project))
+            analysis_actions.append(AlwaysOk(PrepareTestSuite(project)))
             analysis_actions.append(BuildTestSuite(project))
 
             zipped_steps.append(
                 AlwaysOk(
-                    project,
                     RunTestSuite(
                         project,
                         Path(
@@ -705,8 +721,7 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
                     continue
 
                 arg_name = next(iter(patch_variations))
-                #TODO: Change me
-                values: tp.List[int] = list(patch_variations[arg_name])[:2]
+                values: tp.List[int] = list(patch_variations[arg_name])
 
                 if arg_name not in patch.arguments:
                     print(
@@ -725,21 +740,24 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
                     )
 
                     if len(zipped_steps) == 1:
-                        zipped_steps.append(PrepareTestSuite(project))
-
-                    zipped_steps.append(BuildTestSuite(project))
+                        zipped_steps.append(AlwaysOk(PrepareTestSuite(project)))
 
                     zipped_steps.append(
-                        AlwaysOk(
+                        IfThenElse(
                             project,
-                            RunTestSuite(
-                                project,
-                                Path(
-                                    MPTextReport.create_patched_report_name(
-                                        patch, "testsuite", **{arg_name: value}
+                            condition=BuildTestSuite(project),
+                            then_step=AlwaysOk(
+                                RunTestSuite(
+                                    project,
+                                    Path(
+                                        MPTextReport.create_patched_report_name(
+                                            patch, "testsuite",
+                                            **{arg_name: value}
+                                        )
                                     )
                                 )
-                            )
+                            ),
+                            return_result=StepResult.OK
                         )
                     )
 
