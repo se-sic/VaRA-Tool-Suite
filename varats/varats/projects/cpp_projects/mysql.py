@@ -6,6 +6,7 @@ from time import sleep
 
 import benchbuild as bb
 import jinja2
+from benchbuild import project
 from benchbuild.utils.settings import get_number_of_jobs
 from jinja2 import TemplateNotFound, TemplateError
 from plumbum import local
@@ -23,6 +24,7 @@ from varats.project.project_util import (
     get_local_project_repo,
     RevisionBinaryMap,
     BinaryType,
+    verify_binaries,
 )
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
@@ -51,6 +53,7 @@ class MySQL(VProject):
     def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__(*args, **kwargs)
         self.__server_handle: tp.Optional[subprocess.Popen] = None
+        self.__log_handle = None
         self.builddir = self.builddir.replace("@", "-")
 
     @staticmethod
@@ -66,7 +69,23 @@ class MySQL(VProject):
         return binary_map[revision]
 
     def compile(self) -> None:
-        default_cmake_compile(self)
+        version_source = local.path(self.source_of_primary)
+
+        build_dir = Path(version_source / "build")
+        build_dir.mkdir(exist_ok=True)
+        cc_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
+        with local.cwd(build_dir):
+            with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
+                cmake = local["cmake"]["-DDOWNLOAD_BOOST=ON",
+                                       f"-DWITH_BOOST={build_dir}/boost"]
+                make = local["make"]
+                bb.watch(cmake)(version_source)
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+        with local.cwd(version_source):
+            verify_binaries(self)
 
     def recompile(self) -> None:
         build_dir = Path(self.builddir) / "build"
@@ -165,8 +184,9 @@ class MySQL(VProject):
         """Start the database server."""
         build_dir = Path(self.source_of_primary) / "build"
 
-        secure_files_dir = build_dir / "mysql-files"
         data_dir = build_dir / "mysql-data"
+
+        data_dir.mkdir()
 
         defaults_file = self.__generate_defaults_file(data_dir)
 
@@ -176,9 +196,8 @@ class MySQL(VProject):
             # First, initialize the database with the defaults file
             bb.watch(
                 mysqldbd[f"--defaults-file={defaults_file.absolute()}",
-                         f"--secure-file-priv={secure_files_dir.absolute()}",
                          "--initialize-insecure"]
-            )
+            )()
 
             server_binary = mysqldbd[
                 f"--defaults-file={defaults_file.absolute()}"]
@@ -190,12 +209,13 @@ class MySQL(VProject):
                 stdout=self.__log_handle, stderr=self.__log_handle
             )
 
-            client_binary = local[build_dir / "bin" / "mysql"]["-u", "root"]
+            client_binary = local[build_dir / "bin" / "mysql"][
+                f"--defaults-file={defaults_file.absolute()}", "-u", "root"]
             # Wait for the server to start up by trying to connect with the client binary
             sleep(5)
 
             bb.watch(client_binary
-                    )("-e", "CREATE DATABASE IF NOT EXISTS `benchbase`;")
+                    )("-e", "CREATE DATABASE IF NOT EXISTS benchbase;")
 
         # Create benchbase db
 
@@ -212,12 +232,10 @@ class MySQL(VProject):
 
         # Remove auxiliary files created for the server
         build_dir = Path(self.source_of_primary) / "build"
-        secure_files_dir = build_dir / "mysql-files"
         data_dir = build_dir / "mysql-data"
         defaults_file = self.__defaults_file_path()
 
         defaults_file.unlink(missing_ok=True)
-        shutil.rmtree(secure_files_dir, ignore_errors=True)
         shutil.rmtree(data_dir, ignore_errors=True)
 
     def render_workload_config(
@@ -239,7 +257,7 @@ class MySQL(VProject):
         defaults_file_path.unlink(missing_ok=True)
 
         # Load the template defaults file and render with jinja2
-        template_defaults_file = BENCHBASE_EXTRA_FILES_DIR / "db_config_files" / "mysqldb.cnf"
+        template_defaults_file = BENCHBASE_EXTRA_FILES_DIR / "db_config_files" / "mysql.cnf"
         # Render the patch with the arguments
         loader = jinja2.FileSystemLoader(
             searchpath=template_defaults_file.parent
@@ -260,6 +278,7 @@ class MySQL(VProject):
         try:
             render_args = {
                 "data_dir": data_dir,
+                "socket_path": f"/tmp/{self.run_uuid}-mysql.sock",
             }
             rendered = template.render(render_args)
         except TemplateError:
