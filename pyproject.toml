@@ -119,6 +119,7 @@ markers = [
 [tool.ruff]
 line-length = 80
 exclude = ["CVS", "gui", "filtertree_data.py", ".eggs", "docs/source/conf.py",]
+indent-width = 4
 
 [tool.ruff.lint]
 select = [
@@ -146,6 +147,8 @@ select = [
 # Ignoring specific rules that conflict with pre-ruff setup or are not needed
 ignore = [
   "PLW1514", # unspecified-encoding
+  "G004", # logging-f-string
+  "ISC002", # multi-line-implicit-string-concatenation
   "N815",  # mixed-case-variable-in-class-scope
   "PLW0177", # comparison-to-nan
   "PLW2901", # redefined-loop-variable
@@ -156,7 +159,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["varats"]
-known-third-party = ["benchbuild"]
+known-third-party = ["benchbuild", "enchant"]
 
 # McCabe complexity settings (replaces some of Pylint's DESIGN)
 [tool.ruff.lint.mccabe]
@@ -172,6 +175,7 @@ max-positional-args=10
 max-public-methods=20
 max-returns=6
 max-statements=50
+max-nested-blocks=5
 
 
 [tool.mypy]
