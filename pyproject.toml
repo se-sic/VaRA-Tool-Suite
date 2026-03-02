@@ -147,7 +147,7 @@ select = [
 ignore = [
   "PLW1514", # unspecified-encoding
   "N815",  # mixed-case-variable-in-class-scope
-  "PLW0177", # comparison-to-nan 
+  "PLW0177", # comparison-to-nan
   "PLW2901", # redefined-loop-variable
   "PLR2004", # magic-value-comparison
   "PLR5501", # collapsible-else-if
@@ -164,7 +164,7 @@ max-complexity = 12
 
 # Pylint settings to match .pylintrc configuration
 [tool.ruff.lint.pylint]
-max-args = 10 
+max-args = 10
 max-bool-expr=6
 max-branches=12
 max-locals=20
