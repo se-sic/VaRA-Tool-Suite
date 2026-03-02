@@ -164,6 +164,11 @@ class PostgreSQL(VProject):
         build_dir = local.path(self.source_of_primary) / "build-tests"
         meson = local["meson"]["test", "-q", "--print-errorlogs"]
 
+        def _cleanup():
+            tmp_install_dir = build_dir / "tmp_install"
+            if tmp_install_dir.exists():
+                shutil.rmtree(tmp_install_dir)
+
         if not tests_to_run:
             tests_to_run = self.get_test_names()
 
@@ -181,6 +186,8 @@ class PostgreSQL(VProject):
             except ProcessExecutionError as e:
                 print(f"Error running tests: {e}")
                 return {}
+            finally:
+                _cleanup()
 
             result_file = Path(build_dir / "meson-logs" / "testlog.junit.xml")
 

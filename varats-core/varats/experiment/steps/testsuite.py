@@ -183,7 +183,10 @@ class CollectTests(ProjectStep):  # type: ignore
         try:
             tests = self.project.get_test_names()
             self.status = StepResult.OK
-        except ProcessExecutionError:
+        except ProcessExecutionError as pe:
+            print(
+                f"Error while collecting tests for project {self.project.name}: {pe}"
+            )
             self.status = StepResult.ERROR
             tests = []
 
@@ -194,3 +197,8 @@ class CollectTests(ProjectStep):  # type: ignore
                 f.write(f"{test}\n")
 
         return self.status
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Collect test names", indent * " "
+        )
