@@ -118,13 +118,60 @@ markers = [
 
 [tool.ruff]
 line-length = 80
+exclude = ["CVS", "gui", "filtertree_data.py", ".eggs", "docs/source/conf.py",]
 
 [tool.ruff.lint]
-select = ["I"]  # I = import-sorting rules only
+select = [
+  # Core Python correctness
+  "F",      # Pyflakes (undefined names, unused imports, etc.)
+  "E",      # pycodestyle errors
+  "W",      # pycodestyle warnings
+
+  # Import sorting (replaces isort)
+  "I",
+
+  # Naming conventions (replaces BASIC naming rules)
+  "N",
+
+  # McCabe complexity (replaces DESIGN complexity only)
+  "C901",
+
+  # Full Pylint coverage available in Ruff
+  "PLE",    # pylint errors
+  "PLW",    # pylint warnings
+  "PLR",    # pylint refactor
+  "PLC",    # pylint convention rules
+]
+
+# Ignoring specific rules that conflict with pre-ruff setup or are not needed
+ignore = [
+  "PLW1514", # unspecified-encoding
+  "N815",  # mixed-case-variable-in-class-scope
+  "PLW0177", # comparison-to-nan 
+  "PLW2901", # redefined-loop-variable
+  "PLR2004", # magic-value-comparison
+  "PLR5501", # collapsible-else-if
+  "PLW1641", # eq-without-hash
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["varats"]
 known-third-party = ["benchbuild"]
+
+# McCabe complexity settings (replaces some of Pylint's DESIGN)
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+# Pylint settings to match .pylintrc configuration
+[tool.ruff.lint.pylint]
+max-args = 10 
+max-bool-expr=6
+max-branches=12
+max-locals=20
+max-positional-args=10
+max-public-methods=20
+max-returns=6
+max-statements=50
 
 
 [tool.mypy]
