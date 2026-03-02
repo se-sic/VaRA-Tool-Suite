@@ -61,8 +61,8 @@ class BuildWithCoverage(ProjectStep):  # type: ignore
 
     def __call__(self) -> StepResult:
         with local.env(
-            CFLAGS="-fprofile-instr-generate -fcoverage-mapping",
-            CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping",
+            CFLAGS="-fprofile-instr-generate -fcoverage-mapping -fuse-ld=lld",
+            CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping -fuse-ld=lld",
             #CMAKE_BUILD_TYPE="Debug",
         ):
             try:
@@ -171,7 +171,7 @@ class MergeCoverages(ProjectStep):  # type: ignore
             if report_file.stem == "index":
                 continue
 
-            with open(report_file) as coverage_file:
+            with open(report_file, errors="ignore") as coverage_file:
                 file_coverages = []
 
                 # The first two lines only contain metadata
