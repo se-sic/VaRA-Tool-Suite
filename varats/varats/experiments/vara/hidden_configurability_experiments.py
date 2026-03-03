@@ -81,6 +81,7 @@ from varats.projects.cpp_projects.fast_downward import FastDownward
 from varats.projects.cpp_projects.hyteg import HyTeg
 from varats.projects.cpp_projects.lepton import Lepton
 from varats.projects.cpp_projects.mariadb import MariaDB
+from varats.projects.cpp_projects.mysql import MySQL
 from varats.projects.cpp_projects.sevenZip import SevenZip
 from varats.provider.patch.patch_provider import PatchProvider, Patch
 from varats.report.multi_patch_report import MultiPatchReport
@@ -216,11 +217,11 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         Bzip2.NAME: [],
         Gzip.NAME: ["m4"],
         MariaDB.NAME: ["dbug/", "wsrep-lib/", "zlib/"],
-        SQLite.NAME: [],
         PostgreSQL.NAME: [],
         DuckDB.NAME: ["benchmark/", "extensions/", "third_party/"],
         FastDownward.NAME: [],
         DunePerfRegression.NAME: ["dune-performance-regression/"],
+        MySQL.NAME: ["extra/", "mysql-test/", "testclients/", "unittest/"],
     }
 
     def __init__(self, project: VProject, experiment_handle: ExperimentHandle):

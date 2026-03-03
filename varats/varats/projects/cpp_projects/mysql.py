@@ -6,7 +6,6 @@ from time import sleep
 
 import benchbuild as bb
 import jinja2
-from benchbuild import project
 from benchbuild.utils.settings import get_number_of_jobs
 from jinja2 import TemplateNotFound, TemplateError
 from plumbum import local
@@ -20,7 +19,6 @@ from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    default_cmake_compile,
     get_local_project_repo,
     RevisionBinaryMap,
     BinaryType,

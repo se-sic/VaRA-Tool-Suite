@@ -10,6 +10,7 @@ from scipy.ndimage import label
 
 from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     RevisionBinaryMap,
@@ -39,13 +40,15 @@ class DuckDB(VProject):
             refspec="origin/HEAD",
             limit=None,
             shallow=False
-        )
+        ),
+        PatchVariationSource()
     ]
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("duckdb") / RSBinary("benchmark_runner"),
+                "--disable-timeout",
                 "benchmark/large/ingestion/tpch/native/ingest_lineitem.benchmark",
                 label="tpch-csv-ingest-lineitem"
             )
