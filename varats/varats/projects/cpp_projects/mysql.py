@@ -106,7 +106,7 @@ class MySQL(VProject):
         that tests are discoverable for the get_test_names() method. This does
         not necessarily mean that the tests are built yet.
         """
-        ...
+        self.compile()
 
     def build_tests(self) -> None:
         """
@@ -115,7 +115,7 @@ class MySQL(VProject):
         Should be called after prepare_test_environment() to build the tests.
         Once this method is called, the tests should be built and ready to run.
         """
-        ...
+        self.recompile()
 
     def run_testsuite(
         self,
@@ -146,7 +146,32 @@ class MySQL(VProject):
         Returns:
              A list of tests available for this project.
         """
-        ...
+        build_dir = Path(self.source_of_primary) / "build"
+        test_binary = local[build_dir / "mysql-test" / "mtr"]
+
+        with local.cwd(build_dir):
+            test_binary = test_binary["--print-testcases"]
+
+            result = test_binary()
+
+            # Test results are printed in the format:
+            # <suite_name>.<test_name> '<combinations>'
+            # Where the combinations part is optional and may contain multiple combinations separated by commas.
+            # If there are no combinations, the test name is just <suite_name>.<test_name>
+            # If there are combinations, generate one test name for each combination in the format <suite_name>.<test_name>,<combination>
+            test_names = []
+
+            lines = result.splitlines()
+            for line in lines:
+                # Lines containing test names have the following format:
+                # [<test_name>]
+                if not line.strip() or not line.startswith("["):
+                    continue
+
+                test_name = line.strip().strip("[]")
+                test_names.append(test_name)
+
+        return test_names
 
     ###############################
     # SupportsBenchbase Protocol  #

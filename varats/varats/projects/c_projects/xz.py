@@ -266,7 +266,7 @@ class Xz(VProject):
         build_dir = local.path(self.source_of_primary) / "build"
 
         return ctest_run_testsuite(
-            build_dir,
+            Path(build_dir),
             test_report_path=test_report_path,
             tests_to_run=tests_to_run,
             tests_to_exclude=tests_to_exclude

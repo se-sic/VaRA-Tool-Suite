@@ -189,7 +189,7 @@ class Brotli(VProject):
 
         mkdir("-p", run_dir)
 
-        return run_dir, build_method
+        return Path(run_dir), build_method
 
     @staticmethod
     def binaries_for_revision(

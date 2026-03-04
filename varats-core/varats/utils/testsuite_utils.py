@@ -163,7 +163,7 @@ def gtest_run_testsuite(
 def parse_junit_xml(xml_path: Path) -> tp.Dict[str, TestResult]:
     """Parse the xml test report and return the test results."""
     results: tp.Dict[str, TestResult] = {}
-    test_xml = JUnitXml.fromfile(xml_path.absolute().__str__())
+    test_xml = JUnitXml.fromfile(str(xml_path.absolute()))
     for suite in test_xml:
         suite: junitparser.TestSuite
         suite_name = suite.name if suite.name else "<unknown>"
@@ -182,5 +182,62 @@ def parse_junit_xml(xml_path: Path) -> tp.Dict[str, TestResult]:
                 status = TestResult.UNKNOWN
 
             results[f"{suite_name}.{case_name}"] = status
+
+    return results
+
+
+def compression_end_to_end(
+    compression_command, decompression_command, test_files: tp.List[Path]
+) -> tp.Dict[str, TestResult]:
+    """
+    Run an end-to-end test for the given file.
+
+    The end-to-end test compresses and then decompresses the file and checks
+    if the original file is restored correctly.
+
+    Args:
+        compression_command: The command to compress the file. Should be a callable that takes as the first argument a path to the file to be compressed and as the second argument a path to the output compressed file.
+        decompression_command: The command to decompress the file. Should be a callable that takes as the first argument a path to the compressed file and as the second argument a path to the output decompressed file.
+        test_files: A list of files to test.
+    """
+    results: tp.Dict[str, TestResult] = {}
+
+    for file in test_files:
+        print("Running end-to-end test for", file)
+        test_name = file.stem
+        test_status = TestResult.UNKNOWN
+
+        compressed_file = file.with_suffix(file.suffix + ".compressed")
+        decompressed_file = file.with_suffix(file.suffix + ".decompressed")
+
+        try:
+            compression_command(file, compressed_file)
+        except:
+            print("Error during compression of", file)
+            test_status = TestResult.FAILED
+            results[test_name] = test_status
+            continue
+
+        # Decompress the file
+        try:
+            decompression_command(compressed_file, decompressed_file)
+        except:
+            print("Error during decompression of", compressed_file)
+            test_status = TestResult.FAILED
+            results[test_name] = test_status
+            continue
+
+        # Check if the original file is restored correctly
+        if file.read_bytes() == decompressed_file.read_bytes():
+            test_status = TestResult.PASSED
+        else:
+            print("Decompressed file does not match original for", file)
+            test_status = TestResult.FAILED
+
+        results[test_name] = test_status
+
+        # Cleanup
+        compressed_file.unlink(missing_ok=True)
+        decompressed_file.unlink(missing_ok=True)
 
     return results
