@@ -127,12 +127,24 @@ select = [
   "F",      # Pyflakes (undefined names, unused imports, etc.)
   "E",      # pycodestyle errors
   "W",      # pycodestyle warnings
+  
+  # Ruff-specific rules
+  "RUF", 
 
+  # refurb
+  "FURB",  
+  
   # Import sorting (replaces isort)
   "I",
 
   # Naming conventions (replaces BASIC naming rules)
   "N",
+
+  # pandas-vet
+  "PD",    
+
+  # NumPy-specific rules
+  "NPY", 
 
   # flake8 rules
   "COM",    # flake8-commas
@@ -141,6 +153,7 @@ select = [
   "RET",    # flake8-return
   "ARG",    # flake8-unused-arguments
   "PTH",    # flake8-use-pathlib
+  "SIM",    # flake8-simplify  
 
   # Full Pylint coverage available in Ruff
   "PLE",    # pylint errors
