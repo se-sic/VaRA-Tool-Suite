@@ -150,7 +150,6 @@ ignore = [
   "ISC002", # multi-line-implicit-string-concatenation
   "N815",  # mixed-case-variable-in-class-scope
   "PLW0177", # comparison-to-nan
-  "PLW2901", # redefined-loop-variable
   "PLR2004", # magic-value-comparison
   "PLR5501", # collapsible-else-if
 ]
