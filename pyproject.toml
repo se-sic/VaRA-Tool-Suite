@@ -134,6 +134,14 @@ select = [
   # Naming conventions (replaces BASIC naming rules)
   "N",
 
+  # flake8 rules
+  "COM",    # flake8-commas
+  "A",      # flake8-builtins
+  "C4",     # flake8-comprehensions
+  "RET",    # flake8-return
+  "ARG",    # flake8-unused-arguments
+  "PTH",    # flake8-use-pathlib
+
   # Full Pylint coverage available in Ruff
   "PLE",    # pylint errors
   "PLW",    # pylint warnings
