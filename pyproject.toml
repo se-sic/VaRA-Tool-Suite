@@ -146,7 +146,6 @@ select = [
 
 # Ignoring specific rules that conflict with pre-ruff setup or are not needed
 ignore = [
-  "PLW1514", # unspecified-encoding
   "G004", # logging-f-string
   "ISC002", # multi-line-implicit-string-concatenation
   "N815",  # mixed-case-variable-in-class-scope
