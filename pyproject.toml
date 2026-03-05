@@ -134,9 +134,6 @@ select = [
   # Naming conventions (replaces BASIC naming rules)
   "N",
 
-  # McCabe complexity (replaces DESIGN complexity only)
-  "C901",
-
   # Full Pylint coverage available in Ruff
   "PLE",    # pylint errors
   "PLW",    # pylint warnings
@@ -155,9 +152,6 @@ ignore = [
 known-first-party = ["varats"]
 known-third-party = ["benchbuild", "enchant"]
 
-# McCabe complexity settings (replaces some of Pylint's DESIGN)
-[tool.ruff.lint.mccabe]
-max-complexity = 12
 
 # Pylint settings to match .pylintrc configuration
 [tool.ruff.lint.pylint]
