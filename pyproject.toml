@@ -147,7 +147,6 @@ select = [
 # Ignoring specific rules that conflict with pre-ruff setup or are not needed
 ignore = [
   "G004", # logging-f-string
-  "ISC002", # multi-line-implicit-string-concatenation
   "PLR2004", # magic-value-comparison
   "PLR5501", # collapsible-else-if
 ]
