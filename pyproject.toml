@@ -171,7 +171,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["varats"]
-known-third-party = ["benchbuild", "enchant"]
+known-third-party = ["benchbuild"]
 
 
 # Pylint settings to match .pylintrc configuration
