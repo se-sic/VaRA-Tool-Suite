@@ -31,7 +31,6 @@ if tp.TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
-# introducing test line to trigger CI and test if precommit blocks PR after warning due to pylint violations
 
 class TableFormat(Enum):
     """List of supported TableFormats."""
