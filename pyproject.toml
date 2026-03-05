@@ -153,7 +153,6 @@ ignore = [
   "PLW2901", # redefined-loop-variable
   "PLR2004", # magic-value-comparison
   "PLR5501", # collapsible-else-if
-  "PLW1641", # eq-without-hash
 ]
 
 [tool.ruff.lint.isort]
