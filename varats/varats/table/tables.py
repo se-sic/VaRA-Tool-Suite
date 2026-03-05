@@ -12,14 +12,14 @@ import click
 from varats.paper_mgmt.artefacts import Artefact, ArtefactFileInfo
 from varats.ts_utils.artefact_util import convert_kwargs
 from varats.ts_utils.cli_util import (
-    make_cli_option,
-    add_cli_options,
     CLIOptionTy,
-    ConfigOption,
-    OptionTy,
     COGetter,
     COGetterV,
+    ConfigOption,
+    OptionTy,
+    add_cli_options,
     cli_yn_choice,
+    make_cli_option,
 )
 from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.settings import vara_cfg
@@ -32,6 +32,7 @@ if tp.TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 
+# testing again
 class TableFormat(Enum):
     """List of supported TableFormats."""
     value: str
@@ -60,7 +61,9 @@ class TableFormat(Enum):
 
     def is_latex(self) -> bool:
         return self in [
-            TableFormat.LATEX, TableFormat.LATEX_RAW, TableFormat.LATEX_BOOKTABS
+            TableFormat.LATEX,
+            TableFormat.LATEX_RAW,
+            TableFormat.LATEX_BOOKTABS,
         ]
 
     def is_html(self) -> bool:
@@ -83,8 +86,12 @@ class CommonTableOptions():
     """
 
     def __init__(
-        self, view: bool, table_dir: Path, table_format: TableFormat,
-        wrap_table: bool, dry_run: bool
+        self,
+        view: bool,
+        table_dir: Path,
+        table_format: TableFormat,
+        wrap_table: bool,
+        dry_run: bool,
     ):
         self.view = view
         # Will be overridden when generating artefacts
@@ -102,9 +109,11 @@ class CommonTableOptions():
             table_format = TableFormat[table_format]
 
         return CommonTableOptions(
-            kwargs.get("view", False), Path(kwargs.get("table_dir", ".")),
-            table_format, kwargs.get("wrap_table", False),
-            kwargs.get("dry_run", False)
+            kwargs.get("view", False),
+            Path(kwargs.get("table_dir", ".")),
+            table_format,
+            kwargs.get("wrap_table", False),
+            kwargs.get("dry_run", False),
         )
 
     __options = [
@@ -112,32 +121,32 @@ class CommonTableOptions():
             "-v",
             "--view",
             is_flag=True,
-            help="View the table instead of saving it to a file."
+            help="View the table instead of saving it to a file.",
         ),
         make_cli_option(
             "--table-dir",
             type=click.Path(path_type=Path),
-            default=Path("."),
+            default=Path(),
             help="Set the directory the tables will be written to "
-            "(relative to config value 'tables/table_dir')."
+            "(relative to config value 'tables/table_dir').",
         ),
         make_cli_option(
             "--table-format",
             type=EnumChoice(TableFormat, case_sensitive=False),
             default="PLAIN",
-            help="Format for the table."
+            help="Format for the table.",
         ),
         make_cli_option(
             "--wrap-table",
             is_flag=True,
-            help="Wrap tables inside a complete latex document."
+            help="Wrap tables inside a complete latex document.",
         ),
         make_cli_option(
             "--dry-run",
             is_flag=True,
             help="Only log tables that would be generated but do not "
             "generate."
-            "Useful for debugging table generators."
+            "Useful for debugging table generators.",
         ),
     ]
 
@@ -171,7 +180,7 @@ class CommonTableOptions():
             "table_format": self.table_format.name,
             "wrap_table": self.wrap_table,
             "table_dir": self.table_dir,
-            "dry_run": self.dry_run
+            "dry_run": self.dry_run,
         }
 
 
@@ -190,23 +199,26 @@ class TableConfig():
 
     _option_decls: tp.Dict[str, ConfigOption[tp.Any]] = {
         decl.name: decl for decl in tp.cast(
-            tp.List[ConfigOption[tp.Any]], [
+            tp.List[ConfigOption[tp.Any]],
+            [
                 ConfigOption(
                     "font_size",
                     default=10,
                     view_default=10,
-                    help_str="The font size of the table."
+                    help_str="The font size of the table.",
                 ),
                 ConfigOption(
-                    "fig_title", default="", help_str="The title of the table."
+                    "fig_title",
+                    default="",
+                    help_str="The title of the table.",
                 ),
                 ConfigOption(
                     "line_width",
                     default=0.25,
                     view_default=1,
-                    help_str="The width of the table line(s)."
-                )
-            ]
+                    help_str="The width of the table line(s).",
+                ),
+            ],
         )
     }
 
@@ -220,13 +232,14 @@ class TableConfig():
         return get_value
 
     def __option_getter_v(
-        self, option: ConfigOption[OptionTy]
+        self,
+        option: ConfigOption[OptionTy],
     ) -> COGetterV[OptionTy]:
         """Creates a getter for options with view default."""
 
         def get_value(
             default: tp.Optional[OptionTy] = None,
-            view_default: tp.Optional[OptionTy] = None
+            view_default: tp.Optional[OptionTy] = None,
         ) -> OptionTy:
             return option.value_or_default(self.__view, default, view_default)
 
@@ -256,11 +269,12 @@ class TableConfig():
             a table config object with values from the kwargs
         """
         return TableConfig(
-            view, *[
+            view,
+            *[
                 option_decl.with_value(kwargs[option_decl.name])
                 for option_decl in cls._option_decls.values()
                 if option_decl.name in kwargs
-            ]
+            ],
         )
 
     @classmethod
@@ -278,7 +292,7 @@ class TableConfig():
         """
         return add_cli_options(
             command,
-            *[option.to_cli_option() for option in cls._option_decls.values()]
+            *[option.to_cli_option() for option in cls._option_decls.values()],
         )
 
     def get_dict(self) -> tp.Dict[str, tp.Any]:
@@ -345,8 +359,11 @@ class TableGenerator(abc.ABC):
 
     @classmethod
     def __init_subclass__(
-        cls, *, generator_name: str, options: tp.List[CLIOptionTy],
-        **kwargs: tp.Any
+        cls,
+        *,
+        generator_name: str,
+        options: tp.List[CLIOptionTy],
+        **kwargs: tp.Any,
     ) -> None:
         """
         Register concrete table generators.
@@ -374,7 +391,7 @@ class TableGenerator(abc.ABC):
 
     @staticmethod
     def get_class_for_table_generator_type(
-        table_generator_type_name: str
+        table_generator_type_name: str,
     ) -> tp.Type['TableGenerator']:
         """
         Get the class for table from the table registry.
@@ -388,7 +405,7 @@ class TableGenerator(abc.ABC):
         if table_generator_type_name not in TableGenerator.GENERATORS:
             raise LookupError(
                 f"Unknown table generator '{table_generator_type_name}'.\n" +
-                TableGenerator.get_table_generator_types_help_string()
+                TableGenerator.get_table_generator_types_help_string(),
             )
 
         table_cls = TableGenerator.GENERATORS[table_generator_type_name]
@@ -413,7 +430,7 @@ class TableGenerator(abc.ABC):
         self,
         common_options: CommonTableOptions,
         progress: tp.Optional["Progress"] = None,
-        task_id: tp.Optional["TaskID"] = None
+        task_id: tp.Optional["TaskID"] = None,
     ) -> None:
         """
         Generate the tables as specified by this generator.
@@ -430,13 +447,15 @@ class TableGenerator(abc.ABC):
         if len(tables) > 1 and common_options.view:
             common_options.view = cli_yn_choice(
                 f"Do you really want to view all {len(tables)} tables? "
-                f"If you answer 'no', the tables will still be generated.", "n"
+                f"If you answer 'no', the tables will still be generated.",
+                "n",
             )
 
         if progress:
             if task_id is None:
                 task_id = progress.add_task(
-                    total=len(tables), description=f"Building {self.NAME}"
+                    total=len(tables),
+                    description=f"Building {self.NAME}",
                 )
             else:
                 progress.update(task_id, total=len(tables))
@@ -452,7 +471,7 @@ class TableGenerator(abc.ABC):
                 table.save(
                     table_dir,
                     table_format=common_options.table_format,
-                    wrap_table=common_options.wrap_table
+                    wrap_table=common_options.wrap_table,
                 )
             if progress and task_id is not None:
                 progress.advance(task_id)
@@ -473,15 +492,19 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=2):
     """
 
     def __init__(
-        self, name: str, output_dir: Path, table_generator_type: str,
-        common_options: CommonTableOptions, table_config: TableConfig,
-        **kwargs: tp.Any
+        self,
+        name: str,
+        output_dir: Path,
+        table_generator_type: str,
+        common_options: CommonTableOptions,
+        table_config: TableConfig,
+        **kwargs: tp.Any,
     ) -> None:
         super().__init__(name, output_dir)
         self.__table_generator_type = table_generator_type
         self.__table_type_class = \
             TableGenerator.get_class_for_table_generator_type(
-            self.__table_generator_type
+            self.__table_generator_type,
         )
         self.__common_options = common_options
         self.__common_options.table_base_dir = Artefact.base_output_dir()
@@ -529,16 +552,18 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=2):
             **convert_kwargs(
                 self.table_generator_class.OPTIONS,
                 self.__table_kwargs,
-                to_string=True
+                to_string=True,
             ),
-            **artefact_dict
+            **artefact_dict,
         }
         artefact_dict.pop("table_dir")  # duplicate of Artefact's output_path
         return artefact_dict
 
     @staticmethod
     def create_artefact(
-        name: str, output_dir: Path, **kwargs: tp.Any
+        name: str,
+        output_dir: Path,
+        **kwargs: tp.Any,
     ) -> 'Artefact':
         """
         Create an artefact instance from the given information.
@@ -554,23 +579,29 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=2):
         table_generator_type = kwargs.pop('table_generator')
         common_options = CommonTableOptions.from_kwargs(**kwargs)
         table_config = TableConfig.from_kwargs(
-            common_options.view, **kwargs.pop("table_config", {})
+            common_options.view,
+            **kwargs.pop("table_config", {}),
         )
         return TableArtefact(
-            name, output_dir, table_generator_type, common_options,
+            name,
+            output_dir,
+            table_generator_type,
+            common_options,
             table_config,
             **convert_kwargs(
                 TableGenerator.get_class_for_table_generator_type(
-                    table_generator_type
+                    table_generator_type,
                 ).OPTIONS,
                 kwargs,
-                to_string=False
-            )
+                to_string=False,
+            ),
         )
 
     @staticmethod
     def from_generator(
-        name: str, generator: TableGenerator, common_options: CommonTableOptions
+        name: str,
+        generator: TableGenerator,
+        common_options: CommonTableOptions,
     ) -> 'TableArtefact':
         """
         Create a table artefact from a generator.
@@ -584,12 +615,17 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=2):
             an instantiated table artefact
         """
         return TableArtefact(
-            name, common_options.table_dir, generator.NAME, common_options,
-            generator.table_config, **generator.table_kwargs
+            name,
+            common_options.table_dir,
+            generator.NAME,
+            common_options,
+            generator.table_config,
+            **generator.table_kwargs,
         )
 
     def generate_artefact(
-        self, progress: tp.Optional["Progress"] = None
+        self,
+        progress: tp.Optional["Progress"] = None,
     ) -> None:
         """Generate the specified table(s)."""
         task_id = None
@@ -597,7 +633,8 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=2):
             task_id = progress.add_task(description=f"Building {self.name}")
 
         generator_instance = self.table_generator_class(
-            self.table_config, **self.__table_kwargs
+            self.table_config,
+            **self.__table_kwargs,
         )
         generator_instance(self.common_options, progress, task_id)
 
@@ -609,11 +646,12 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=2):
             a list of file info objects
         """
         generator_instance = self.table_generator_class(
-            self.table_config, **self.__table_kwargs
+            self.table_config,
+            **self.__table_kwargs,
         )
         return [
             ArtefactFileInfo(
                 table.table_file_name(self.common_options.table_format),
-                table.table_kwargs.get("case_study", None)
+                table.table_kwargs.get("case_study", None),
             ) for table in generator_instance.generate()
         ]
