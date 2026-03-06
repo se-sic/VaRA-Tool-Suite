@@ -146,6 +146,9 @@ select = [
   # NumPy-specific rules
   "NPY",
 
+  # pyupgrade rules
+  "UP034",   # extraneous-parentheses
+
   # flake8 rules
   "COM",    # flake8-commas
   "A",      # flake8-builtins
