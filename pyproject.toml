@@ -167,6 +167,18 @@ ignore = [
   "G004", # logging-f-string
   "PLR2004", # magic-value-comparison
   "PLR5501", # collapsible-else-if
+
+  # Rules incompatible with ruff formatter
+  "Q",      # all flake-8 quote rules
+  "W191",   # tab-indentation
+  "E111",   # indentation-with-invalid-multiple
+  "E114",   # indentation-with-invalid-multiple-comment
+  "E117",   # over-indented
+  "D206",   # docstring-tab-indentation
+  "D300",   # triple-single-quotes
+  "COM812", # missing-trailing-comma
+  "COM819", # prohibited-trailing-comma
+  "ISC002", # multi-line-implicit-string-concatenation
 ]
 
 [tool.ruff.lint.isort]
@@ -185,6 +197,12 @@ max-public-methods=20
 max-returns=6
 max-statements=50
 max-nested-blocks=5
+
+
+# Ruff Formatter settings
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "preserve"
 
 
 [tool.mypy]

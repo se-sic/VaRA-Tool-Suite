@@ -26,9 +26,5 @@ repos:
     rev: 0.3.4
     hooks:
       - id: auto-walrus
-  - repo: https://github.com/google/yapf
-    rev: 'v0.43.0'
-    hooks:
-      - id: yapf
 
 exclude: ^tests/TEST_INPUTS/.*$
