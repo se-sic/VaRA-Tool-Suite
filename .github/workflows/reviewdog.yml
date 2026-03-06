@@ -28,8 +28,6 @@ jobs:
         pip install .
         pip install -r requirements.txt
         pip install mypy
-        pip install pylint
-        pylint --version
         pip install ruff==0.15.2
 
     - name: Setup reviewdog
@@ -43,4 +41,4 @@ jobs:
       run: |
         reviewdog -runners=mypy -reporter=github-pr-check -conf=.reviewdog.yml
         reviewdog -runners=pylint -reporter=github-pr-check -conf=.reviewdog.yml
-        reviewdog -runners=ruff -reporter=github-pr-check -conf=.reviewdog.yml -filter=file
+        reviewdog -runners=ruff -reporter=github-pr-check -conf=.reviewdog.yml -filter-mode=file
