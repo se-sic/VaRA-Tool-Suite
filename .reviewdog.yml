@@ -5,7 +5,7 @@ runner:
     errorformat:
       - "%f:%l:%c: %m"
     level: error
-  
+
   ruff:
     name: ruff
     cmd: ruff check --output-format=rdjson
