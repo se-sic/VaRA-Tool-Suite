@@ -31,7 +31,7 @@ jobs:
         pip install pylint
         pylint --version
         pip install ruff==0.15.2
-        
+
     - name: Setup reviewdog
       run: |
         mkdir -p $HOME/bin && curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh| sh -s -- -b $HOME/bin
