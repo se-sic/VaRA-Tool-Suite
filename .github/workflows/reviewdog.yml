@@ -43,4 +43,4 @@ jobs:
       run: |
         reviewdog -runners=mypy -reporter=github-pr-check -conf=.reviewdog.yml
         reviewdog -runners=pylint -reporter=github-pr-check -conf=.reviewdog.yml
-        reviewdog -runners=ruff -reporter=github-pr-check -conf=.reviewdog.yml
+        reviewdog -runners=ruff -reporter=github-pr-check -conf=.reviewdog.yml -filter=file
