@@ -128,6 +128,9 @@ select = [
   "E",      # pycodestyle errors
   "W",      # pycodestyle warnings
 
+  # pydocstyle
+  "D",
+
   # Ruff-specific rules
   "RUF",
 
@@ -189,12 +192,18 @@ ignore = [
   "ISC002", # multi-line-implicit-string-concatenation
 ]
 
+
+[tool.ruff.lint.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
+ignore-var-parameters = true
+
+
 [tool.ruff.lint.isort]
 known-first-party = ["varats"]
 known-third-party = ["benchbuild"]
 
 
-# Pylint settings to match .pylintrc configuration
 [tool.ruff.lint.pylint]
 max-args = 10
 max-bool-expr=6
