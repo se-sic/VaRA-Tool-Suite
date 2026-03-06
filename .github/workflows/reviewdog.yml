@@ -30,7 +30,7 @@ jobs:
         pip install mypy
         pip install pylint
         pylint --version
-        pip install ruff=0.15.2
+        pip install ruff==0.15.2
         
     - name: Setup reviewdog
       run: |
