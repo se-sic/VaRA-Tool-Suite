@@ -17,11 +17,6 @@ repos:
     hooks:
       - id: ruff
         args: ["--fix"]
-  - repo: https://github.com/myint/docformatter.git
-    rev: eb1df347edd128b30cd3368dddc3aa65edcfac38
-    hooks:
-      - id: docformatter
-        args: ['--in-place', '--wrap-summaries=80', '--wrap-descriptions=80', '--pre-summary-newline']
   - repo: https://github.com/MarcoGorelli/auto-walrus
     rev: 0.3.4
     hooks:
