@@ -158,7 +158,7 @@ select = [
   "PTH",    # flake8-use-pathlib
   "SIM",    # flake8-simplify
   "FIX",    # flake8-fixme
-  "BLE"  # flake8-blind-except
+  "BLE",  # flake8-blind-except
   "TID251", # banned-api (flake8-tidy-imports)
 
 
