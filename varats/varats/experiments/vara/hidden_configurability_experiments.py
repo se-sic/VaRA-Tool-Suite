@@ -222,6 +222,7 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         FastDownward.NAME: [],
         DunePerfRegression.NAME: ["dune-performance-regression/"],
         MySQL.NAME: ["extra/", "mysql-test/", "testclients/", "unittest/"],
+        "cryptominisat": ["tests/", "utils/"],
     }
 
     def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
@@ -448,6 +449,8 @@ _PROJECT_WORKLOADS = {
     "brotli": ["geo-maps-countries-land-1km", "geo-maps-countries-land-2km5"],
     "xz": ["countries-land-10m", "countries-land-250m"],
     "7zip": ["countries-10m-geo", "countries-100m-geo"],
+    "cryptominisat": [],
+    "bzip2": ["med-geo-compress"]
 }
 
 
@@ -595,25 +598,33 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                     if len(zipped_steps) == 1:
                         # First iteration, perform a full compile
                         zipped_steps.append(actions.Compile(project))
+                        condition = actions.Compile(project)
                     else:
                         zipped_steps.append(ReCompile(project))
+                        condition = ReCompile(project)
 
-                    zipped_steps.extend([
-                        AlwaysOk(
-                            TimePatchedWorkloadsStep(
-                                project,
-                                binary,
-                                file_name=MPRTimeWLAggregate.
-                                create_patched_report_name(
-                                    patch, binary.name, **{
-                                        arg_name: value
-                                    }
-                                ).replace('.', ''),
-                                report_file_ending=".txt",
-                                reps=NUM_REPETITIONS
-                            )
-                        ) for binary in _get_project_binaries(project)
-                    ])
+                    if_step = IfThenElse(
+                        project,
+                        condition=condition,
+                        then_step=actions.Any([
+                            AlwaysOk(
+                                TimePatchedWorkloadsStep(
+                                    project,
+                                    binary,
+                                    file_name=MPRTimeWLAggregate.
+                                    create_patched_report_name(
+                                        patch, binary.name, **{
+                                            arg_name: value
+                                        }
+                                    ).replace('.', ''),
+                                    report_file_ending=".txt",
+                                    reps=NUM_REPETITIONS
+                                )
+                            ) for binary in _get_project_binaries(project)
+                        ],),
+                        return_result=StepResult.OK
+                    )
+                    zipped_steps.append(if_step)
 
                     zipped_steps.append(
                         RevertPatch(project, patch, **{arg_name: value})

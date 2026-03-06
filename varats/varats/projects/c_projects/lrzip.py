@@ -72,7 +72,7 @@ class Lrzip(VProject):
         ),
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
         'apt', 'install', '-y', 'tar', 'libz-dev', 'autoconf', 'libbz2-dev',
         'liblzo2-dev', 'liblz4-dev', 'coreutils', 'libtool'
     )

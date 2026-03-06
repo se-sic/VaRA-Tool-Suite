@@ -2,10 +2,11 @@ benchbuild>=6.8
 click>=8.3.1
 cliffs-delta>=1.0.0
 distro>=1.9.0
+frozendict>=2.4.7
 graphviz>=0.21
 ijson>=3.4.0.post0
 Jinja2>=3.1.6
-junitparser
+junitparser>=4.0.2
 jupyter>=1.1.1
 kaleido>=1.2.0
 matplotlib>=3.10.8

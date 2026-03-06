@@ -162,6 +162,7 @@ def gtest_run_testsuite(
 
 def parse_junit_xml(xml_path: Path) -> tp.Dict[str, TestResult]:
     """Parse the xml test report and return the test results."""
+    xml_path = Path(xml_path)
     results: tp.Dict[str, TestResult] = {}
     test_xml = JUnitXml.fromfile(str(xml_path.absolute()))
     for suite in test_xml:

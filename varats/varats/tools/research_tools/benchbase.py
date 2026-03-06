@@ -121,8 +121,6 @@ class Benchbase(ResearchTool[BenchbaseCodeBase]):
                 "Java 23 directory is not set in config, cannot build benchbase."
             )
 
-        print(f"{java_23_dir=}")
-
         with local.env(
             JAVA_HOME=java_23_dir,
             PATH=f"{java_23_dir}/bin:" + local.env["PATH"]

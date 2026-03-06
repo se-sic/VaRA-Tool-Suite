@@ -119,9 +119,9 @@ class CollectCoverage(ProjectStep):  # type: ignore
                             self.run_cmd.command.as_plumbum(
                                 project=self.project
                             )
-                        )()
+                        )(retcode=None)
                     else:
-                        self.run_cmd()
+                        self.run_cmd(retcode=None)
                 except ProcessExecutionError:
                     return StepResult.ERROR
 

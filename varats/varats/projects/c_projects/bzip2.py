@@ -125,7 +125,7 @@ class Bzip2(VProject):
                 "geo-maps/countries-land-1m.geo.json",
                 "geo-maps/countries-land-10m.geo.json",
                 "geo-maps/countries-land-100m.geo.json",
-                label="med-geo",
+                label="med-geo-compress",
                 creates=[
                     "geo-maps/countries-land-1m.geo.json.bz2",
                     "geo-maps/countries-land-10m.geo.json.bz2",
@@ -143,7 +143,7 @@ class Bzip2(VProject):
                 "geo-maps-compr/countries-land-1m.geo.json.bz2",
                 "geo-maps-compr/countries-land-10m.geo.json.bz2",
                 "geo-maps-compr/countries-land-100m.geo.json.bz2",
-                label="med-geo",
+                label="med-geo-decompress",
                 creates=[
                     "geo-maps-compr/countries-land-1m.geo.json",
                     "geo-maps-compr/countries-land-10m.geo.json",
@@ -234,7 +234,8 @@ class Bzip2(VProject):
         bzip2_repo = RepositoryHandle(bzip2_source)
 
         build_dir, build_method = self.__getbuilddir()
-        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        with local.cwd(build_dir):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
