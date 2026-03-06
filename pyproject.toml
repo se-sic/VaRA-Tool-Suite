@@ -158,6 +158,9 @@ select = [
   "PTH",    # flake8-use-pathlib
   "SIM",    # flake8-simplify
   "FIX",    # flake8-fixme
+  "BLE"  # flake8-blind-except
+  "TID251", # banned-api (flake8-tidy-imports)
+
 
   # Full Pylint coverage available in Ruff
   "PLE",    # pylint errors
@@ -202,6 +205,11 @@ max-public-methods=20
 max-returns=6
 max-statements=50
 max-nested-blocks=5
+
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"optparse".msg = "optparse is deprecated."
+"tkinter.tix".msg = "tkinter.tix is deprecated."
 
 
 # Ruff Formatter settings
