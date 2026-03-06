@@ -11,3 +11,8 @@ runner:
     cmd: pylint varats* -j 0
     errorformat:
       - "%f:%l:%c: %t%n: %m"
+
+  ruff:
+    name: ruff
+    cmd: ruff check --output-format=rdjson
+    format: rdjson
