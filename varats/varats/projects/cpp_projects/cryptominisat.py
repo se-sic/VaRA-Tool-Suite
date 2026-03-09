@@ -4,7 +4,6 @@ from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
-from benchbuild.project import build_dir
 from benchbuild.source import Git, HTTPUntar
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -21,6 +20,11 @@ from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    TestResult,
+    ctest_get_test_names,
+    ctest_run_testsuite,
+)
 
 
 class CryptoMiniSAT(VProject):
@@ -141,6 +145,7 @@ class CryptoMiniSAT(VProject):
                     )
 
     def recompile(self) -> None:
+        build_dir = Path(self.builddir) / "build"
         with local.env(LD_LIBRARY_PATH=str(build_dir / "lib")):
             with local.cwd(Path(self.source_of_primary) / "build"):
                 cmake = local["cmake"]
@@ -149,3 +154,64 @@ class CryptoMiniSAT(VProject):
 
     def run_tests(self) -> None:
         pass
+
+    ##############################
+    # SupportsTestSuite Protocol #
+    ##############################
+
+    def prepare_test_environment(self) -> None:
+        """
+        Prepare the test environment for this project.
+
+        After running this method, the test environment should be prepared such
+        that tests are discoverable for the get_test_names() method. This does
+        not necessarily mean that the tests are built yet.
+        """
+        self.compile()
+
+    def build_tests(self) -> None:
+        """
+        Build the tests for this project.
+
+        Should be called after prepare_test_environment() to build the tests.
+        Once this method is called, the tests should be built and ready to run.
+        """
+        self.recompile()
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        """
+        Run the test suite for this project.
+
+        Args:
+            test_report_path: Path to the test report file.
+            tests_to_run: List of test cases to run.
+                          If None, all tests will be run.
+            tests_to_exclude: List of test cases to exclude.
+
+        Returns:
+            returns a dictionary mapping test names to respective result (e.g., 'passed', 'failed', 'skipped').
+        """
+        return ctest_run_testsuite(
+            build_dir=Path(self.builddir) / "build",
+            test_report_path=test_report_path,
+            tests_to_run=tests_to_run,
+            tests_to_exclude=tests_to_exclude
+        )
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """
+        Returns a list of tests that can be run for this project in the current
+        revision and configuration. Requires that prepare_test_environment() was
+        called before.
+
+        Returns:
+             A list of tests available for this project.
+        """
+        build_dir = Path(self.builddir) / "build"
+
+        return ctest_get_test_names(build_dir)
