@@ -223,6 +223,7 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         DunePerfRegression.NAME: ["dune-performance-regression/"],
         MySQL.NAME: ["extra/", "mysql-test/", "testclients/", "unittest/"],
         "cryptominisat": ["tests/", "utils/"],
+        "cadical": ["test/", "contrib"],
     }
 
     def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
@@ -603,28 +604,27 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                         zipped_steps.append(ReCompile(project))
                         condition = ReCompile(project)
 
-                    if_step = IfThenElse(
-                        project,
-                        condition=condition,
-                        then_step=actions.Any([
-                            AlwaysOk(
-                                TimePatchedWorkloadsStep(
-                                    project,
-                                    binary,
-                                    file_name=MPRTimeWLAggregate.
-                                    create_patched_report_name(
-                                        patch, binary.name, **{
-                                            arg_name: value
-                                        }
-                                    ).replace('.', ''),
-                                    report_file_ending=".txt",
-                                    reps=NUM_REPETITIONS
+                    for b in _get_project_binaries(project):
+                        zipped_steps.append(
+                            IfThenElse(
+                                project,
+                                condition=condition,
+                                then_step=AlwaysOk(
+                                    TimePatchedWorkloadsStep(
+                                        project,
+                                        b,
+                                        file_name=MPRTimeWLAggregate.
+                                        create_patched_report_name(
+                                            patch, b.name, **{
+                                                arg_name: value
+                                            }
+                                        ).replace('.', ''),
+                                        report_file_ending=".txt",
+                                        reps=NUM_REPETITIONS
+                                    )
                                 )
-                            ) for binary in _get_project_binaries(project)
-                        ],),
-                        return_result=StepResult.OK
-                    )
-                    zipped_steps.append(if_step)
+                            )
+                        )
 
                     zipped_steps.append(
                         RevertPatch(project, patch, **{arg_name: value})
