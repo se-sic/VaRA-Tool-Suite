@@ -413,7 +413,8 @@ def _add_benchbuild_config(
         BB_VARATS_OUTFILE=str(image_context.varats_root / "results"),
         BB_VARATS_RESULT=str(image_context.varats_root / "BC_files"),
         BB_JOBS=str(bb_cfg()["jobs"]),
-        BB_ENV=to_yaml(dict(bb_env))
+        BB_ENV=to_yaml(dict(bb_env)),
+        BB_VERSIONS_SEPARATOR=str(bb_cfg()["versions"]["separator"])
     )
 
 

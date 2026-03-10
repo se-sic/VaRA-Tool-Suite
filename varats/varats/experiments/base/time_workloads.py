@@ -55,7 +55,7 @@ class TimeProjectWorkloads(OutputFolderStep):
 
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
-                self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                self.project, self.__binary, [WorkloadCategory.MEDIUM]
             ):
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
@@ -68,7 +68,7 @@ class TimeProjectWorkloads(OutputFolderStep):
 
                 with cleanup(prj_command):
                     try:
-                        run_cmd()
+                        run_cmd(retcode=self.__binary.valid_exit_codes)
                     except ProcessExecutionError as e:
                         print(f"{e.stdout=}")
                         print(f"{e.stderr=}")
@@ -109,7 +109,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
         )
 
         # Only consider the main/first binary
-        binary = project.binaries[1]
+        binary = project.binaries[0]
         print(f"{binary}")
 
         measurement_repetitions = 1
