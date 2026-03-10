@@ -2,7 +2,7 @@
 import json
 import re
 import typing as tp
-from enum import Enum
+from enum import IntEnum
 from pathlib import Path
 
 import benchbuild as bb
@@ -10,14 +10,14 @@ from junitparser import JUnitXml, junitparser
 from plumbum import local, ProcessExecutionError
 
 
-class TestResult(Enum):
+class TestResult(IntEnum):
     PASSED = 0,
     FAILED = 1,
     SKIPPED = 2,
     TIMEOUT = 3,
     DISABLED = 4,
     NOT_RUN = 5,
-    UNKNOWN = 6
+    UNKNOWN = -1
 
 
 def ctest_get_test_names(build_dir: Path) -> tp.Iterable[str]:
