@@ -2,12 +2,15 @@
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import WorkloadSet, SourceRoot
+from benchbuild.source import HTTP
 from benchbuild.utils.cmd import make
 from benchbuild.utils.revision_ranges import block_revisions, GoodBadSubgraph
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
+from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -17,6 +20,7 @@ from varats.project.project_util import (
     verify_binaries,
     RevisionBinaryMap,
 )
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
@@ -43,10 +47,44 @@ class X264(VProject):
                 limit=None,
                 shallow=False
             )
+        ),
+        HTTP(
+            local="aspen-1080p.y4m",
+            remote={
+                "1.0": "https://media.xiph.org/video/derf/y4m/aspen_1080p.y4m"
+            },
+        ),
+        HTTP(
+            local="old-town-2160p.y4m",
+            remote={
+                "1.0":
+                    "https://media.xiph.org/video/derf/y4m/old_town_cross_2160p50.y4m"
+            }
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.SMALL): [
+            VCommand(
+                SourceRoot("x264") / RSBinary("x264"),
+                "aspen-1080p.y4m",
+                "-o",
+                "/dev/null",
+                label="aspen-1080p"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("x264") / RSBinary("x264"),
+                "old-town-2160p.y4m",
+                "-o",
+                "/dev/null",
+                label="old-town-2160p"
+            )
+        ]
+    }
 
     @staticmethod
     def binaries_for_revision(
