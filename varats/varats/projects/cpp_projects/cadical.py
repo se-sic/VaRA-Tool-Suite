@@ -243,12 +243,28 @@ class Cadical(VProject):
         return self._run_suite("usage", extract_name, extract_result)
 
     def _run_cnf_tests(self) -> tp.Dict[str, TestResult]:
-        return {}
+
+        def extract_name(line: str) -> tp.Optional[str]:
+            if "running CNF test" in line:
+                return line.split("'")[1]
+            return None
+
+        def extract_result(line: str) -> tp.Optional[TestResult]:
+            if line.startswith("#"):
+                if "ok" in line:
+                    return TestResult.PASSED
+                elif "FAILED" in line:
+                    return TestResult.FAILED
+                else:
+                    return TestResult.UNKNOWN
+            return None
+
+        return self._run_suite("cnf", extract_name, extract_result)
 
     def _run_traces_tests(self) -> tp.Dict[str, TestResult]:
 
         def extract_name(line: str) -> tp.Optional[str]:
-            if "trace/run.sh" in line:
+            if "trace/run.sh" in line and "'" in line:
                 return line.split("'")[1]
             return None
 
@@ -294,4 +310,4 @@ class Cadical(VProject):
              A list of tests available for this project.
         """
 
-        return list(self.run_tests().keys())
+        return list(self.run_testsuite().keys())
