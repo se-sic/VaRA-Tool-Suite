@@ -450,8 +450,10 @@ _PROJECT_WORKLOADS = {
     "brotli": ["geo-maps-countries-land-1km", "geo-maps-countries-land-2km5"],
     "xz": ["countries-land-10m", "countries-land-250m"],
     "7zip": ["countries-10m-geo", "countries-100m-geo"],
-    "cryptominisat": [],
-    "bzip2": ["med-geo-compress"]
+    "cryptominisat": ["traffic-kkb-unknown"],
+    "bzip2": ["med-geo-compress"],
+    "x264": ["aspen-1080p", "old-town-2160p"],
+    "lrzip": ["countries-land-10m", "countries-land-100m"],
 }
 
 
@@ -495,8 +497,7 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
                         )
 
                         with cleanup(prj_command):
-                            #bb.watch(run_cmd)()
-                            run_cmd()
+                            bb.watch(run_cmd)()
 
         return StepResult.OK
 
