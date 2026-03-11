@@ -507,6 +507,8 @@ class PatchProvider(Provider):
 
         with lock_file(lock_path):
             patches_repo = self._get_patches_repository()
-            if (time.time() - patches_repo.last_fetch) >= self.fetch_interval:
+            if not (patches_repo.worktree_path.exists()) or (
+                time.time() - patches_repo.last_fetch
+            ) >= self.fetch_interval:
                 self.patches_source.fetch()
                 pull_current_branch(patches_repo)

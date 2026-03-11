@@ -192,7 +192,7 @@ class RepositoryHandle:
             timestamp of the last fetch operation in seconds since epoch, or
             0 if no fetch has been performed yet
         """
-        fetch_head = self.repo_path / ".git" / "FETCH_HEAD"
+        fetch_head = self.repo_path / "FETCH_HEAD"
         if not fetch_head.exists():
             return 0.0
 
