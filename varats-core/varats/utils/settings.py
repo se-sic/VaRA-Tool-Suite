@@ -219,6 +219,13 @@ def create_new_varats_config() -> s.Configuration:
         }
     }
 
+    cfg['patch_provider'] = {
+        "repositories": {
+            "desc": "List of repositories to fetch patches from.",
+            "default": ["https://github.com/se-sic/vara-project-patches.git"],
+        }
+    }
+
     cfg['sampling'] = {}
 
     cfg['ml'] = {}

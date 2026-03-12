@@ -27,6 +27,7 @@ from varats.utils.git_util import (
     get_initial_commit,
     RepositoryHandle,
 )
+from varats.utils.settings import vara_cfg
 
 
 class Patch:
@@ -285,7 +286,12 @@ class PatchProvider(Provider):
     def __init__(self, project: tp.Type[Project]):
         super().__init__(project)
 
-        self._update_local_patches_repo()
+        # Accessing the configuration (.yml) file
+        cfg = vara_cfg()
+
+        repos = cfg["patch_provider"]["repositories"].value
+
+        self._update_local_patches_repo(repos)
         repo = self._get_patches_repository()
 
         patches_project_dir = repo.worktree_path / self.project.NAME
@@ -302,19 +308,30 @@ class PatchProvider(Provider):
         project_repo = get_local_project_repo(self.project.NAME)
         fetch_repository(project_repo)
 
-        for root, _, files in os.walk(patches_project_dir):
-            for filename in files:
-                if not filename.endswith(".info"):
-                    continue
+        # for root, _, files in os.walk(patches_project_dir):
+        #     for filename in files:
+        #         if not filename.endswith(".info"):
+        #             continue
+        #
+        #         info_path = Path(os.path.join(root, filename))
+        #         try:
+        #             current_patch = Patch.from_yaml(info_path)
+        #             self.__patches.add(current_patch)
+        #         except YAMLError:
+        #             warnings.warn(
+        #                 f"Unable to parse patch info in: '{filename}'"
+        #             )
 
-                info_path = Path(os.path.join(root, filename))
-                try:
-                    current_patch = Patch.from_yaml(info_path)
-                    self.__patches.add(current_patch)
-                except YAMLError:
-                    warnings.warn(
-                        f"Unable to parse patch info in: '{filename}'"
-                    )
+        # using rglob to find all .info files in the project patch directory and subdirectories (but we don't have
+        # filename, instead we have the whole path for warning)
+        for info_path in patches_project_dir.rglob("*.info"):
+            try:
+                current_patch = Patch.from_yaml(info_path)
+                self.__patches.add(current_patch)
+            except YAMLError:
+                warnings.warn(
+                    f"Unable to parse patch info in: `{info_path.name}`"
+                )
 
     def get_by_shortname(self, shortname: str) -> tp.Optional[Patch]:
         """
@@ -371,9 +388,16 @@ class PatchProvider(Provider):
         )
 
     @classmethod
-    def _update_local_patches_repo(cls) -> None:
+    def _update_local_patches_repo(cls, repos) -> None:
         lock_path = Path(target_prefix()) / "patch_provider.lock"
 
         with lock_file(lock_path):
-            cls.patches_source.fetch()
+            source = bb.source.Git(
+                remote=repos,
+                local=cls.patches_source.local,
+                refspec=cls.patches_source.refspec,
+                limit=cls.patches_source.limit,
+                shallow=cls.patches_source.shallow
+            )
+            source.fetch()
             pull_current_branch(cls._get_patches_repository())
