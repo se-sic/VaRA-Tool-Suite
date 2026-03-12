@@ -291,7 +291,7 @@ class PatchProvider(Provider):
 
         repos = cfg["patch_provider"]["repositories"].value
 
-        self._update_local_patches_repo(repos)
+        self._update_local_patches_repo(repos[0])
         repo = self._get_patches_repository()
 
         patches_project_dir = repo.worktree_path / self.project.NAME
