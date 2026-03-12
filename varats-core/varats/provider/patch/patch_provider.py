@@ -395,7 +395,7 @@ class PatchProvider(Provider):
             source = bb.source.Git(
                 remote=repos,
                 local=cls.patches_source.local,
-                refspec=cls.patches_source.refspec,
+                refspec="origin/f-PatchSubdirectories",
                 limit=cls.patches_source.limit,
                 shallow=cls.patches_source.shallow
             )
