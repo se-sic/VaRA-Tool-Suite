@@ -1,0 +1,13 @@
+diff --git a/bzip2.c b/bzip2.c
+index a3a916b..f70fdfb 100644
+--- a/bzip2.c
++++ b/bzip2.c
+@@ -1133,6 +1133,8 @@ void compress ( Char *name )
+    if (name == NULL && srcMode != SM_I2O)
+       panic ( "compress: bad modes\n" );
+ 
++   sleep(1);
++
+    switch (srcMode) {
+       case SM_I2O:
+          copyFileName ( inName, (Char*)"(stdin)" );

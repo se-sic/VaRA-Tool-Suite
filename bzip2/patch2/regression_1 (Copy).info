@@ -1,0 +1,11 @@
+description: "Patch that adds a regression that only affects compression"
+include_revisions:
+  revision_range:
+    start: 1ea1ac188ad4b9cb662e3f8314673c63df95a589
+    end:   master
+path: regression_1.patch
+project_name: bzip2
+shortname: regress_compression
+tags:
+- regression
+- perf_prec
