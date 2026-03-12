@@ -82,6 +82,7 @@ class Lrzip(VProject):
             VCommand(
                 SourceRoot("lrzip") / RSBinary("lrzip"),
                 ConfigParams(),
+                "-f",
                 "geo-maps/countries-land-1km.geo.json",
                 label="countries-land-1km",
                 creates=["countries-land-1km.geo.json.lrz"]
@@ -89,6 +90,7 @@ class Lrzip(VProject):
             VCommand(
                 SourceRoot("lrzip") / RSBinary("lrzip"),
                 ConfigParams(),
+                "-f",
                 "geo-maps/countries-land-100m.geo.json",
                 label="countries-land-100m",
                 creates=["countries-land-100m.geo.json.lrz"]
@@ -98,6 +100,7 @@ class Lrzip(VProject):
             VCommand(
                 SourceRoot("lrzip") / RSBinary("lrzip"),
                 ConfigParams(),
+                "-f",
                 "geo-maps/countries-land-10m.geo.json",
                 label="countries-land-10m",
                 creates=["countries-land-10m.geo.json.lrz"]
@@ -107,6 +110,7 @@ class Lrzip(VProject):
             VCommand(
                 SourceRoot("lrzip") / RSBinary("lrzip"),
                 ConfigParams(),
+                "-f",
                 "geo-maps/countries-land-1m.geo.json",
                 label="countries-land-1m",
                 creates=["countries-land-1m.geo.json.lrz"]

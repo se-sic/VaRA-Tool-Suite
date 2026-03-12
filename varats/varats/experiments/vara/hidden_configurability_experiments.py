@@ -224,6 +224,7 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         MySQL.NAME: ["extra/", "mysql-test/", "testclients/", "unittest/"],
         "cryptominisat": ["tests/", "utils/"],
         "cadical": ["test/", "contrib"],
+        "x264": ["extras/", "tools/"],
     }
 
     def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
@@ -599,10 +600,8 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
 
                     if len(zipped_steps) == 1:
                         # First iteration, perform a full compile
-                        zipped_steps.append(actions.Compile(project))
                         condition = actions.Compile(project)
                     else:
-                        zipped_steps.append(ReCompile(project))
                         condition = ReCompile(project)
 
                     for b in _get_project_binaries(project):
