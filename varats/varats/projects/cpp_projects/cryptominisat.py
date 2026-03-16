@@ -204,7 +204,7 @@ class CryptoMiniSAT(VProject):
             returns a dictionary mapping test names to respective result (e.g., 'passed', 'failed', 'skipped').
         """
         return ctest_run_testsuite(
-            build_dir=Path(self.version_of_primary) / "build",
+            build_dir=Path(self.source_of_primary) / "build",
             test_report_path=test_report_path,
             tests_to_run=tests_to_run,
             tests_to_exclude=tests_to_exclude
@@ -219,6 +219,6 @@ class CryptoMiniSAT(VProject):
         Returns:
              A list of tests available for this project.
         """
-        build_dir = Path(self.version_of_primary) / "build"
+        build_dir = Path(self.source_of_primary) / "build"
 
         return ctest_get_test_names(build_dir)
