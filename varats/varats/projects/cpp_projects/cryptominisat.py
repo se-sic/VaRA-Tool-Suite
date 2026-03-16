@@ -8,6 +8,7 @@ from benchbuild.source import Git, HTTPUntar
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
@@ -79,6 +80,12 @@ class CryptoMiniSAT(VProject):
             )
         ]
     }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12).run('apt', 'install', '-y', 'clang-19', 'libclang-19-dev', 'cmake', 'build-essential', 'help2man', 'libgmp-dev')\
+                                                        .run("update-alternatives", "--install", "/usr/bin/clang", "clang", "/usr/bin/clang-19", "100") \
+                                                        .run("update-alternatives", "--install", "/usr/bin/clang++", "clang++", "/usr/bin/clang++-19", "100") \
+                                                        .run("update-alternatives", "--set", "clang", "/usr/bin/clang-19") \
+                                                        .run("update-alternatives", "--set", "clang++", "/usr/bin/clang++-19")
 
     @staticmethod
     def binaries_for_revision(
@@ -197,7 +204,7 @@ class CryptoMiniSAT(VProject):
             returns a dictionary mapping test names to respective result (e.g., 'passed', 'failed', 'skipped').
         """
         return ctest_run_testsuite(
-            build_dir=Path(self.builddir) / "build",
+            build_dir=Path(self.version_of_primary) / "build",
             test_report_path=test_report_path,
             tests_to_run=tests_to_run,
             tests_to_exclude=tests_to_exclude
@@ -212,6 +219,6 @@ class CryptoMiniSAT(VProject):
         Returns:
              A list of tests available for this project.
         """
-        build_dir = Path(self.builddir) / "build"
+        build_dir = Path(self.version_of_primary) / "build"
 
         return ctest_get_test_names(build_dir)
