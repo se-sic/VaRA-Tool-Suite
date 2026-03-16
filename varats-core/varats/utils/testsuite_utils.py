@@ -82,7 +82,7 @@ def ctest_run_testsuite(
                 ])
             ctest_cmd = ctest_cmd["-R", test_regex, "-E", exclude_regex]
 
-        ret_code, _, _ = bb.watch(ctest_cmd)()
+        ret_code, _, _ = bb.watch(ctest_cmd)(retcode=None)
 
     results = parse_junit_xml(test_report_path)
 
