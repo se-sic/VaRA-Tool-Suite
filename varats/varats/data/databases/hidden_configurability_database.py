@@ -256,7 +256,7 @@ def _get_data_single_config_default(
                     "metric": "wall_clock_time",
                     "value": patch_report.measurements_wall_clock_time(wl),
                     "value_relative": [
-                        (t / base_times[wl]) - 1
+                        float((t / base_times[wl]) - 1)
                         for t in patch_report.measurements_wall_clock_time(wl)
                     ],
                     "config_id": report.filename.config_id,
@@ -267,7 +267,7 @@ def _get_data_single_config_default(
                     "metric": "max_resident_size",
                     "value": patch_report.max_resident_sizes(wl),
                     "value_relative": [
-                        (t / base_rss[wl]) - 1
+                        float((t / base_rss[wl]) - 1)
                         for t in patch_report.max_resident_sizes(wl)
                     ],
                     "config_id": report.filename.config_id,
@@ -356,7 +356,7 @@ def _get_data_single_config_benchbase(
                     "metric": "throughput",
                     "value": patched_report.summary(base_name).throughput,
                     "value_relative": [
-                        (t / base_data["throughput"][base_name]) - 1
+                        float((t / base_data["throughput"][base_name]) - 1)
                         for t in patched_report.summary(base_name).throughput
                     ],
                     "config_id": report.filename.config_id,
@@ -367,7 +367,7 @@ def _get_data_single_config_benchbase(
                     "metric": "goodput",
                     "value": patched_report.summary(base_name).goodput,
                     "value_relative": [
-                        (t / base_data["goodput"][base_name]) - 1
+                        float((t / base_data["goodput"][base_name]) - 1)
                         for t in patched_report.summary(base_name).goodput
                     ],
                     "config_id": report.filename.config_id,
@@ -395,7 +395,7 @@ def _load_cached_df(project_name: str):
     # Convert columns "value" and "value_relative" back to lists
     df["value"] = df["value"].apply(lambda x: ast.literal_eval(x))
     df["value_relative"] = df["value_relative"].apply(
-        lambda x: ast.literal_eval(x)
+        lambda x: ast.literal_eval(x) if pd.notna(x) else None
     )
 
     return df
