@@ -11,9 +11,11 @@ from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
 )
 from varats.data.reports.text_report import PlainTextReport
+from varats.experiments.hidden_config.hidden_config_utils import (
+    PATCH_VARIATIONS,
+)
 from varats.experiments.vara.hidden_configurability_experiments import (
     _PROJECT_WORKLOADS,
-    PATCH_VARIATIONS,
     TestPatchVariations,
     MPTextReport,
     FilterHiddenConfigurabilityReport,
@@ -598,8 +600,16 @@ class ConfigAlternativesGenerator(
 
 
 _ACTIVE_HV_PROJECTS = [
-    "Ect", "lrzip", "7zip", "brotli", "bzip2", "xz", "lepton", "libzmq",
-    "DunePerfRegression", "FastDownward", "libvpx"
+    "lrzip",
+    "7zip",
+    "brotli",
+    "bzip2",
+    "xz",
+    #"libzmq",
+    "FastDownward",
+    #"libvpx",
+    "mariadb",
+    "postgresql"
 ]
 
 
@@ -611,17 +621,21 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
         table_rows = []
 
         for cs in case_studies:
-            if cs.project_name not in _ACTIVE_HV_PROJECTS or cs.project_name not in PATCH_VARIATIONS:
+            if cs.project_name not in _ACTIVE_HV_PROJECTS:
                 print(
                     f"Skipping {cs.project_name} as it is not an active HV subject system"
                 )
                 continue
-            cs_data = aggregate_data(cs, None)
+            print(f"Processing {cs.project_name}...")
+            try:
+                cs_data = aggregate_data(cs, None)
+            except Exception as e:
+                print(f"Error processing {cs.project_name}: {e}")
+                continue
 
             # Filter to single config ID for projects with multiple
             __cs_configs = {
                 "libzmq": [13],
-                "DunePerfRegression": [8],
                 "FastDownward": [0],
                 "libvpx": [0],
             }

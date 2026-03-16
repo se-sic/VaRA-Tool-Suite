@@ -1,4 +1,6 @@
 import json
+import shutil
+import tempfile
 import typing as tp
 import zipfile
 from dataclasses import dataclass
@@ -6,8 +8,10 @@ from pathlib import Path
 
 import pandas as pd
 import xmltodict
+from frozendict import frozendict
 
-from varats.report.report import BaseReport, ReportAggregate
+from varats.report.multi_patch_report import MultiPatchReport
+from varats.report.report import BaseReport, ReportAggregate, ReportFilename
 
 
 @dataclass
@@ -188,14 +192,178 @@ class BenchBaseReport(BaseReport, shorthand="BBR", file_type="zip"):
         return result.summary if result else None
 
 
+@dataclass(eq=True, frozen=True)
+class BenchbaseResultsIdentifier:
+    dbms_type: str
+    benchmark: str
+    scale_factor: float
+    terminals: int
+
+
+@dataclass
+class BenchbaseResultRepsSummary:
+    id: BenchbaseResultsIdentifier
+    latencies: tp.List[BenchbaseLatencies]
+    throughput: tp.List[float]
+    goodput: tp.List[float]
+    num_requests: tp.List[int]
+
+
 class BenchBaseReportAggregate(
-    ReportAggregate[BenchBaseReport],
+    BaseReport,
     shorthand=BenchBaseReport.SHORTHAND + ReportAggregate.SHORTHAND,
     file_type=ReportAggregate.FILE_TYPE
 ):
-    """Aggregate multiple BenchBase reports into a single report."""
+    """
+    Aggregate multiple BenchBase runs in the same zip file into one report.
+
+    Essentially a wrapper around a single BenchBaseReport, but identifies runs
+    with same parameters and allows access to aggregated results as repetitions
+    """
 
     def __init__(self, path: Path):
-        super().__init__(path, BenchBaseReport)
+        super().__init__(path)
 
-        # TODO: Ensure that all reports have the same set of workloads
+        bb_report = BenchBaseReport(path)
+        self.__summaries: tp.Dict[BenchbaseResultsIdentifier,
+                                  BenchbaseResultRepsSummary] = {}
+
+        for _, summary in bb_report.summaries.items():
+            identifier = BenchbaseResultsIdentifier(
+                dbms_type=summary.dbms_type,
+                benchmark=summary.benchmark,
+                scale_factor=summary.scale_factor,
+                terminals=summary.terminals
+            )
+
+            if identifier not in self.__summaries:
+                self.__summaries[identifier] = BenchbaseResultRepsSummary(
+                    id=identifier,
+                    latencies=[],
+                    throughput=[],
+                    goodput=[],
+                    num_requests=[]
+                )
+
+            self.__summaries[identifier].latencies.append(summary.latencies)
+            self.__summaries[identifier].throughput.append(summary.throughput)
+            self.__summaries[identifier].goodput.append(summary.goodput)
+            self.__summaries[identifier].num_requests.append(
+                summary.num_requests
+            )
+
+    @property
+    def workloads(self) -> tp.KeysView[BenchbaseResultsIdentifier]:
+        """Get the list of workloads present in the report."""
+        return self.__summaries.keys()
+
+    @property
+    def summaries(
+        self
+    ) -> tp.Dict[BenchbaseResultsIdentifier, BenchbaseResultRepsSummary]:
+        """Get the summaries of all BenchBase results."""
+        return self.__summaries
+
+    def summary(self,
+                benchmark: str) -> tp.Optional[BenchbaseResultRepsSummary]:
+        for summary in self.__summaries.values():
+            if summary.id.benchmark == benchmark:
+                return summary
+        return None
+
+
+class MPBenchbaseReport(
+    MultiPatchReport,
+    shorthand="MP" + BenchBaseReportAggregate.SHORTHAND,
+    file_type="zip"
+):
+    """Multi-patch report for BenchBase benchmark results."""
+
+    def __init__(self, path: Path):
+        self.__path = path
+        self.__filename = ReportFilename(path)
+        self.__patched_reports: tp.Dict[str,
+                                        tp.Dict[str,
+                                                BenchBaseReportAggregate]] = {}
+        self.__base: tp.Dict[str, BenchBaseReportAggregate] = {}
+
+        with tempfile.TemporaryDirectory() as tmp_result_dir:
+            shutil.unpack_archive(path, extract_dir=tmp_result_dir)
+
+            for report in Path(tmp_result_dir).iterdir():
+                base_name = self._parse_base_file_name_from_report_name(
+                    report.stem
+                ).removeprefix("mariadbd-")
+                if self.is_baseline_report(report.name):
+                    # Parse as BenchBaseReportAggregate
+                    bbagg_report = BenchBaseReportAggregate(report)
+                    if len(bbagg_report.workloads) > 1:
+                        raise AssertionError(
+                            f"Baseline report {report.name} contains multiple workloads, which is not supported."
+                        )
+
+                    self.__base[base_name] = bbagg_report
+                elif self.is_patched_report(report.name):
+                    if base_name not in self.__patched_reports:
+                        self.__patched_reports[base_name] = {}
+
+                    patch_shortname = self._parse_patch_shorthand_from_report_name(
+                        report.name
+                    )
+                    if patch_shortname not in self.__patched_reports[base_name]:
+                        self.__patched_reports[base_name][patch_shortname] = []
+
+                    # Parse as BenchBaseReportAggregate
+                    bbagg_report = BenchBaseReportAggregate(report)
+                    if len(bbagg_report.workloads) > 1:
+                        raise AssertionError(
+                            f"Patched report {report.name} contains multiple workloads, which is not supported."
+                        )
+
+                    self.__patched_reports[base_name][patch_shortname
+                                                     ] = bbagg_report
+
+            if not self.__base or not self.__patched_reports:
+                raise AssertionError(
+                    f"Reports were missing in the file {path=}"
+                )
+
+            # Check that all base names are present in both base and patched reports
+            for base_name in self.__base:
+                if base_name not in self.__patched_reports:
+                    raise AssertionError(
+                        f"Base report for {base_name} is missing patched reports in the file {path=}"
+                    )
+
+    def get_base_names(self) -> tp.List[str]:
+        return list(self.__base.keys())
+
+    def get_baseline_for(
+        self, base_name: str
+    ) -> tp.Optional[BenchBaseReportAggregate]:
+        return self.__base.get(base_name, None)
+
+    def get_patched_for(
+        self, base_name: str, patch_shortname: str
+    ) -> tp.Optional[BenchBaseReportAggregate]:
+        if base_name in self.__patched_reports and patch_shortname in self.__patched_reports[
+            base_name]:
+            return self.__patched_reports[base_name][patch_shortname]
+        return None
+
+    @property
+    def path(self) -> Path:
+        """Path to the report file."""
+        return self.__path
+
+    @property
+    def filename(self) -> ReportFilename:
+        """Filename of the report."""
+        return self.__filename
+
+    def get_patch_names(self) -> tp.List[str]:
+        """Get the list of patch shortnames present in the report."""
+        patch_names = set()
+        for patched_reports in self.__patched_reports.values():
+            patch_names.update(patched_reports.keys())
+        return list(patch_names)

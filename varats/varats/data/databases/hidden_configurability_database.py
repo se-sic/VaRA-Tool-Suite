@@ -1,3 +1,4 @@
+import ast
 import typing as tp
 from collections import defaultdict
 from pathlib import Path
@@ -6,11 +7,18 @@ import numpy as np
 import pandas as pd
 from scipy.stats import ttest_ind
 
+from varats.data.cache_helper import cache_dataframe, load_cached_df_or_none
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
 from varats.experiments.base.run_workloads import RunWorkloads
+from varats.experiments.hidden_config.benchbase_experiments import (
+    BenchbaseHiddenConfig,
+    MPBenchbaseReport,
+)
+from varats.experiments.hidden_config.hidden_config_utils import (
+    get_all_variations_as_dict,
+)
 from varats.experiments.vara.hidden_configurability_experiments import (
     TimePatchedWorkloads,
-    PATCH_VARIATIONS,
     variation_value_to_str,
 )
 from varats.paper.case_study import CaseStudy
@@ -18,6 +26,8 @@ from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.projects.cpp_projects.libzmq import LibZMQMPReport
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
+
+CACHE_DATA_ID = "hc_database"
 
 
 def extract_config_point(full_name: str) -> tp.Tuple[str, str]:
@@ -57,7 +67,9 @@ def get_data_for_single_config(
 
         df2 = _get_data_single_config_libzmq(cs, config_id)
         return pd.concat([df1, df2], ignore_index=True)
-        return _get_data_single_config_libzmq(cs, config_id)
+
+    if cs.project_name in ["mariadb", "postgresql", "mysql"]:
+        return _get_data_single_config_benchbase(cs, config_id)
 
     return _get_data_single_config_default(cs, config_id)
 
@@ -233,14 +245,6 @@ def _get_data_single_config_default(
             )
             base_rss[wl] = np.mean(base_report.max_resident_sizes(wl))
 
-        def get_shortname(name: str) -> str:
-            name = name.split("/")[-1]  # Get the last part of the path
-            fn_without_prefix = name[len("patched_"):]
-            split_leftover_fn = fn_without_prefix.partition("_")
-            shortname_length = int(split_leftover_fn[0])
-            patch_shortname = "".join(split_leftover_fn[2:])[:shortname_length]
-            return patch_shortname
-
         for patch_report in report.get_patched_reports():
             cp = extract_config_point(patch_report.filename.filename)
 
@@ -274,38 +278,161 @@ def _get_data_single_config_default(
     return result
 
 
+def _get_data_single_config_benchbase(
+    cs: CaseStudy, config_id: tp.Optional[int] = None
+) -> pd.DataFrame:
+    result_files = get_processed_revisions_files(
+        cs.project_name,
+        BenchbaseHiddenConfig,
+        BenchbaseHiddenConfig.report_spec().main_report,
+        get_case_study_file_name_filter(cs),
+        config_id=config_id,
+        only_newest=False,
+    )
+
+    if len(result_files) == 0:
+        print(f"No results found for {cs.project_name} ({config_id=})")
+        return pd.DataFrame()
+
+    data_rows = []
+    base_data = {
+        "throughput": {},
+        "goodput": {},
+    }
+
+    for result_file in result_files:
+        report: MPBenchbaseReport = MPBenchbaseReport(result_file.full_path())
+        binary = report.filename.binary_name
+
+        patch_names = report.get_patch_names()
+
+        for base_name in report.get_base_names():
+            baseline_report = report.get_baseline_for(base_name)
+
+            if baseline_report is None:
+                continue
+
+            data_rows.extend([
+                # TODO: Latencies?
+                {
+                    "binary-wl": f"{binary}/{base_name}",
+                    "config_opportunity": "__baseline__",
+                    "variation": None,
+                    "metric": "throughput",
+                    "value": baseline_report.summary(base_name).throughput,
+                    "value_relative": None,
+                    "config_id": report.filename.config_id,
+                },
+                {
+                    "binary-wl": f"{binary}/{base_name}",
+                    "config_opportunity": "__baseline__",
+                    "variation": None,
+                    "metric": "goodput",
+                    "value": baseline_report.summary(base_name).goodput,
+                    "value_relative": None,
+                    "config_id": report.filename.config_id,
+                }
+            ])
+
+            base_data["throughput"][base_name] = np.mean(
+                baseline_report.summary(base_name).throughput
+            )
+            base_data["goodput"][base_name] = np.mean(
+                baseline_report.summary(base_name).goodput
+            )
+
+            for patch_name in patch_names:
+                patched_report = report.get_patched_for(base_name, patch_name)
+
+                if patched_report is None:
+                    continue
+
+                cp = patch_name.split("=")[0], patch_name.split("=")[-1]
+
+                data_rows.extend([{
+                    "binary-wl": f"{binary}/{base_name}",
+                    "config_opportunity": f"{cp[0]}",
+                    "variation": cp[1],
+                    "metric": "throughput",
+                    "value": patched_report.summary(base_name).throughput,
+                    "value_relative": [
+                        (t / base_data["throughput"][base_name]) - 1
+                        for t in patched_report.summary(base_name).throughput
+                    ],
+                    "config_id": report.filename.config_id,
+                }, {
+                    "binary-wl": f"{binary}/{base_name}",
+                    "config_opportunity": f"{cp[0]}",
+                    "variation": cp[1],
+                    "metric": "goodput",
+                    "value": patched_report.summary(base_name).goodput,
+                    "value_relative": [
+                        (t / base_data["goodput"][base_name]) - 1
+                        for t in patched_report.summary(base_name).goodput
+                    ],
+                    "config_id": report.filename.config_id,
+                }])
+
+    result = pd.DataFrame.from_records(data_rows)
+    return result
+
+
+def _load_cached_df(project_name: str):
+    dtypes = {
+        "binary-wl": "str",
+        "config_opportunity": "str",
+        "variation": "str",
+        "metric": "str",
+        "value": "str",
+        "value_relative": "str",
+        "config_id": "Int64",
+    }
+    df = load_cached_df_or_none(CACHE_DATA_ID, project_name, dtypes)
+
+    if df is None:
+        return None
+
+    # Convert columns "value" and "value_relative" back to lists
+    df["value"] = df["value"].apply(lambda x: ast.literal_eval(x))
+    df["value_relative"] = df["value_relative"].apply(
+        lambda x: ast.literal_eval(x)
+    )
+
+    return df
+
+
+def _cache_df(df: pd.DataFrame, project_name: str):
+    # Convert columns "value" and "value_relative" to string to store lists in csv
+    df["value"] = df["value"].apply(lambda x: str(x))
+    df["value_relative"] = df["value_relative"].apply(lambda x: str(x))
+
+    cache_dataframe(CACHE_DATA_ID, project_name, df)
+
+
 def aggregate_data(
     cs: CaseStudy, config_ids: tp.Optional[tp.List[int]]
 ) -> pd.DataFrame:
 
-    result_df = pd.DataFrame()
+    result_df = _load_cached_df(cs.project_name)
 
-    if config_ids is None:
-        config_ids = cs.get_config_ids_for_revision(cs.revisions[0])
+    if result_df is None:
+        # Data not cached, load from reports and cache it for future use
+        result_df = pd.DataFrame()
 
-    if len(config_ids) == 0:
-        config_ids = [None]
+        if config_ids is None:
+            config_ids = cs.get_config_ids_for_revision(cs.revisions[0])
 
-    for config_id in config_ids:
-        config_df = get_data_for_single_config(cs, config_id)
+        if len(config_ids) == 0:
+            config_ids = [None]
 
-        result_df = pd.concat([result_df, config_df], ignore_index=True)
+        for config_id in config_ids:
+            config_df = get_data_for_single_config(cs, config_id)
+
+            result_df = pd.concat([result_df, config_df], ignore_index=True)
+
+        _cache_df(result_df, cs.project_name)
 
     result_df = add_significance_values(result_df)
-
-    str_val_map = create_config_opportunities_value_map(cs)
-
-    def map_str_values(row: pd.Series) -> pd.Series:
-        """Map string values to numerical values."""
-        if row["config_opportunity"] == "__baseline__":
-            return row
-
-        row["variation"] = str_val_map[row["config_opportunity"]][str(
-            row["variation"]
-        )]
-        return row
-
-    result_df = result_df.apply(map_str_values, axis=1)
 
     return result_df
 
@@ -316,7 +443,7 @@ def create_config_opportunities_value_map(
     """Create a mapping of configuration opportunities to their values."""
     result = {}
 
-    patches = PATCH_VARIATIONS[cs.project_name]
+    patches = get_all_variations_as_dict(cs)
 
     for patch_name, config_opportunity in patches.items():
         arg_name, values = config_opportunity
@@ -324,7 +451,7 @@ def create_config_opportunities_value_map(
             result[f"{patch_name}_{arg_name}"] = {
                 variation_value_to_str(value): value for value in values
             }
-        elif cs.project_name in ["FastDownward"]:
+        elif cs.project_name in ["FastDownward", "mariadb"]:
             result[f"{patch_name}"] = {
                 variation_value_to_str(value): value for value in values
             }

@@ -3,6 +3,7 @@ import typing as tp
 import numpy as np
 
 from varats.base.configuration import PatchVariationConfiguration
+from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_paper_config
 from varats.project.patch_variation_source import get_current_variation_id
 from varats.project.varats_project import VProject
@@ -336,6 +337,41 @@ def get_variations_as_dict(
     }
 
 
+def get_all_variations_as_dict(
+    case_study: CaseStudy
+) -> tp.Dict[str, tp.Dict[str, tp.Any]]:
+    paper_config = get_paper_config()
+
+    config_map = load_configuration_map_for_case_study(
+        paper_config, case_study, PatchVariationConfiguration
+    )
+
+    result = {}
+
+    for cid in config_map.ids():
+        variation = config_map.get_configuration(cid)
+        if variation is None:
+            continue
+
+        for o in variation.options():
+            patch_name = o.name
+            if patch_name not in result:
+                result[patch_name] = {}
+            if len(o.value) > 1:
+                print(
+                    "Warning: Multiple arguments for patch variation, only the first one will be used."
+                )
+
+            for arg_name, arg_values in o.value.items():
+                if arg_name not in result[patch_name]:
+                    result[patch_name][arg_name] = set()
+                result[patch_name] = (
+                    arg_name, list(arg_values) + sample_variations(arg_values)
+                )
+
+    return result
+
+
 def sample_variations(values: tp.List[tp.Any],
                       num_samples: int = 20) -> tp.List[tp.Any]:
     rng = np.random.default_rng(seed=42)
@@ -360,35 +396,3 @@ def sample_variations(values: tp.List[tp.Any],
     unique_random_values = unique_random_values - unique_values
 
     return list(unique_random_values)
-
-
-def get_variations(project: VProject,
-                   patch_name) -> tp.Tuple[str, tp.List[tp.Any]]:
-    if patch_name not in PATCH_VARIATIONS[project.name]:
-        raise ValueError(
-            f"Patch {patch_name} does not have any variations defined for "
-            f"project {project.name}"
-        )
-
-    arg_name, values = PATCH_VARIATIONS[project.name][patch_name]
-
-    #DEBUG
-    return arg_name, values
-
-    # In addition, sample 20 random values between the minimum and maximum value
-    rng = np.random.default_rng(seed=42)
-
-    if isinstance(values[0], int):
-        random_values = rng.integers(min(values), max(values) + 1, size=20)
-    elif isinstance(values[0], float):
-        # We want to sample floats with the same number of decimal places as the provided values
-        decimal_places = max(len(str(value).split(".")[1]) for value in values)
-        random_values = rng.uniform(min(values), max(values), size=20)
-        random_values = np.round(random_values, decimals=decimal_places)
-    else:
-        raise ValueError(
-            f"Unsupported value type {type(values[0])} for patch "
-            f"{patch_name} in project {project.name}"
-        )
-
-    return arg_name, values + random_values.tolist()

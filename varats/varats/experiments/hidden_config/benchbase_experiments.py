@@ -8,7 +8,10 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.actions import Step, Compile, ProjectStep, StepResult
 from plumbum import local, ProcessExecutionError
 
-from varats.data.reports.benchbase_report import BenchBaseReportAggregate
+from varats.data.reports.benchbase_report import (
+    BenchBaseReportAggregate,
+    MPBenchbaseReport,
+)
 from varats.data.reports.llvm_cov_report import (
     LLVMCoverageReport,
     MWLCoverageReport,
@@ -39,7 +42,6 @@ from varats.experiments.hidden_config.hidden_config_utils import (
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider, Patch
-from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.tools.research_tools.benchbase import Benchbase
 from varats.utils.config import get_current_config_id
@@ -221,17 +223,6 @@ class BenchbaseBenchmark(FeatureExperiment, shorthand="BBB"):
         return analysis_actions
 
 
-class MPBenchbaseReport(
-    MultiPatchReport,
-    shorthand="MP" + BenchBaseReportAggregate.SHORTHAND,
-    file_type="zip"
-):
-    """Multi-patch report for BenchBase benchmark results."""
-
-    def __init__(self, Path):
-        super().__init__(Path, BenchBaseReportAggregate)
-
-
 class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
     """Runs the BenchBase benchmark suite with a hidden configuration."""
 
@@ -292,9 +283,8 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
                     RunBenchbase(
                         project,
                         Path(
-                            MPBenchbaseReport.create_baseline_report_name(
-                                f"{db_binary.name}-{wl}"
-                            )
+                            MPBenchbaseReport.
+                            create_baseline_report_name(f"{wl}")
                         ), wl, HIDDEN_CONFIG_REPS
                     )
                 ) for wl in _WORKLOADS
@@ -343,8 +333,7 @@ class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
                                 Path(
                                     MPBenchbaseReport.
                                     create_patched_report_name(
-                                        patch, f"{db_binary.name}-{wl}",
-                                        **{arg_name: value}
+                                        patch, f"{wl}", **{arg_name: value}
                                     )
                                 ), wl, HIDDEN_CONFIG_REPS
                             )

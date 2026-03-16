@@ -22,10 +22,10 @@ from varats.experiment.workload_util import (
     create_workload_specific_filename,
     WorkloadCategory,
 )
-from varats.experiments.vara.feature_experiment import FeatureExperiment
-from varats.experiments.vara.hidden_configurability_experiments import (
+from varats.experiments.hidden_config.hidden_config_utils import (
     PATCH_VARIATIONS,
 )
+from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider

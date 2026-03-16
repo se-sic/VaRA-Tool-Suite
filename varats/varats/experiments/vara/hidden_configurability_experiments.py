@@ -48,7 +48,6 @@ from varats.experiment.steps.testsuite import (
 from varats.experiment.workload_util import (
     workload_commands,
     create_workload_specific_filename,
-    WorkloadCategory,
 )
 from varats.experiments.coverage.collect_coverages import CollectBinaryCoverages
 from varats.experiments.hidden_config.benchbase_experiments import (
@@ -56,8 +55,6 @@ from varats.experiments.hidden_config.benchbase_experiments import (
 )
 from varats.experiments.hidden_config.database_utils import SupportsBenchbase
 from varats.experiments.hidden_config.hidden_config_utils import (
-    PATCH_VARIATIONS,
-    get_variations,
     get_variations_as_dict,
     sample_variations,
 )
@@ -72,7 +69,6 @@ from varats.projects.c_projects.bzip2 import Bzip2
 from varats.projects.c_projects.gzip import Gzip
 from varats.projects.c_projects.lrzip import Lrzip
 from varats.projects.c_projects.postgres import PostgreSQL
-from varats.projects.c_projects.sqlite import SQLite
 from varats.projects.c_projects.xz import Xz
 from varats.projects.cpp_projects.duckdb import DuckDB
 from varats.projects.cpp_projects.dune import DunePerfRegression
@@ -455,6 +451,8 @@ _PROJECT_WORKLOADS = {
     "bzip2": ["med-geo-compress"],
     "x264": ["aspen-1080p", "old-town-2160p"],
     "lrzip": ["countries-land-10m", "countries-land-100m"],
+    "mariadb": ["tpcc", "tpch", "auctionmark"],
+    "postgresql": ["tpcc", "tpch", "auctionmark"],
 }
 
 

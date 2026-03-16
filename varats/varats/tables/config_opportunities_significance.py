@@ -4,7 +4,7 @@ import click
 import pandas as pd
 
 from varats.data.databases.hidden_configurability_database import aggregate_data
-from varats.experiments.vara.hidden_configurability_experiments import (
+from varats.experiments.hidden_config.hidden_config_utils import (
     PATCH_VARIATIONS,
 )
 from varats.paper.paper_config import get_loaded_paper_config
