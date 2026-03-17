@@ -453,6 +453,7 @@ _PROJECT_WORKLOADS = {
     "lrzip": ["countries-land-10m", "countries-land-100m"],
     "mariadb": ["tpcc", "tpch", "auctionmark"],
     "postgresql": ["tpcc", "tpch", "auctionmark"],
+    "cadical": ["traffic-kkb-unknown"]
 }
 
 
@@ -462,6 +463,9 @@ def variation_value_to_str(value: tp.Any) -> str:
 
 def _filter_workloads(project: VProject,
                       binary: ProjectBinaryWrapper) -> tp.List[ProjectCommand]:
+    if project.name not in _PROJECT_WORKLOADS:
+        print(f"Warning: No workload defined for {project.name}")
+        return []
     return [
         cmd for cmd in workload_commands(project, binary, [])
         if cmd.command.label in _PROJECT_WORKLOADS[project.name]
@@ -496,7 +500,9 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
                         )
 
                         with cleanup(prj_command):
-                            bb.watch(run_cmd)()
+                            bb.watch(run_cmd)(
+                                retcode=self._binary.valid_exit_codes
+                            )
 
         return StepResult.OK
 
@@ -559,7 +565,7 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                     binary,
                     file_name=MPRTimeWLAggregate.create_baseline_report_name(
                         binary.name
-                    ),
+                    ) + ".zip",
                     report_file_ending=".txt",
                     reps=NUM_REPETITIONS
                 ) for binary in _get_project_binaries(project)
@@ -569,6 +575,12 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
             patches_filtered: tp.List[Patch] = [
                 patch for patch in patches if patch.shortname in variations
             ]
+
+            if len(patches_filtered) == 0:
+                print(f"No patch found with shortname {[variations.keys()]}.")
+                print(
+                    f"Available patches: {[patch.shortname for patch in patches]}"
+                )
 
             for patch in patches_filtered:
                 patch_variations = variations[patch.shortname]
@@ -613,10 +625,8 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                                         b,
                                         file_name=MPRTimeWLAggregate.
                                         create_patched_report_name(
-                                            patch, b.name, **{
-                                                arg_name: value
-                                            }
-                                        ).replace('.', ''),
+                                            patch, b.name, **{arg_name: value}
+                                        ) + ".zip",
                                         report_file_ending=".txt",
                                         reps=NUM_REPETITIONS
                                     )

@@ -88,7 +88,7 @@ def sample_variations(values: tp.List[tp.Any],
         )
     elif isinstance(values[0], float):
         # We want to sample floats with the same number of decimal places as the provided values
-        decimal_places = max(len(str(value).split(".")[1]) for value in values)
+        decimal_places = max([0] + [str(v)[::-1].find(".") for v in values])
         random_values = rng.uniform(min(values), max(values), size=num_samples)
         random_values = np.round(random_values, decimals=decimal_places)
     else:
