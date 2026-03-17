@@ -12,7 +12,7 @@ from varats.data.reports.hidden_configurability_report import (
 )
 from varats.data.reports.text_report import PlainTextReport
 from varats.experiments.hidden_config.hidden_config_utils import (
-    PATCH_VARIATIONS,
+    get_all_variations_as_dict,
 )
 from varats.experiments.vara.hidden_configurability_experiments import (
     _PROJECT_WORKLOADS,
@@ -195,13 +195,13 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
         table_rows = []
 
         for cs in case_studies:
-            if cs.project_name not in _PROJECT_WORKLOADS or cs.project_name not in PATCH_VARIATIONS:
+            if cs.project_name not in _PROJECT_WORKLOADS:
                 print(
                     f"Skipping {cs.project_name} as it is not an active HV subject system"
                 )
                 continue
             cs_workloads = _PROJECT_WORKLOADS[cs.project_name]
-            cs_opportunities: dict = PATCH_VARIATIONS[cs.project_name]
+            cs_opportunities: dict = get_all_variations_as_dict(cs)
             project_repo = get_local_project_repo(cs.project_name)
             locs = calc_repo_loc(project_repo, cs.revisions[0].hash)
             row = {

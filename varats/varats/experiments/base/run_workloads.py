@@ -23,19 +23,14 @@ from varats.experiment.workload_util import (
     WorkloadCategory,
 )
 from varats.experiments.hidden_config.hidden_config_utils import (
-    PATCH_VARIATIONS,
+    get_variations_as_dict,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider
 from varats.report.multi_patch_report import MultiPatchReport
-from varats.report.report import (
-    BaseReport,
-    ReportSpecification,
-    ReportAggregate,
-    FileStatusExtension,
-)
+from varats.report.report import BaseReport, ReportSpecification
 from varats.utils.config import get_current_config_id
 from varats.utils.git_util import ShortCommitHash
 
@@ -129,6 +124,7 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
     """
 
     NAME = "RunWorkloads"
+    PATCH_TAG = "template"
     NUM_REPETITIONS = 10
 
     REPORT_SPEC = ReportSpecification(MPRBinAggregate)
@@ -163,31 +159,47 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
         patch_provider = PatchProvider.get_provider_for_project(type(project))
         patches = patch_provider.get_patches_for_revision(
             ShortCommitHash(project.version_of_primary)
-        )["template"]
+        )[self.PATCH_TAG]
 
         patch_steps = []
 
-        hwms = PATCH_VARIATIONS["libzmq"]["hwm_template"][1]
-        for p in patches:
-            patch = p
-
-        for hwm in hwms:
-            patch_steps.append(ApplyPatch(project, patch, hwm=hwm))
-            patch_steps.append(ReCompile(project))
-            patch_steps.extend([
-                RunAllWorkloads(
-                    project,
-                    binary,
-                    self,
-                    self.NUM_REPETITIONS,
-                    file_name=MPRBinAggregate.
-                    create_patched_report_name(patch, binary.name) +
-                    f"_hwm={hwm}"
+        variations = get_variations_as_dict(project)
+        for patch in patches:
+            if patch.shortname not in variations:
+                print(
+                    f"No variations found for patch {patch.shortname} in project {project.name}, skipping..."
                 )
-                for binary in project.binaries
-                if binary.type == BinaryType.EXECUTABLE
-            ])
-            patch_steps.append(RevertPatch(project, patch, hwm=hwm))
+                continue
+
+            patch_variations = variations[patch.shortname]
+
+            if len(patch_variations) > 1:
+                print(
+                    f"Multiple arguments defined for patch {patch.shortname} in project {project.name}. Only one argument will be used at a time during rendering."
+                )
+
+            for arg_name, values in patch_variations.items():
+                for value in values:
+                    patch_args = {arg_name: value}
+                    patch_steps.append(ApplyPatch(project, patch, **patch_args))
+                    patch_steps.append(ReCompile(project))
+                    patch_steps.extend([
+                        RunAllWorkloads(
+                            project,
+                            binary,
+                            self,
+                            self.NUM_REPETITIONS,
+                            file_name=MPRBinAggregate.
+                            create_patched_report_name(
+                                patch, binary.name, **patch_args
+                            ) + ".zip"
+                        )
+                        for binary in project.binaries
+                        if binary.type == BinaryType.EXECUTABLE
+                    ])
+                    patch_steps.append(
+                        RevertPatch(project, patch, **patch_args)
+                    )
 
         analysis_actions = get_config_patch_steps(project)
 
@@ -200,9 +212,8 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
                         binary,
                         self,
                         self.NUM_REPETITIONS,
-                        file_name=MPRBinAggregate.create_baseline_report_name(
-                            binary.name
-                        )
+                        file_name=MPRBinAggregate.
+                        create_baseline_report_name(binary.name) + ".zip"
                     )
                     for binary in project.binaries
                     if binary.type == BinaryType.EXECUTABLE

@@ -5,7 +5,7 @@ import pandas as pd
 
 from varats.data.databases.hidden_configurability_database import aggregate_data
 from varats.experiments.hidden_config.hidden_config_utils import (
-    PATCH_VARIATIONS,
+    get_all_variations_as_dict,
 )
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.table.table import Table
@@ -42,7 +42,7 @@ class ConfigOpportunitiesSignificanceTable(
 
             num_variations = 0
 
-            for patch, arg in PATCH_VARIATIONS[case_study.project_name].items():
+            for patch, arg in get_all_variations_as_dict(case_study).items():
                 _, values = arg
                 num_variations += len(values)
 
