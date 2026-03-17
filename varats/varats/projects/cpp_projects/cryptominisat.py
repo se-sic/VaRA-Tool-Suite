@@ -11,6 +11,7 @@ from plumbum import local
 from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     RevisionBinaryMap,
@@ -44,6 +45,7 @@ class CryptoMiniSAT(VProject):
             limit=None,
             shallow=False
         ),
+        PatchVariationSource(),
         # The specific combination of branches between cryptominisat, cadical and cadiback
         # is not easy to automatically determine. We follow the current (2026-03) approach from
         # cryptominisats CI, which uses the latest commit on the default branches.
