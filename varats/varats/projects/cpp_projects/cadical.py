@@ -7,8 +7,10 @@ from benchbuild.source import HTTPUntar
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     RevisionBinaryMap,
@@ -25,9 +27,6 @@ from varats.utils.testsuite_utils import TestResult
 class Cadical(VProject):
     """CaDiCaL SAT solver."""
 
-    def run_tests(self) -> None:
-        pass
-
     NAME = "cadical"
     GROUP = "cpp_projects"
     DOMAIN = ProjectDomains.SOLVER
@@ -41,6 +40,7 @@ class Cadical(VProject):
             limit=None,
             shallow=False
         ),
+        PatchVariationSource(),
         HTTPUntar(
             local="traffic_kkb_unknown.cnf",
             remote={
@@ -51,6 +51,15 @@ class Cadical(VProject):
         )
     ]
 
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
+        'apt',
+        'install',
+        '-y',
+        'build-essential',
+        'pkg-config',
+        'clang',
+    )
+
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
@@ -60,6 +69,9 @@ class Cadical(VProject):
             )
         ]
     }
+
+    def run_tests(self) -> None:
+        pass
 
     @staticmethod
     def binaries_for_revision(
