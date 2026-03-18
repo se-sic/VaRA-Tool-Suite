@@ -6,7 +6,10 @@ import numpy as np
 import pandas as pd
 from junitparser import JUnitXml, junitparser
 
-from varats.data.databases.hidden_configurability_database import aggregate_data
+from varats.data.databases.hidden_configurability_database import (
+    aggregate_data,
+    EffectSize,
+)
 from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
 )
@@ -609,7 +612,9 @@ _ACTIVE_HV_PROJECTS = [
     "FastDownward",
     #"libvpx",
     "mariadb",
-    "postgresql"
+    "postgresql",
+    #"cryptominisat"
+    "cadical"
 ]
 
 
@@ -627,12 +632,6 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
                 )
                 continue
             print(f"Processing {cs.project_name}...")
-            try:
-                cs_data = aggregate_data(cs, None)
-            except Exception as e:
-                print(f"Error processing {cs.project_name}: {e}")
-                continue
-
             # Filter to single config ID for projects with multiple
             __cs_configs = {
                 "libzmq": [13],
@@ -640,9 +639,14 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
                 "libvpx": [0],
             }
             if cs.project_name in __cs_configs:
-                cs_data = cs_data[cs_data["config_id"].isin(
-                    __cs_configs[cs.project_name]
-                )]
+                config_id = __cs_configs[cs.project_name][0]
+            else:
+                config_id = None
+            try:
+                cs_data = aggregate_data(cs, [config_id])
+            except Exception as e:
+                print(f"Error processing {cs.project_name}: {e}")
+                continue
 
             # For each row, we want to summarize the performance impact
             # of all configuration opportunities
@@ -677,10 +681,13 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
                     "|A|": 0,
                     "Metric": metric,
                     "|S|": 0,
-                    "|S+|": 0,
                     "|S-|": 0,
+                    "|S+|": 0,
                     "Range": (None, None),
                 }
+
+                for es in EffectSize:
+                    new_row[f"ES({es.name})"] = 0
 
                 for config_opportunity in metric_data["config_opportunity"
                                                      ].unique():
@@ -709,6 +716,14 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
                             max(new_row["Range"][1], means.max())
                             if new_row["Range"][1] is not None else means.max()
                         )
+
+                        # Add overview of effect sizes
+                        # Effect size categories are in the "effect_size" column
+                        for effect_size in EffectSize:
+                            new_row[f"ES({effect_size.name})"] += int((
+                                significant_impacts["effect_size"] ==
+                                effect_size
+                            ).sum())
 
                 # Convert Impact Range to normal floats
                 new_row["Range"] = (

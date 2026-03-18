@@ -1,11 +1,12 @@
 import ast
 import typing as tp
 from collections import defaultdict
+from enum import Enum
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_ind, mannwhitneyu
 
 from varats.data.cache_helper import cache_dataframe, load_cached_df_or_none
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
@@ -58,20 +59,27 @@ def get_configuration_points(report_file: MPRTimeWLAggregate) -> tp.List[str]:
 def get_data_for_single_config(
     cs: CaseStudy, config_id: tp.Optional[int] = None
 ) -> pd.DataFrame:
-    # Case distinction for specific projects
-    if cs.project_name == "libzmq":
-        df1 = _get_data_single_config_default(cs, config_id)
-        # Change all occurrences of config_opportunity "hwm" to "sndbuf"
-        df1.loc[df1["config_opportunity"] == "default_hwm",
-                "config_opportunity"] = "hwm"
+    result_df = _load_cached_df(cs.project_name, config_id)
 
-        df2 = _get_data_single_config_libzmq(cs, config_id)
-        return pd.concat([df1, df2], ignore_index=True)
+    if result_df is None:
+        # Case distinction for specific projects
+        if cs.project_name == "libzmq":
+            df1 = _get_data_single_config_default(cs, config_id)
+            # Change all occurrences of config_opportunity "hwm" to "sndbuf"
+            df1.loc[df1["config_opportunity"] == "default_hwm",
+                    "config_opportunity"] = "hwm"
 
-    if cs.project_name in ["mariadb", "postgresql", "mysql"]:
-        return _get_data_single_config_benchbase(cs, config_id)
+            df2 = _get_data_single_config_libzmq(cs, config_id)
+            result_df = pd.concat([df1, df2], ignore_index=True)
 
-    return _get_data_single_config_default(cs, config_id)
+        elif cs.project_name in ["mariadb", "postgresql", "mysql"]:
+            result_df = _get_data_single_config_benchbase(cs, config_id)
+        else:
+            result_df = _get_data_single_config_default(cs, config_id)
+
+        _cache_df(result_df, cs.project_name, config_id)
+
+    return result_df
 
 
 def _get_data_single_config_libzmq(
@@ -377,7 +385,10 @@ def _get_data_single_config_benchbase(
     return result
 
 
-def _load_cached_df(project_name: str):
+def _load_cached_df(
+    project_name: str,
+    config_id: tp.Optional[int] = None
+) -> tp.Optional[pd.DataFrame]:
     dtypes = {
         "binary-wl": "str",
         "config_opportunity": "str",
@@ -387,7 +398,9 @@ def _load_cached_df(project_name: str):
         "value_relative": "str",
         "config_id": "Int64",
     }
-    df = load_cached_df_or_none(CACHE_DATA_ID, project_name, dtypes)
+    df = load_cached_df_or_none(
+        f"{CACHE_DATA_ID}-{config_id}", project_name, dtypes
+    )
 
     if df is None:
         return None
@@ -401,36 +414,33 @@ def _load_cached_df(project_name: str):
     return df
 
 
-def _cache_df(df: pd.DataFrame, project_name: str):
+def _cache_df(
+    df: pd.DataFrame,
+    project_name: str,
+    config_id: tp.Optional[int] = None
+) -> None:
     # Convert columns "value" and "value_relative" to string to store lists in csv
     df["value"] = df["value"].apply(lambda x: str(x))
     df["value_relative"] = df["value_relative"].apply(lambda x: str(x))
 
-    cache_dataframe(CACHE_DATA_ID, project_name, df)
+    cache_dataframe(f"{CACHE_DATA_ID}-{config_id}", project_name, df)
 
 
 def aggregate_data(
     cs: CaseStudy, config_ids: tp.Optional[tp.List[int]]
 ) -> pd.DataFrame:
+    result_df = pd.DataFrame()
 
-    result_df = _load_cached_df(cs.project_name)
+    if config_ids is None:
+        config_ids = cs.get_config_ids_for_revision(cs.revisions[0])
 
-    if result_df is None:
-        # Data not cached, load from reports and cache it for future use
-        result_df = pd.DataFrame()
+    if len(config_ids) == 0:
+        config_ids = [None]
 
-        if config_ids is None:
-            config_ids = cs.get_config_ids_for_revision(cs.revisions[0])
+    for config_id in config_ids:
+        config_df = get_data_for_single_config(cs, config_id)
 
-        if len(config_ids) == 0:
-            config_ids = [None]
-
-        for config_id in config_ids:
-            config_df = get_data_for_single_config(cs, config_id)
-
-            result_df = pd.concat([result_df, config_df], ignore_index=True)
-
-        _cache_df(result_df, cs.project_name)
+        result_df = pd.concat([result_df, config_df], ignore_index=True)
 
     result_df = add_significance_values(result_df)
 
@@ -488,10 +498,42 @@ def add_significance_values(df: pd.DataFrame) -> pd.DataFrame:
         if (row["config_opportunity"] == "__baseline__"):
             return None
         baseline_value = baseline_df.loc[row["binary-wl"], row["metric"],
-                                         row["config_id"]][0]
-        return ttest_ind(baseline_value, row["value"])
+                                         row["config_id"]].copy()
+        return mannwhitneyu(baseline_value, row["value"])
 
     df["significance"] = df.apply(is_significant, axis=1)
+
+    def cohens_d(row):
+        if (row["config_opportunity"] == "__baseline__"):
+            return None
+        baseline_value = baseline_df.loc[row["binary-wl"], row["metric"],
+                                         row["config_id"]]
+
+        def s(x1, x2):
+            return np.sqrt(((len(x1) - 1) * np.std(x1, ddof=1)**2 +
+                            (len(x2) - 1) * np.std(x2, ddof=1)**2) /
+                           (len(x1) + len(x2) - 2))
+
+        return (np.mean(row["value"]) -
+                np.mean(baseline_value)) / s(row["value"], baseline_value)
+
+    df["cohens_d"] = df.apply(cohens_d, axis=1)
+
+    def r(row):
+        if (row["config_opportunity"] == "__baseline__"):
+            return None
+        return row["significance"].statistic / np.sqrt(
+            len(row["value"]) + len(
+                baseline_df.loc[row["binary-wl"], row["metric"],
+                                row["config_id"]]
+            )
+        )
+
+    df["r"] = df.apply(r, axis=1)
+
+    df["effect_size"] = df["r"].apply(
+        lambda x: EffectSize.interpret(x) if pd.notna(x) else EffectSize.NONE
+    )
 
     return df
 
@@ -559,3 +601,31 @@ def get_regressing_configs(
                         ))
 
     return result
+
+
+class EffectSize(float, Enum):
+    NONE = 0.0
+    VERY_SMALL = 0.01
+    SMALL = 0.2
+    MEDIUM = 0.5
+    LARGE = 0.8
+    VERY_LARGE = 1.2
+    HUGE = 2.0
+
+    @staticmethod
+    def interpret(effect_size: float) -> 'EffectSize':
+        effect_size = abs(effect_size)
+        if effect_size < EffectSize.VERY_SMALL.value:
+            return EffectSize.NONE
+        if effect_size < EffectSize.SMALL.value:
+            return EffectSize.VERY_SMALL
+        if effect_size < EffectSize.MEDIUM.value:
+            return EffectSize.SMALL
+        if effect_size < EffectSize.LARGE.value:
+            return EffectSize.MEDIUM
+        if effect_size < EffectSize.VERY_LARGE.value:
+            return EffectSize.LARGE
+        if effect_size < EffectSize.HUGE.value:
+            return EffectSize.VERY_LARGE
+        else:
+            return EffectSize.HUGE
