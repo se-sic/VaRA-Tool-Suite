@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from junitparser import JUnitXml, junitparser
 
+from varats.data.cache_helper import cache_dataframe, load_cached_df_or_none
 from varats.data.databases.hidden_configurability_database import (
     aggregate_data,
     EffectSize,
@@ -14,9 +15,6 @@ from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
 )
 from varats.data.reports.text_report import PlainTextReport
-from varats.experiments.hidden_config.hidden_config_utils import (
-    get_all_variations_as_dict,
-)
 from varats.experiments.vara.hidden_configurability_experiments import (
     _PROJECT_WORKLOADS,
     TestPatchVariations,
@@ -191,43 +189,91 @@ class HiddenVariabilityOverviewTableGenerator(
 
 
 class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
+    __CACHE_ID = "hv_project_overview_table"
+
+    def _cache_overview_df(self, project_name: str, df: pd.DataFrame) -> None:
+        cache_dataframe(self.__CACHE_ID, project_name, df)
+
+    def _load_cached_overview_df(self, project_name: str) -> pd.DataFrame:
+        dtypes = {
+            "Project": str,
+            "Domain": str,
+            "LOC": int,
+            "|CL|": int,
+            "|CO|": int
+        }
+
+        return load_cached_df_or_none(self.__CACHE_ID, project_name, dtypes)
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
-        table_rows = []
+        result_df = pd.DataFrame()
 
         for cs in case_studies:
-            if cs.project_name not in _PROJECT_WORKLOADS:
-                print(
-                    f"Skipping {cs.project_name} as it is not an active HV subject system"
-                )
-                continue
-            cs_workloads = _PROJECT_WORKLOADS[cs.project_name]
-            cs_opportunities: dict = get_all_variations_as_dict(cs)
-            project_repo = get_local_project_repo(cs.project_name)
-            locs = calc_repo_loc(project_repo, cs.revisions[0].hash)
-            row = {
-                "Name":
+            cs_df = self._load_cached_overview_df(cs.project_name)
+
+            if cs_df is None:
+                print(f"Processing {cs.project_name}...")
+                reports = get_processed_revisions_files(
                     cs.project_name,
-                "LOC":
-                    locs,
-                "|C|":
-                    len(cs.get_config_ids_for_revision(cs.revisions[0])),
-                "|W|":
-                    len(cs_workloads),
-                "|O|":
-                    len(cs_opportunities),
-                "|A|":
-                    sum([len(entry[1]) for entry in cs_opportunities.values()]),
-            }
+                    FilterHiddenConfigurabilityReport,
+                    FilterHiddenConfigurabilityReport.report_spec().main_report,
+                )
 
-            table_rows.append(row)
+                if not reports:
+                    print(f"No report for {cs.project_name}")
+                    continue
 
-        df = pd.DataFrame(table_rows).set_index("Name")
-        df.sort_index(inplace=True)
+                if len(reports) > 1:
+                    print(f"More than one report for {cs.project_name}")
+                    continue
 
-        return dataframe_to_table(df, table_format, wrap_table=wrap_table)
+                report = HiddenConfigurabilityReport(reports[0].full_path())
+
+                project_repo = get_local_project_repo(cs.project_name)
+                locs = calc_repo_loc(project_repo, cs.revisions[0].hash)
+                row = {
+                    "Project":
+                        cs.project_name,
+                    "Domain":
+                        cs.project_cls.DOMAIN,
+                    "LOC":
+                        locs,
+                    "|CL|":
+                        report.get_num_configurability_points(),
+                    "|CO|":
+                        sum([
+                            len(p) for _, p in
+                            report.get_points_with_tag("conf_opp").items()
+                        ]),
+                }
+                cs_df = pd.DataFrame([row])
+                self._cache_overview_df(cs.project_name, cs_df)
+            result_df = pd.concat([result_df, cs_df], ignore_index=True)
+
+        df = result_df.reset_index(drop=True)
+        # Sort by domain first, then by project name
+        df.sort_values(by=["Domain", "Project"], inplace=True)
+
+        kwargs = {}
+        style = df.style.hide(axis="index")
+        if table_format == TableFormat.LATEX:
+            # Format LOC with thousands separator
+            df["LOC"] = df["LOC"].apply(lambda x: f"{x:,}")
+
+            # Wrap project names in \textsc{}
+            df["Project"] = df["Project"].apply(lambda x: f"\\textsc{{{x}}}")
+
+            kwargs["hrules"] = True
+            kwargs[
+                "caption"
+            ] = "Overview of our subject systems grouped by domain. For each subject system, we show the total lines of code (LOC), the number of \\canlocs{} (|CL|), and the number of \\conopps{} (|CO|)."
+            kwargs["label"] = "tab:subject_systems"
+
+        return dataframe_to_table(
+            df, table_format, wrap_table=wrap_table, style=style, **kwargs
+        )
 
 
 class HVProjectOverviewTableGenerator(

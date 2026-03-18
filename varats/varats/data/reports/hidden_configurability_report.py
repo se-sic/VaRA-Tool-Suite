@@ -81,6 +81,17 @@ class HiddenConfigurabilityReport(BaseReport, shorthand="HC", file_type="yaml"):
             for points in self.__hidden_configurability_points.values()
         )
 
+    def get_points_with_tag(self, tag: str) -> dict:
+        """Returns all hidden configurability points with the given tag."""
+        tagged_points = {}
+        for hidden_var_kind, points in self.__hidden_configurability_points.items(
+        ):
+            tagged_points[hidden_var_kind] = [
+                point for point in points if tag in point.tags
+            ]
+
+        return tagged_points
+
 
 class MPRTimeWLAggregate(
     MultiPatchReport,
