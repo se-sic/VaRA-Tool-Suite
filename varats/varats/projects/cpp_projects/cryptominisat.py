@@ -51,14 +51,14 @@ class CryptoMiniSAT(VProject):
         # cryptominisats CI, which uses the latest commit on the default branches.
         Git(
             remote="https://github.com/meelgroup/cadical",
-            local="cadical",
+            local="cadical-cms",
             refspec="origin/HEAD",
             limit=1,
             shallow=True,
         ),
         Git(
             remote="https://github.com/meelgroup/cadiback",
-            local="cadiback",
+            local="cadiback-cms",
             refspec="origin/HEAD",
             limit=1,
             shallow=True,
@@ -116,8 +116,12 @@ class CryptoMiniSAT(VProject):
 
         build_dir = Path(self.builddir)
         crypto_src = Path(self.source_of_primary)
-        cadical_src = Path(self.source_of("cadical"))
-        cadiback_src = Path(self.source_of("cadiback"))
+        cadical_src = Path(self.source_of("cadical-cms"))
+        cadiback_src = Path(self.source_of("cadiback-cms"))
+
+        # Create SymLinks for build scripts
+        (build_dir / "cadical").symlink_to(cadical_src)
+        (build_dir / "cadiback").symlink_to(cadiback_src)
 
         cmake = local["cmake"]
         make = local["make"]
