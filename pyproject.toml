@@ -124,7 +124,7 @@ indent-width = 4
 [tool.ruff.lint]
 select = [
   # pyupgrade
-  "UP",     
+  "UP",
 
   # Core Python correctness
   "F",      # Pyflakes (undefined names, unused imports, etc.)
@@ -167,7 +167,7 @@ select = [
   "BLE",    # flake8-blind-except
   "TID251", # banned-api (flake8-tidy-imports)
   "TC",     # flake8-type-checking
-  
+
   # Full Pylint coverage available in Ruff
   "PLE",    # pylint errors
   "PLW",    # pylint warnings
