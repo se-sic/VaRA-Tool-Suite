@@ -52,9 +52,10 @@ def _get_mprtef_report_cached(
             report_path.full_path()
         ] = MultiPatchReport(report_path.full_path(), TEFReportAggregate)
     else:
-        print(
-            f"Using internally cached TEF report for {report_path.full_path()}"
-        )
+        pass
+        #print(
+        #    f"Using internally cached TEF report for {report_path.full_path()}"
+        #)
 
     return REPORT_CACHE[report_path.full_path()]
 
@@ -408,7 +409,7 @@ class Baseline(Profiler):
     def __init__(self) -> None:
         super().__init__(
             "Base", fpp.BlackBoxBaselineRunner, fpp.BlackBoxOverheadBaseline,
-            TimeReportAggregate
+            fpp.MPRTimeReportAggregate
         )
 
     def is_regression(
@@ -779,7 +780,25 @@ def load_overhead_data(
             Baseline(), case_study, rev
         )
         if not overhead_ground_truth:
-            print(f"No baseline data for {case_study.project_name}, skipping")
+            print(
+                f"No baseline data for {case_study.project_name}, generating dummy data"
+            )
+            table_rows.extend([{
+                'CaseStudy': project_name,
+                'Profiler': p,
+                'time': np.nan,
+                'memory': np.nan,
+                'major_page_faults': np.nan,
+                'minor_page_faults': np.nan,
+                'fs_inputs': np.nan,
+                'fs_outputs': np.nan,
+                'overhead_time': np.nan,
+                'overhead_memory': np.nan,
+                'overhead_major_page_faults': np.nan,
+                'overhead_minor_page_faults': np.nan,
+                'overhead_fs_inputs': np.nan,
+                'overhead_fs_outputs': np.nan
+            } for p in ["Base"] + [profiler.name for profiler in profilers]])
             continue
 
         new_row = {

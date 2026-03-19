@@ -2,6 +2,7 @@ import re
 import typing as tp
 from collections import defaultdict
 
+import numpy as np
 import pandas as pd
 from ijson import IncompleteJSONError
 from matplotlib import pyplot as plt
@@ -11,12 +12,17 @@ from varats.base.configuration import PatchConfiguration
 from varats.data.cache_helper import load_cached_df_or_none, cache_dataframe
 from varats.data.databases.feature_perf_precision_database import (
     get_patch_names,
+    get_regressing_config_ids_gt,
+    compute_profiler_predictions,
+    map_to_negative_config_ids,
+    map_to_positive_config_ids,
     Profiler,
     Baseline,
     VXray,
     PIMTracer,
     EbpfTraceTEF,
 )
+from varats.data.metrics import ConfusionMatrix
 from varats.data.reports.tef_feature_identifier_report import (
     TEFFeatureIdentifierReport,
 )
@@ -41,9 +47,10 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
         Baseline(), VXray(), PIMTracer(),
         EbpfTraceTEF()
     ]
-    SEVERITIES: tp.List[str] = ["1 ms", "10 ms", "100 ms", "1000 ms"]
+    SEVERITIES: tp.List[str] = ["1 ms", "10 ms", "100 ms", "1 s"]
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        print("FEATURE PERF SENSITIVITY TABLE")
         # Data aggregation
         df = pd.DataFrame()
         table_rows = self.__dummy_data()
@@ -61,14 +68,16 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             df = pd.DataFrame()
             table_rows = self.__by_severity()
             df = pd.concat([df, pd.DataFrame(table_rows)])
-            #cache_dataframe("fperf_sensitivity_table", "feature_perf_sensitivity", df)
+            cache_dataframe(
+                "fperf_sensitivity_table", "feature_perf_sensitivity", df
+            )
         else:
             print("Loaded cached data for sensitivity table.")
 
         columns_names = ["CaseStudy", "# Regressions"]
 
-        for p in self.PROFILERS:
-            for severity in ["1ms", "10ms", "100ms", "1000ms"]:
+        for severity in ["1ms", "10ms", "100ms", "1000ms"]:
+            for p in self.PROFILERS:
                 columns_names.append(f"{p.name}_{severity}")
         print(f"{df=}")
         df = df.reindex(columns=columns_names)
@@ -77,9 +86,11 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
         column_setup = [(' ', 'CaseStudy'), ('', f'{symb_regressed_configs}')]
 
-        for p in self.PROFILERS:
-            for severity in self.SEVERITIES:
-                column_setup.append((p.name, severity))
+        for severity in self.SEVERITIES:
+            for p in self.PROFILERS:
+                column_setup.append(
+                    (severity, f"\\rotatebox{{90}}{{{p.name}}}")
+                )
 
         df.columns = pd.MultiIndex.from_tuples(column_setup)
 
@@ -108,11 +119,11 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
             style.background_gradient(
                 cmap=ryg_map,
-                subset=[(p.name, s)
+                subset=[(s, f"\\rotatebox{{90}}{{{p.name}}}")
                         for p in self.PROFILERS
                         for s in self.SEVERITIES
                         if p.name != "Base"],
-                vmin=-1.0,
+                vmin=0,
                 vmax=1.0
             )
 
@@ -165,7 +176,12 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             df = add_multirow_column(df)
             df.drop(columns=[('   ', 'Category')], inplace=True)
 
-            style.format(precision=2)
+            style.format(
+                precision=2,
+                subset=[(s, f"\\rotatebox{{90}}{{{p.name}}}")
+                        for p in self.PROFILERS
+                        for s in self.SEVERITIES]
+            )
             style.hide()
 
         def add_extras(doc: Document) -> None:
@@ -201,9 +217,15 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
         patches = id_report.patches_containing_region(["__VARA__DETECT__"])
 
+        for p_name, regions, _ in patches:
+            if len(regions) == 1:
+                print(
+                    f"Detected  __VARA__DETECT__ region without any other region. {project=}/{config_id=}/{p_name=}"
+                )
+
         patch_names = [patch[0].removesuffix("detect") for patch in patches]
 
-        return patch_names
+        return list(set(patch_names))
 
     def __get_affectable_patches_manual(
         self, case_study: CaseStudy, config_id: int
@@ -231,7 +253,157 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
         # TODO: Remove suffixes from shortnames if necessary
 
-        return patch_names
+        return list(set(patch_names))
+
+    def __by_severity_alternative(self):
+        print("NEW METHOD")
+        profilers = self.PROFILERS
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        table_rows = []
+        num_regressions: tp.Dict[str, int] = {}
+
+        for cs_idx, case_study in enumerate(case_studies):
+            print(
+                f"Processing cs '{case_study.project_name}' ({cs_idx+1}/{len(case_studies)})"
+            )
+
+            rev = case_study.revisions[0]
+            project_name = case_study.project_name
+            config_ids = case_study.get_config_ids_for_revision(rev)
+
+            regressions_gt: tp.Dict[str, tp.Dict[int, bool]] = {}
+
+            num_regressions[project_name] = sum(
+                len(map_to_positive_config_ids(regressions_gt[s]))
+                for s in regressions_gt
+            )
+
+            # Step 1: Collect GT data from 1000ms patches
+            patches = get_patch_names(case_study)
+
+            gt_patches = [p for p in patches if "1000" in p]
+
+            for patch_name in gt_patches:
+                patch_id = patch_name.removesuffix("ms").removesuffix("1000")
+
+                patch_gt = get_regressing_config_ids_gt(
+                    project_name, case_study, rev, patch_name
+                )
+                if patch_gt is None:
+                    print(
+                        f"Could not load GT data for {project_name} and {patch_id}"
+                    )
+                    continue
+                regressions_gt[patch_id] = patch_gt
+
+            # Now that all GT data is loaded, we check the actual detected regressions for each patch
+            for patch_name in patches:
+                severity_regex = r".*(1|10|100|1000)(ms)?$"
+
+                match = re.search(severity_regex, patch_name)
+                if match:
+                    patch_severity = int(match.group(1))
+                else:
+                    print(
+                        f"Could not extract severity from patch name '{patch_name}' for project '{case_study.project_name}'"
+                    )
+                    continue
+
+                patch_id = patch_name.removesuffix("ms").rstrip(
+                    "0"
+                ).removesuffix("1")
+
+                abs_cut_off = 100
+                if patch_severity < 1000:
+                    abs_cut_off = 10
+                if patch_severity < 100:
+                    abs_cut_off = 1
+                    rel_cut_off = 0.0
+                else:
+                    rel_cut_off = 0.01
+
+                for profiler in profilers:
+                    new_row: tp.Dict[str, tp.Any] = {
+                        "CaseStudy":
+                            project_name,
+                        "Patch":
+                            patch_id,
+                        "Severity":
+                            patch_severity,
+                        "Configs":
+                            len(config_ids),
+                        "RegressedConfigs":
+                            len(regressions_gt[patch_id])
+                            if patch_id in regressions_gt else -1
+                    }
+
+                    profiler.set_absolute_cut_off(abs_cut_off)
+                    profiler.set_relative_cut_off(rel_cut_off)
+
+                    #                    if profiler.name == "Base":
+                    #                        profiler.report_type = MPRTimeReportAggregate
+
+                    regressions_actual = compute_profiler_predictions(
+                        profiler, project_name, case_study, config_ids,
+                        patch_name
+                    )
+
+                    if regressions_actual and patch_id in regressions_gt:
+                        ground_truth = regressions_gt[patch_id]
+
+                        results = ConfusionMatrix(
+                            map_to_positive_config_ids(ground_truth),
+                            map_to_negative_config_ids(ground_truth),
+                            map_to_positive_config_ids(regressions_actual),
+                            map_to_negative_config_ids(regressions_actual)
+                        )
+
+                        new_row['precision'] = results.precision()
+                        new_row['recall'] = results.recall()
+                        new_row['f1_score'] = results.f1_score()
+                        new_row['Profiler'] = profiler.name
+                        new_row['fp_ids'] = results.getFPs()
+                        new_row['fn_ids'] = results.getFNs()
+                    else:
+                        print(
+                            f"Error calculating precision/recall for {project_name=}/{patch_name=}/{profiler.name=}"
+                        )
+                        new_row['precision'] = np.nan
+                        new_row['recall'] = np.nan
+                        new_row['f1_score'] = np.nan
+                        new_row['Profiler'] = profiler.name
+                        new_row['fp_ids'] = []
+                        new_row['fn_ids'] = []
+
+                    table_rows.append(new_row)
+
+        raw_df = pd.DataFrame.from_records(table_rows)
+        pd.set_option('display.max_columns', None)
+        print(f"{raw_df=}")
+
+        table_rows = []
+        for cs in case_studies:
+            new_row = {
+                "CaseStudy": cs.project_name,
+                "# Regressions": num_regressions[cs.project_name]
+            }
+            for severity in [1, 10, 100, 1000]:
+                for profiler in profilers:
+                    df = raw_df[(raw_df["CaseStudy"] == cs.project_name) &
+                                (raw_df["Severity"] == severity) &
+                                (raw_df["Profiler"] == profiler.name)]
+
+                    print(f"{df=}")
+
+                    new_row[f"{profiler.name}_{severity}ms"] = df["precision"
+                                                                 ].mean()
+                    new_row[f"{profiler.name}_{severity}_recall"] = df["recall"
+                                                                      ].mean()
+
+            table_rows.append(new_row)
+
+        return table_rows
 
     def __by_severity(self):
         profilers = self.PROFILERS
@@ -243,6 +415,9 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             print(
                 f"Processing case study '{case_study.project_name}' ({idx1+1}/{len(case_studies)})"
             )
+            if case_study.project_name != "SynthFeatureInteraction":
+                print(f"Skipping case study '{case_study.project_name}'.")
+                continue
             rev = case_study.revisions[0]
             project_name = case_study.project_name
 
@@ -369,7 +544,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
         ]
 
         for cs in case_studies:
-            new_row = {'CaseStudy': cs, '# Regressions': 20.0}
+            new_row = {'CaseStudy': cs, '# Regressions': 20}
             for p in self.PROFILERS:
                 for severity in ["1ms", "10ms", "100ms", "1000ms"]:
                     new_row[f"{p.name}_{severity}"] = 0.5

@@ -387,8 +387,16 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             real_world_mean = pivot_df.loc[~pivot_df.index.
                                            isin(SYNTH_CATEGORIES)].mean()
 
-            pivot_df.loc["SynthMean"] = synth_mean
-            pivot_df.loc["RealWorldMean"] = real_world_mean
+        else:
+            # Still calculate means based on CS name
+            # All synthetic start with "Synth"
+            synth_mean = pivot_df.loc[pivot_df.index.str.startswith("Synth")
+                                     ].mean()
+            real_world_mean = pivot_df.loc[~pivot_df.index.str.
+                                           startswith("Synth")].mean()
+
+        pivot_df.loc["SynthMean"] = synth_mean
+        pivot_df.loc["RealWorldMean"] = real_world_mean
 
         pivot_df.loc["OverallMean"] = overall_mean
 
