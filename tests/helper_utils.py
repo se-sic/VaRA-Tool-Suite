@@ -21,10 +21,8 @@ from varats.base.configuration import ConfigurationImpl, ConfigurationOptionImpl
 from varats.project.project_util import is_git_source
 from varats.tools.bb_config import create_new_bb_config
 
-if sys.version_info <= (3, 8):
-    from typing_extensions import Protocol
-else:
-    from typing import Protocol
+
+from typing import Protocol
 
 TEST_INPUTS_DIR = Path(os.path.dirname(__file__)) / 'TEST_INPUTS'
 

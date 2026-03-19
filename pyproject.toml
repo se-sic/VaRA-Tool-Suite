@@ -123,6 +123,9 @@ indent-width = 4
 
 [tool.ruff.lint]
 select = [
+  # pyupgrade
+  "UP",     
+
   # Core Python correctness
   "F",      # Pyflakes (undefined names, unused imports, etc.)
   "E",      # pycodestyle errors
@@ -161,10 +164,10 @@ select = [
   "PTH",    # flake8-use-pathlib
   "SIM",    # flake8-simplify
   "FIX",    # flake8-fixme
-  "BLE",  # flake8-blind-except
+  "BLE",    # flake8-blind-except
   "TID251", # banned-api (flake8-tidy-imports)
-
-
+  "TC",     # flake8-type-checking
+  
   # Full Pylint coverage available in Ruff
   "PLE",    # pylint errors
   "PLW",    # pylint warnings
