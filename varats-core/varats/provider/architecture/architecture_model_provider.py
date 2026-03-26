@@ -136,6 +136,9 @@ class ArchitectureModel:
                         loc["EndLine"] if "EndLine" in loc else None
                     ) for loc in raw_module_definition["Locations"]
                 ]
+            if "Packages" not in raw_model:
+                self.packages = {}
+                return
             raw_package_definitions = raw_model["Packages"]
             self.packages: tp.Dict[str, tp.List[str]] = {}
             for raw_package_definition in raw_package_definitions:
