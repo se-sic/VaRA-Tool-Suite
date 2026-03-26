@@ -63,6 +63,7 @@ def update_projects(
         'varats.projects.c_projects.picosat',
         'varats.projects.c_projects.qemu',
         'varats.projects.c_projects.redis',
+        'varats.projects.c_projects.sqlite',
         'varats.projects.c_projects.tig',
         'varats.projects.c_projects.tmux',
         'varats.projects.c_projects.vim',
