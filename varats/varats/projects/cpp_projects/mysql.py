@@ -1,6 +1,7 @@
 import shutil
 import subprocess
 import typing as tp
+import uuid
 from pathlib import Path
 from time import sleep
 
@@ -10,6 +11,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from jinja2 import TemplateNotFound, TemplateError
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.experiments.hidden_config.database_utils import (
     BENCHBASE_EXTRA_FILES_DIR,
     BENCHBASE_WORKLOAD_CONFIG_DIR,
@@ -25,6 +27,7 @@ from varats.project.project_util import (
     verify_binaries,
 )
 from varats.project.varats_project import VProject
+from varats.projects.cpp_projects.mariadb import MariaDB
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import TestResult
@@ -47,6 +50,11 @@ class MySQL(VProject):
         ),
         PatchVariationSource()
     ]
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
+        'apt', 'install', '-y', 'build-essential', 'clang', 'cmake',
+        'pkg-config', 'bison'
+    )
 
     def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__(*args, **kwargs)
@@ -86,7 +94,7 @@ class MySQL(VProject):
             verify_binaries(self)
 
     def recompile(self) -> None:
-        build_dir = Path(self.builddir) / "build"
+        build_dir = Path(self.source_of_primary) / "build"
 
         with local.cwd(build_dir):
             local["make"]("-j", get_number_of_jobs(bb_cfg()))
@@ -135,7 +143,42 @@ class MySQL(VProject):
         Returns:
             returns a dictionary mapping test names to respective result (e.g., 'passed', 'failed', 'skipped').
         """
-        ...
+        build_dir = Path(self.source_of_primary) / "build"
+        test_binary = local[build_dir / "mysql-test" / "mtr"]
+
+        if not test_report_path:
+            test_report_path = build_dir / f"test_report-{uuid.uuid4()}.xml"
+
+        with local.cwd(build_dir):
+            test_command = test_binary[
+                "--mem",
+                "--force",
+                "--max-test-fail=1000",  # We want to get as many results as possible, so we set a high limit for test failures
+                f"--parallel={get_number_of_jobs(bb_cfg())}",
+                f"--xml-report={test_report_path.absolute()}"]
+
+            if tests_to_exclude:
+                # Build an exclusion regex pattern for the test binary
+                # Ensure exact matches
+                exclusion_pattern = "|".join([
+                    f"^{test}$" for test in tests_to_exclude
+                ])
+
+                test_command = test_command[f"--skip-test={exclusion_pattern}"]
+
+            if tests_to_run:
+                # Tests that need to be run are simply passed as arguments
+                test_command = test_command[*tests_to_run]
+            try:
+                bb.watch(test_command)(
+                    retcode=None
+                )  # mtr returns 1 if any test failed, but we want to continue to parse the report
+            except Exception as e:
+                print(f"Test command failed with error: {e}")
+                print(f"Continuing to parse test report at {test_report_path}")
+
+            # Parse test results
+            return MariaDB._parse_test_report(test_report_path)
 
     def get_test_names(self) -> tp.Iterable[str]:
         """

@@ -659,7 +659,7 @@ _ACTIVE_HV_PROJECTS = [
     #"libvpx",
     "mariadb",
     "postgresql",
-    #"cryptominisat"
+    "cryptominisat",
     "cadical"
 ]
 
@@ -742,8 +742,13 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
 
                     # Filter all rows where the significance pvalue is < 0.05
                     # Each row has a object where the pvalue is stored in a field named pvalue
-                    significant_impacts = opportunity_data[opportunity_data[
-                        "significance"].apply(lambda x: x.pvalue < 0.05)]
+                    significant_impacts = opportunity_data[(
+                        opportunity_data["significance"].
+                        apply(lambda x: x.pvalue < 0.05)
+                    ) & (
+                        opportunity_data["effect_size"].
+                        apply(lambda x: abs(x) >= EffectSize.SMALL)
+                    )]
 
                     new_row["|A|"] += len(
                         opportunity_data["variation"].unique()
@@ -792,6 +797,22 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
 
         df.sort_index(inplace=True)
         df["Range"] = df["Range"].apply(format_range)
+
+        # Convert effect sizes to relative numbers
+        for es in EffectSize:
+            df[f"ES({es.name})"] = df[f"ES({es.name})"] / df["|S|"]
+
+            df[f"ES({es.name})"] = df[f"ES({es.name})"].apply(
+                lambda x: f"{x:.2%}" if isinstance(x, float) else x
+            )
+
+        # Temp: Drop range
+        df.drop(columns=[f"ES({e.name})" for e in EffectSize], inplace=True)
+
+        #Convert ES columns to multi-index
+        #df.columns = pd.MultiIndex.from_tuples(
+        #    [("EffectSize", col.split("(")[1][:-1]) if "(" in col else ("", col) for col in df.columns]
+        #)
 
         return dataframe_to_table(df, table_format, wrap_table=wrap_table)
 
