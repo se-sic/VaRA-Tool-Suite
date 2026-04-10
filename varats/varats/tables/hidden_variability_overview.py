@@ -10,6 +10,7 @@ from varats.data.cache_helper import cache_dataframe, load_cached_df_or_none
 from varats.data.databases.hidden_configurability_database import (
     aggregate_data,
     EffectSize,
+    ACTIVE_HV_PROJECTS,
 )
 from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
@@ -648,22 +649,6 @@ class ConfigAlternativesGenerator(
         ]
 
 
-_ACTIVE_HV_PROJECTS = [
-    "lrzip",
-    "7zip",
-    "brotli",
-    "bzip2",
-    "xz",
-    #"libzmq",
-    "FastDownward",
-    #"libvpx",
-    "mariadb",
-    "postgresql",
-    "cryptominisat",
-    "cadical"
-]
-
-
 class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
@@ -672,7 +657,7 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
         table_rows = []
 
         for cs in case_studies:
-            if cs.project_name not in _ACTIVE_HV_PROJECTS:
+            if cs.project_name not in ACTIVE_HV_PROJECTS:
                 print(
                     f"Skipping {cs.project_name} as it is not an active HV subject system"
                 )

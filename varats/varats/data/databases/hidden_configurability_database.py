@@ -21,6 +21,8 @@ from varats.experiments.hidden_config.hidden_config_utils import (
 from varats.experiments.vara.hidden_configurability_experiments import (
     TimePatchedWorkloads,
     variation_value_to_str,
+    TestPatchVariations,
+    MPTextReport,
 )
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -29,6 +31,21 @@ from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 
 CACHE_DATA_ID = "hc_database"
+
+ACTIVE_HV_PROJECTS = [
+    "lrzip",
+    "7zip",
+    "brotli",
+    "bzip2",
+    "xz",
+    #"libzmq",
+    "FastDownward",
+    #"libvpx",
+    "mariadb",
+    "postgresql",
+    "cryptominisat",
+    "cadical"
+]
 
 
 def extract_config_point(full_name: str) -> tp.Tuple[str, str]:
@@ -77,9 +94,34 @@ def get_data_for_single_config(
         else:
             result_df = _get_data_single_config_default(cs, config_id)
 
+        # Enrich data with testsuite information
+
         _cache_df(result_df, cs.project_name, config_id)
 
     return result_df
+
+
+def _add_testsuite_info(
+    df: pd.DataFrame,
+    cs: CaseStudy,
+    config_id: tp.Optional[int] = None
+) -> pd.DataFrame:
+    result_files = get_processed_revisions_files(
+        cs.project_name,
+        TestPatchVariations,
+        TestPatchVariations.report_spec().main_report,
+        get_case_study_file_name_filter(cs),
+        config_id=config_id,
+        only_newest=False,
+    )
+
+    if len(result_files) != 1:
+        print(
+            f"Expected exactly one result file for TestPatchVariations, but found {len(result_files)} for {cs.project_name} ({config_id=})"
+        )
+        return df
+
+    report: TestPatchVariations = MPTextReport(result_files[0].full_path())
 
 
 def _get_data_single_config_libzmq(

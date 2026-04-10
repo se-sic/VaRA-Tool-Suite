@@ -213,3 +213,6 @@ commands =
   pip3 wheel --no-deps -w {distdir} .
   twine upload --skip-existing -r testpypi {distdir}/varats*
 """
+
+[tool.ty.environment]
+root = ["./varats", "./varats-core"]

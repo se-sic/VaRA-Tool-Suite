@@ -60,7 +60,6 @@ class MySQL(VProject):
         super().__init__(*args, **kwargs)
         self.__server_handle: tp.Optional[subprocess.Popen] = None
         self.__log_handle = None
-        self.builddir = self.builddir.replace("@", "-")
 
     @staticmethod
     def binaries_for_revision(
@@ -105,6 +104,12 @@ class MySQL(VProject):
     ###############################
     # SupportsTestSuites Protocol #
     ###############################
+    @property
+    def id(self) -> str:
+        """We need to override the default id from benchbuild, as it contains
+        the @ symbol which causes issues with the test suite of mysql."""
+        version_str = str(self.revision)
+        return f"{self.name}-{self.group}-{version_str}"
 
     def prepare_test_environment(self) -> None:
         """
