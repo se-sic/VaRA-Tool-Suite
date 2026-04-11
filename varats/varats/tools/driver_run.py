@@ -17,6 +17,7 @@ import click
 import jinja2
 from benchbuild.utils.cmd import benchbuild, sbatch
 from benchbuild.utils.settings import to_yaml
+from benchbuild.environments.adapters.common import run_tee
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
 
@@ -212,15 +213,18 @@ def main(
 
     with local.cwd(vara_cfg()["benchbuild_root"].value):
         try:
-            with benchbuild[bb_args].bgrun(
-                stdout=PIPE, stderr=PIPE, env=env
-            ) as bb_proc:
-                try:
-                    _, stdout, _ = tee(bb_proc)
-                except KeyboardInterrupt:
-                    # wait for BB to complete when Ctrl-C is pressed
-                    retcode, _, _ = tee(bb_proc)
-                    sys.exit(retcode)
+            if debug and container:
+                benchbuild[bb_args].run_fg()
+            else:
+                with benchbuild[bb_args].bgrun(
+                    stdout=PIPE, stderr=PIPE, env=env
+                ) as bb_proc:
+                    try:
+                        _, stdout, _ = tee(bb_proc)
+                    except KeyboardInterrupt:
+                        # wait for BB to complete when Ctrl-C is pressed
+                        retcode, _, _ = tee(bb_proc)
+                        sys.exit(retcode)
         except ProcessExecutionError:
             sys.exit(1)
 
