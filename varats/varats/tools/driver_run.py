@@ -15,9 +15,9 @@ from subprocess import PIPE
 
 import click
 import jinja2
+from benchbuild.environments.adapters.common import run_tee
 from benchbuild.utils.cmd import benchbuild, sbatch
 from benchbuild.utils.settings import to_yaml
-from benchbuild.environments.adapters.common import run_tee
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
 

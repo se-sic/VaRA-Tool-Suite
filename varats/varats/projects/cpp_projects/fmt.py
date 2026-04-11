@@ -39,9 +39,8 @@ class Fmt(VProject):
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
-        'apt', 'install', '-y', 'cmake'
-    )
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12
+                              ).run('apt', 'install', '-y', 'cmake')
 
     @staticmethod
     def binaries_for_revision(
