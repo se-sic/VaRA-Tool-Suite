@@ -28,6 +28,7 @@ from varats.experiments.vara.feature_perf_precision import (
     MPRTEFAggregate,
     RunGenTracedWorkloads,
     select_project_binaries,
+    get_threshold,
 )
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
@@ -54,7 +55,7 @@ class TEFFeatureIdentifier(FeatureExperiment, shorthand="TEFid"):
             FeatureInstrType.TEF,
             project=project,
             save_temps=True,
-            instruction_threshold=0
+            instruction_threshold=get_threshold(project)
         )
 
         project.cflags += get_extra_cflags(project)
