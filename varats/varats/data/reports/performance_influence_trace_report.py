@@ -69,14 +69,16 @@ class PerfInfluenceTraceReport(BaseReport, shorthand="PIT", file_type="json"):
 
         return stringify
 
-    def _translate_interaction(self, interaction: str) -> str:
-        sub_terms = interaction.split('*')
-        return "*".join(
+    def _translate_interaction(
+        self, interaction: str, new_sep: str = "*"
+    ) -> str:
+        sub_terms = interaction.split("*")
+        return new_sep.join(
             map(
                 lambda region_id: self.__region_name_map[int(region_id)],
                 sub_terms
             )
-        )
+        ).replace("*", new_sep)
 
     @staticmethod
     def _parse_region_interaction_entries(

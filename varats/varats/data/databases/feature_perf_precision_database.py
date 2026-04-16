@@ -329,12 +329,10 @@ class PIMTracer(Profiler):
         for old_pim_report in reports:
             per_report_acc_pim: tp.DefaultDict[str, int] = defaultdict(int)
             for region_inter in old_pim_report.region_interaction_entries:
-                name = get_interactions_from_fr_string(
-                    old_pim_report._translate_interaction(
-                        region_inter.interaction
-                    ),
-                    sep="*"
+                region_names = old_pim_report._translate_interaction(
+                    region_inter.interaction, new_sep=","
                 )
+                name = get_interactions_from_fr_string(region_names)
                 per_report_acc_pim[name] += region_inter.time
 
             for name, time_value in per_report_acc_pim.items():
@@ -954,12 +952,15 @@ def _precise_pim_feature_regression_check(
 
             if ttest_res.pvalue < 0.05:
                 is_regression[feature] = True
+            else:
+                is_regression[feature] = False
         else:
             if np.mean(old_values) > profiler.absolute_cut_off:
                 print(
                     f"Could not find feature {feature} in new trace. "
                     f"({np.mean(old_values)}us lost)"
                 )
+            is_regression[feature] = False
             # TODO: how to handle this?
             # raise NotImplementedError()
             # is_regression = True
@@ -1015,9 +1016,11 @@ def get_feature_regressions_pim(
 
     new_acc_pim = profiler._PIMTracer__aggregate_pim_data(opt_mr.reports())
 
-    return _precise_pim_feature_regression_check(
+    results = _precise_pim_feature_regression_check(
         old_acc_pim, new_acc_pim, profiler
     )
+
+    return results
 
 
 def get_feature_regressions_ebpf(
@@ -1061,9 +1064,14 @@ def load_precision_whitebox_data(
     table_rows = []
 
     for cs in case_studies:
+        if cs.project_name != "DunePerfRegression":
+            print(f"Skipping {cs.project_name}...")
+            #continue
+        print(f"Processing case study {cs.project_name}...")
         rev = cs.revisions[0]
 
         for config_id in cs.get_config_ids_for_revision(rev):
+            print(f"Processing config id {config_id}...")
             # Load ground truth data
             ground_truth_report_files = get_processed_revisions_files(
                 cs.project_name,
@@ -1122,8 +1130,17 @@ def load_precision_whitebox_data(
                         for pim_report in base_report:
                             pim_report: PerfInfluenceTraceReport
                             all_features = [
-                                f.interaction
-                                for f in pim_report.region_interaction_entries
+                                get_interactions_from_fr_string(
+                                    pim_report._translate_interaction(
+                                        f.interaction, new_sep=","
+                                    ),
+                                    sep=","
+                                ) for f in pim_report.region_interaction_entries
+                            ]
+                            # Deduplication of nested features
+                            all_features = [
+                                "*".join(sorted(list(set(feature.split("*")))))
+                                for feature in all_features
                             ]
                     else:
                         base_report = report_file.get_baseline_report().reports(
@@ -1143,6 +1160,15 @@ def load_precision_whitebox_data(
                     regressed_features_predicted = _PROFILER_FEATURE_REGRESSIONS[
                         profiler.name](rpf, relevant_patch, profiler)
 
+                    for feature in regressed_features_gt:
+                        if feature not in regressed_features_predicted:
+                            print(
+                                f"Feature {feature} missing in predicted for "
+                                f"{profiler.name=}, {cs.project_name=}, "
+                                f"{config_id=}, {patch=}"
+                            )
+                            regressed_features_predicted[feature] = False
+
                     new_row = {
                         'CaseStudy': cs.project_name,
                         'Patch': relevant_patch,
@@ -1152,11 +1178,11 @@ def load_precision_whitebox_data(
 
                     results = ConfusionMatrix(
                         map_to_positive_config_ids(regressed_features_gt),
-                        map_to_positive_config_ids(regressed_features_gt),
+                        map_to_negative_config_ids(regressed_features_gt),
                         map_to_positive_config_ids(
                             regressed_features_predicted
                         ),
-                        map_to_positive_config_ids(
+                        map_to_negative_config_ids(
                             regressed_features_predicted
                         )
                     )
@@ -1167,6 +1193,11 @@ def load_precision_whitebox_data(
                     new_row[f"RegressedFeatures"] = len(
                         map_to_positive_config_ids(regressed_features_gt)
                     )
+                    new_row["expected"] = results.actual_positive
+                    new_row["TP"] = results.getTPs()
+                    new_row["FP"] = results.getFPs()
+                    new_row["TN"] = results.getTNs()
+                    new_row["FN"] = results.getFNs()
 
                     table_rows.append(new_row)
 

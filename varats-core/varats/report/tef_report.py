@@ -290,7 +290,7 @@ def get_feature_performance_from_tef_report(
                 # Subtract feature duration from parent duration such that
                 # it is not counted twice, similar to behavior in
                 # Performance-Influence models.
-                interactions = [event.name for event in open_events]
+                interactions = sorted([event.name for event in open_events])
                 if open_events:
                     # Parent is equivalent to interaction of all open
                     # events.
@@ -307,7 +307,7 @@ def get_feature_performance_from_tef_report(
                         )
 
                 interaction_string = get_interactions_from_fr_string(
-                    ",".join(interactions + [trace_event.name])
+                    ",".join(sorted(interactions + [trace_event.name]))
                 )
 
                 current_performance = feature_performances.get(
@@ -333,10 +333,13 @@ def get_interactions_from_fr_string(interactions: str, sep: str = ",") -> str:
     interactions = (
         interactions.replace("FR", "").replace("(", "").replace(")", "")
     )
+
     interactions_list = interactions.split(sep)
 
     # Features cannot interact with itself, so remove duplicates
     interactions_list = list(set(interactions_list))
+
+    interactions_list = sorted(interactions_list)
 
     # Ignore interactions with base, but do not remove base if it's the only
     # feature
