@@ -314,9 +314,8 @@ class PicoSATLoadTime(VProject, ReleaseProviderHook):
 
         with local.cwd(picosat_source):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(local[config_script_name]
-                        )(["--trace", "--stats", "-g"])
-                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                bb.watch(local[config_script_name])(["--trace", "--stats"])
+                bb.watch(make)("picosat", "-j", get_number_of_jobs(bb_cfg()))
 
         with local.cwd(picosat_source):
             verify_binaries(self)
@@ -329,7 +328,7 @@ class PicoSATLoadTime(VProject, ReleaseProviderHook):
 
         with local.cwd(picosat_source):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                bb.watch(make)("picosat", "-j", get_number_of_jobs(bb_cfg()))
 
         with local.cwd(picosat_source):
             verify_binaries(self)
