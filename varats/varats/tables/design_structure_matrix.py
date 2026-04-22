@@ -1,5 +1,7 @@
+import enum
 import json
 import typing as tp
+from enum import Enum
 from xml.etree import ElementTree as ET
 
 import click
@@ -14,6 +16,31 @@ from varats.table.tables import TableConfig, TableFormat, TableGenerator
 from varats.ts_utils.cli_util import make_cli_option
 
 
+class DependencyTypes(Enum):
+    CALL = "Call"
+    CAST = "Cast"
+    CONTAIN = "Contain"
+    CREATE = "Create"
+    EXTEND = "Extend"
+    IMPLLINK = "ImplLink"
+    IMPLEMENT = "Implement"
+    IMPORT = "Import"
+    PARAMETER = "Parameter"
+    RETURN = "Return"
+    USE = "Use"
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self.value == other
+        elif isinstance(other, DependencyTypes):
+            return self.value == other.value
+        else:
+            return NotImplemented
+
+    def __hash__(self):
+        return hash(self.value)
+
+
 class InternalDSM:
     """Internal representation of a Design Structure Matrix Used as an interface
     between reports and different DSM tools."""
@@ -26,11 +53,11 @@ class InternalDSM:
         target: str
         weight: int
         name: str
-        attributes: tp.Dict[str, tp.List[str]]
+        attributes: tp.Dict[str, tp.Dict[str, int]]
 
         def __init__(
             self, source: str, target: str, name: str, weight: int,
-            attributes: tp.Optional[tp.Dict[str, tp.List[str]]]
+            attributes: tp.Optional[tp.Dict[str, tp.Dict[str, int]]]
         ) -> None:
             self.source = source
             self.target = target
@@ -40,6 +67,9 @@ class InternalDSM:
                 self.attributes = {}
             else:
                 self.attributes = attributes
+
+        def __repr__(self):
+            return f"{self.source} -> {self.target} ({self.name}, weight={self.weight}, attributes={self.attributes})"
 
     def __init__(self, name: str, project: str) -> None:
         self.name = name
@@ -52,7 +82,7 @@ class InternalDSM:
         target: str,
         name: str,
         weight: int = 1,
-        attributes: tp.Optional[tp.Dict[str, tp.List[str]]] = None
+        attributes: tp.Optional[tp.Dict[str, tp.Dict[str, int]]] = None
     ) -> None:
         dependency = InternalDSM.Dependency(
             source, target, name, weight, attributes
@@ -70,6 +100,17 @@ class InternalDSM:
         for dependency in self.dependencies:
             dependency.source = am.get_module_for_location(dependency.source)
             dependency.target = am.get_module_for_location(dependency.target)
+
+    def as_dsm_dict(
+        self
+    ) -> dict[tuple[str, str], list["InternalDSM.Dependency"]]:
+        dsm_dict: dict[tuple[str, str], list["InternalDSM.Dependency"]] = {}
+        for dependency in self.dependencies:
+            key = (dependency.source, dependency.target)
+            if key not in dsm_dict:
+                dsm_dict[key] = []
+            dsm_dict[key].append(dependency)
+        return dsm_dict
 
     @classmethod
     def from_dv8_json_string(
@@ -97,6 +138,49 @@ class InternalDSM:
                                 source_entry, target_entry, name, value
                             )
         return dsm
+
+    def merge(self, other: 'InternalDSM') -> None:
+        """Merge another DSM into this one, combining dependencies with the same
+        source and target."""
+        for other_dependency in other.dependencies:
+            found = False
+            for dependency in self.dependencies:
+                if dependency.source == other_dependency.source and dependency.target == other_dependency.target and dependency.name == other_dependency.name:
+                    dependency.weight += other_dependency.weight
+                    for group, attributes in other_dependency.attributes.items(
+                    ):
+                        if group not in dependency.attributes:
+                            dependency.attributes[group] = {}
+                        for attribute, value in attributes.items():
+                            if attribute not in dependency.attributes[group]:
+                                dependency.attributes[group][attribute] = 0
+                            dependency.attributes[group][attribute] += value
+                    found = True
+                    break
+            if not found:
+                self.dependencies.append(other_dependency)
+
+    def count_overlapping_dependencies(
+        self, A: tp.List[str], B: tp.List[str]
+    ) -> dict[str, dict[str, int]]:
+        """Count occurrences where dependencies of a type in A align with one or
+        more dependencies of a type form B."""
+        as_dict = self.as_dsm_dict()
+        count_dict: dict[str, dict[str, int]] = {}
+        for key, dependencies in as_dict.items():
+            for dependency in dependencies:
+                if dependency.name in A:
+                    if dependency.name not in count_dict:
+                        count_dict[dependency.name] = {}
+                    for other_dependency in dependencies:
+                        if other_dependency.name in B:
+                            if other_dependency.name not in count_dict[
+                                dependency.name]:
+                                count_dict[dependency.name][
+                                    other_dependency.name] = 0
+                            count_dict[dependency.name][other_dependency.name
+                                                       ] += 1
+        return count_dict
 
 
 """
@@ -240,7 +324,7 @@ class DSMEditorXML:
             source_entry = self.get_or_create_entry(dependency.source)
             dep_interfaces = []
             for group, attributes in dependency.attributes.items():
-                for item in attributes:
+                for item in attributes.keys():
                     dep_interfaces.append(
                         self.get_or_create_interface(group, item, item[:2])
                     )

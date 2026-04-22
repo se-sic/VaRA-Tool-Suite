@@ -121,7 +121,7 @@ class FeatureArchitectureTaintReportExperiment(
         if fm_provider is None:
             raise FeatureModelNotFound(project, None)
 
-        fm_path = fm_provider.get_feature_model_path(project)
+        fm_path = fm_provider.get_feature_model_path(project.name)
 
         if fm_path is None or not fm_path.exists():
             raise FeatureModelNotFound(project, fm_path)
