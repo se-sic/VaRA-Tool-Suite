@@ -159,6 +159,7 @@ def main(
     if slurm:
         bb_command_args.append("slurm")
 
+    interactive = False
     if container:
         if slurm:
             __prepare_slurm_for_container()
@@ -170,6 +171,7 @@ def main(
             if debug:
                 bb_extra_args.append("--debug")
                 bb_extra_args.append("--interactive")
+                interactive = True
 
     if white_list:
         vara_cfg()["experiment"]["file_status_whitelist"] = [
@@ -210,9 +212,10 @@ def main(
             ["file_status_blacklist"].to_env_dict().items()
         }
 
+    stdout = ""
     with local.cwd(vara_cfg()["benchbuild_root"].value):
         try:
-            if debug and container:
+            if interactive:
                 benchbuild[bb_args].run_fg()
             else:
                 with benchbuild[bb_args].bgrun(
