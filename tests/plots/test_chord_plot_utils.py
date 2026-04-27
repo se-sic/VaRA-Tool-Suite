@@ -1,9 +1,7 @@
 """Test chord plot utils."""
-import typing as tp
 import unittest
 
 import numpy as np
-import numpy.typing as nptp
 
 from varats.plots.chord_plot_utils import (
     _angular_to_cartesian,
