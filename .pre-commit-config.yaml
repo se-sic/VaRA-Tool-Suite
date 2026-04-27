@@ -15,20 +15,12 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.2
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: ["--fix"]
-  - repo: https://github.com/myint/docformatter.git
-    rev: eb1df347edd128b30cd3368dddc3aa65edcfac38
-    hooks:
-      - id: docformatter
-        args: ['--in-place', '--wrap-summaries=80', '--wrap-descriptions=80', '--pre-summary-newline']
+      - id: ruff-format
   - repo: https://github.com/MarcoGorelli/auto-walrus
     rev: 0.3.4
     hooks:
       - id: auto-walrus
-  - repo: https://github.com/google/yapf
-    rev: 'v0.43.0'
-    hooks:
-      - id: yapf
 
 exclude: ^tests/TEST_INPUTS/.*$

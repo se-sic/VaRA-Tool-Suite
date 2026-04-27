@@ -99,6 +99,7 @@ import git  # ruff: isort:skip
 import github  # ruff: isort:skip
 import pygit2  # ruff: isort:skip
 import urllib3.exceptions  # ruff: isort:skip
+import varats.utils.git_util  # ruff: isort:skip
 
 # Some packages use new syntax for type checking that isn't available to us
 import jwt.algorithms
