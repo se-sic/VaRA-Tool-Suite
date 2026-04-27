@@ -133,6 +133,7 @@ select = [
 
   # pydocstyle
   "D",
+  "D213",  # multi-line-summary-second-line
 
   # Ruff-specific rules
   "RUF",
@@ -196,6 +197,9 @@ ignore = [
   "ISC002", # multi-line-implicit-string-concatenation
 ]
 
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["D"]
 
 [tool.ruff.lint.pydocstyle]
 # Use Google-style docstrings.

@@ -21,7 +21,7 @@ from varats.project.project_util import is_git_source
 from varats.tools.bb_config import create_new_bb_config
 from varats.utils import settings
 
-TEST_INPUTS_DIR = Path(os.path.dirname(__file__)) / 'TEST_INPUTS'
+TEST_INPUTS_DIR = Path(__file__).parent / 'TEST_INPUTS'
 
 TestFunctionTy = tp.Callable[..., tp.Any]
 
@@ -30,14 +30,16 @@ class UnitTestFixture(Protocol):
     """A test fixture that can be used with a :class:`TestEnvironment`."""
 
     def copy_to_env(self, path: Path) -> None:
-        """Called when entering the test environment.
+        """
+        Called when entering the test environment.
 
         The new configs are already in place and the cwd is the tmp dir.
         """
         ...
 
     def cleanup(self) -> None:
-        """Called when exiting the test environment.
+        """
+        Called when exiting the test environment.
 
         The old configs are in place again, but the cwd is still the tmp dir.
         """
@@ -65,7 +67,8 @@ class FileFixture(UnitTestFixture):
 
 
 class RepoFixture(UnitTestFixture):
-    """A git repository that is cloned into the test environment.
+    """
+    A git repository that is cloned into the test environment.
 
     The clone uses a local reference to avoid unnecessary traffic.
     """
@@ -137,7 +140,8 @@ class UnitTestFixtures:
 
 
 class TestEnvironment:
-    """Test environment implementation.
+    """
+    Test environment implementation.
 
     The wrapped test is run inside a temporary directory that acts as the
     varats root folder with a fresh default varats and BenchBuild config.
@@ -154,7 +158,7 @@ class TestEnvironment:
 
         self.__tmp_dir = tempfile.TemporaryDirectory()
         self.__tmp_path = Path(self.__tmp_dir.name)
-        self.__cwd = os.getcwd()
+        self.__cwd = Path.cwd()
         self.__test_inputs = required_test_inputs
 
         # pylint: disable=protected-access
@@ -217,7 +221,8 @@ class TestEnvironment:
 def run_in_test_environment(
     *required_test_inputs: UnitTestFixture,
 ) -> TestFunctionTy:
-    """Run a test in an isolated test environment.
+    """
+    Run a test in an isolated test environment.
 
     The wrapped test is run inside a temporary directory that acts as the
     varats root folder with a fresh default varats and BenchBuild config.
@@ -240,7 +245,8 @@ def run_in_test_environment(
 def create_test_environment(
     *required_test_inputs: UnitTestFixture,
 ) -> TestEnvironment:
-    """Context manager that creates an isolated test environment.
+    """
+    Context manager that creates an isolated test environment.
 
     The wrapped test is run inside a temporary directory that acts as the
     varats root folder with a fresh default varats and BenchBuild config.
@@ -259,7 +265,7 @@ class DummyGit(Git):
     def fetch(self) -> pb.LocalPath:
         return pb.LocalPath("/dev/null")
 
-    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
+    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:  # noqa: ARG002
         return pb.LocalPath("/dev/null")
 
     def versions(self) -> list[base.Variant]:
@@ -305,8 +311,7 @@ class BBTestSource(FetchableSource):
     def default(self) -> Variant:
         return Variant(owner=self, version=self.test_versions[0])
 
-    # pylint: disable=unused-argument,no-self-use
-    def version(self, target_dir: str, version: str) -> pb.LocalPath:
+    def version(self, target_dir: str, version: str) -> pb.LocalPath:  # noqa: ARG002
         return pb.local.path('.') / f'varats-test-{version}'
 
     def versions(self) -> tp.Iterable[Variant]:
