@@ -1,4 +1,5 @@
 """General tables module."""
+
 import abc
 import logging
 import typing as tp
@@ -35,6 +36,7 @@ LOG = logging.getLogger(__name__)
 # testing again
 class TableFormat(Enum):
     """List of supported TableFormats."""
+
     value: str
 
     PLAIN = "plain"
@@ -70,7 +72,7 @@ class TableFormat(Enum):
         return self in [TableFormat.HTML, TableFormat.UNSAFEHTML]
 
 
-class CommonTableOptions():
+class CommonTableOptions:
     """
     Options common to all tables.
 
@@ -184,7 +186,7 @@ class CommonTableOptions():
         }
 
 
-class TableConfig():
+class TableConfig:
     """
     Class with parameters that influence a table's appearance.
 
@@ -198,7 +200,8 @@ class TableConfig():
             self.__options[option.name] = option
 
     _option_decls: tp.Dict[str, ConfigOption[tp.Any]] = {
-        decl.name: decl for decl in tp.cast(
+        decl.name: decl
+        for decl in tp.cast(
             tp.List[ConfigOption[tp.Any]],
             [
                 ConfigOption(
@@ -222,8 +225,9 @@ class TableConfig():
         )
     }
 
-    def __option_getter(self,
-                        option: ConfigOption[OptionTy]) -> COGetter[OptionTy]:
+    def __option_getter(
+        self, option: ConfigOption[OptionTy]
+    ) -> COGetter[OptionTy]:
         """Creates a getter for options with no view default."""
 
         def get_value(default: tp.Optional[OptionTy] = None) -> OptionTy:
@@ -386,8 +390,10 @@ class TableGenerator(abc.ABC):
         Returns:
             a help string that contains all available table names.
         """
-        return "The following table generators are available:\n  " + \
-               "\n  ".join(list(TableGenerator.GENERATORS))
+        return (
+            "The following table generators are available:\n  "
+            + "\n  ".join(list(TableGenerator.GENERATORS))
+        )
 
     @staticmethod
     def get_class_for_table_generator_type(
@@ -404,8 +410,8 @@ class TableGenerator(abc.ABC):
         """
         if table_generator_type_name not in TableGenerator.GENERATORS:
             raise LookupError(
-                f"Unknown table generator '{table_generator_type_name}'.\n" +
-                TableGenerator.get_table_generator_types_help_string(),
+                f"Unknown table generator '{table_generator_type_name}'.\n"
+                + TableGenerator.get_table_generator_types_help_string(),
             )
 
         table_cls = TableGenerator.GENERATORS[table_generator_type_name]
@@ -502,9 +508,10 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=2):
     ) -> None:
         super().__init__(name, output_dir)
         self.__table_generator_type = table_generator_type
-        self.__table_type_class = \
+        self.__table_type_class = (
             TableGenerator.get_class_for_table_generator_type(
-            self.__table_generator_type,
+                self.__table_generator_type,
+            )
         )
         self.__common_options = common_options
         self.__common_options.table_base_dir = Artefact.base_output_dir()
@@ -653,5 +660,6 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=2):
             ArtefactFileInfo(
                 table.table_file_name(self.common_options.table_format),
                 table.table_kwargs.get("case_study", None),
-            ) for table in generator_instance.generate()
+            )
+            for table in generator_instance.generate()
         ]
