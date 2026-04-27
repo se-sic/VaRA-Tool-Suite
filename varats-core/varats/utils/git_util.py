@@ -13,6 +13,10 @@ from plumbum import TF, RETCODE
 from plumbum.commands.base import BoundCommand
 
 from varats.utils.exceptions import unwrap
+from varats.utils.git_commands import (
+    checkout_branch_or_commit,
+    update_all_submodules,
+)
 
 if tp.TYPE_CHECKING:
     from benchbuild.utils.revision_ranges import AbstractRevisionRange
@@ -222,18 +226,6 @@ def is_commit_hash(value: str) -> bool:
         value: to check
     """
     return re.search("^[a-fA-F0-9]{1,40}$", value) is not None
-
-
-def get_current_branch(repo: RepositoryHandle) -> str:
-    """
-    Get the current branch of a repository, e.g., HEAD.
-
-    Args:
-        repo: git repository handle
-
-    Returns: branch name
-    """
-    return tp.cast(str, repo("rev-parse", "--abbrev-ref", "HEAD").strip())
 
 
 def get_head_commit(repo: RepositoryHandle) -> FullCommitHash:
@@ -1001,17 +993,19 @@ class RepositoryAtCommit():
     def __init__(
         self, repo: RepositoryHandle, revision: ShortCommitHash
     ) -> None:
-        self.__repo = repo.pygit_repo
-        self.__initial_head = self.__repo.head
-        self.__revision = self.__repo[revision.hash]
+        self.__repo = repo
+        self.__initial_head = get_head_commit(self.__repo)
+        self.__revision = revision
 
     def __enter__(self) -> Path:
-        self.__repo.checkout_tree(self.__revision)
-        return Path(self.__repo.path).parent
+        checkout_branch_or_commit(self.__repo, self.__revision)
+        update_all_submodules(self.__repo, True, True)
+        return self.__repo.repo_path.parent
 
     def __exit__(
         self, exc_type: tp.Optional[tp.Type[BaseException]],
         exc_value: tp.Optional[BaseException],
         exc_traceback: tp.Optional[TracebackType]
     ) -> None:
-        self.__repo.checkout(self.__initial_head)
+        checkout_branch_or_commit(self.__repo, self.__initial_head)
+        update_all_submodules(self.__repo, True, True)

@@ -98,6 +98,7 @@ import git  # isort:skip
 import github  # isort:skip
 import pygit2  # isort:skip
 import urllib3.exceptions  # isort:skip
+import varats.utils.git_util  # isort:skip
 
 # Some packages use new syntax for type checking that isn't available to us
 import jwt.algorithms

@@ -9,8 +9,8 @@ from varats.project.project_util import (
     get_primary_project_source,
     get_local_project_repo,
 )
+from varats.utils.git_commands import get_current_branch
 from varats.utils.git_util import (
-    get_current_branch,
     FullCommitHash,
     ShortCommitHash,
     RepositoryHandle,
