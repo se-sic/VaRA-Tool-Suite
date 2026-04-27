@@ -174,7 +174,7 @@ class RepositoryHandle:
             self.__repo_path = Path(
                 unwrap(
                     pygit2.discover_repository(str(self.worktree_path)),
-                    f"No git repository found."
+                    "No git repository found."
                 )
             )
 
