@@ -76,7 +76,7 @@ class ConfigurationParameterRenderer:
         self.__default_args = default_args
 
     def unrendered(self) -> str:
-        return f"<params>"
+        return "<params>"
 
     def rendered(self, project: VProject,
                  **kwargs: tp.Any) -> tp.Tuple[str, ...]:

@@ -1,5 +1,6 @@
 """Test TEFReport."""
 
+import io
 import json
 import unittest
 from pathlib import Path
@@ -214,10 +215,17 @@ class TestTEFReportParser(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Load and prepare TEF report."""
-        with mock.patch(
-            'builtins.open',
-            new=mock.mock_open(read_data=TRACE_EVENT_FORMAT_OUTPUT)
-        ):
+
+        def mock_open_side_effect(path, mode='r', *args, **kwargs):
+            data = TRACE_EVENT_FORMAT_OUTPUT
+            if 'b' in mode:
+                # Binary mode: encode string to bytes, return BytesIO
+                bytes_data = data.encode() if isinstance(data, str) else data
+                return io.BytesIO(bytes_data)
+            else:
+                return mock.mock_open(read_data=data)()
+
+        with mock.patch('builtins.open', side_effect=mock_open_side_effect):
             cls.report = TEFReport(Path("fake_file_path"))
 
     def test_parse_time_unit(self) -> None:
