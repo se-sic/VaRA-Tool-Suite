@@ -1,4 +1,5 @@
 """Configuration map module."""
+
 import logging
 import typing as tp
 from pathlib import Path
@@ -8,8 +9,8 @@ import yaml
 from varats.base.configuration import (
     Configuration,
     DummyConfiguration,
-    PlainCommandlineConfiguration,
     PatchConfiguration,
+    PlainCommandlineConfiguration,
 )
 from varats.base.version_header import VersionHeader
 from varats.utils.exceptions import ConfigurationMapConfigIDMissmatch
@@ -17,14 +18,16 @@ from varats.utils.exceptions import ConfigurationMapConfigIDMissmatch
 LOG = logging.getLogger(__name__)
 
 
-class ConfigurationMap():
-    """A configuration map builds a relation between a unique ID and the
-    corresponding project configuration."""
+class ConfigurationMap:
+    """
+    A configuration map builds a relation between a unique ID and the
+    corresponding project configuration.
+    """
 
     DUMMY_CONFIG_ID = -1
 
     def __init__(self) -> None:
-        self.__configurations: tp.Dict[int, Configuration] = {}
+        self.__configurations: dict[int, Configuration] = {}
 
     def add_configuration(self, config: Configuration) -> int:
         """
@@ -39,7 +42,7 @@ class ConfigurationMap():
         self.__configurations[next_id] = config
         return next_id
 
-    def get_configuration(self, config_id: int) -> tp.Optional[Configuration]:
+    def get_configuration(self, config_id: int) -> Configuration | None:
         """
         Look up the `Configuration` with the corresponding config_id.
 
@@ -64,7 +67,7 @@ class ConfigurationMap():
         """All id configuration pairs stored in the config map."""
         return self.__configurations.items()
 
-    def ids(self) -> tp.List[int]:
+    def ids(self) -> list[int]:
         return list(self.__configurations.keys())
 
     def __str__(self) -> str:
@@ -75,7 +78,7 @@ class ConfigurationMap():
 
 
 def load_configuration_map(
-    file_path: Path, concrete_config_type: tp.Type[Configuration]
+    file_path: Path, concrete_config_type: type[Configuration]
 ) -> ConfigurationMap:
     """
     Load a configuration map from a file.
@@ -87,7 +90,7 @@ def load_configuration_map(
 
     Returns: a new `ConfigurationMap` based on the parsed file
     """
-    with open(file_path, 'r') as stream:
+    with open(file_path) as stream:
         documents = yaml.load_all(stream, Loader=yaml.CLoader)
         version_header = VersionHeader(next(documents))
         version_header.raise_if_not_type("ConfigurationMap")
@@ -118,21 +121,24 @@ def store_configuration_map(
         version_header = VersionHeader.from_version_number(
             "ConfigurationMap", 1
         )
-        yaml.dump_all([
-            version_header.get_dict(), {
-                id_config_pair[0]: id_config_pair[1].dump_to_string()
-                for id_config_pair in configuration_map.id_config_tuples()
-            }
-        ],
-                      stream,
-                      default_flow_style=False,
-                      explicit_start=True,
-                      explicit_end=True)
+        yaml.dump_all(
+            [
+                version_header.get_dict(),
+                {
+                    id_config_pair[0]: id_config_pair[1].dump_to_string()
+                    for id_config_pair in configuration_map.id_config_tuples()
+                },
+            ],
+            stream,
+            default_flow_style=False,
+            explicit_start=True,
+            explicit_end=True,
+        )
 
 
 def create_configuration_map_from_yaml_doc(
-    yaml_doc: tp.Dict[str, tp.Any],
-    concrete_config_type: tp.Optional[tp.Type[Configuration]] = None
+    yaml_doc: dict[str, tp.Any],
+    concrete_config_type: type[Configuration] | None = None,
 ) -> ConfigurationMap:
     """
     Create a configuration map from a yaml document.
@@ -144,7 +150,6 @@ def create_configuration_map_from_yaml_doc(
 
     Returns: a new `ConfigurationMap` based on the parsed doc
     """
-
     new_config_map = ConfigurationMap()
     raw_config_type = yaml_doc.pop("config_type", None)
     if concrete_config_type is None:
@@ -153,7 +158,7 @@ def create_configuration_map_from_yaml_doc(
 
         concrete_config_type = {
             "PlainCommandlineConfiguration": PlainCommandlineConfiguration,
-            "PatchConfiguration": PatchConfiguration
+            "PatchConfiguration": PatchConfiguration,
         }[raw_config_type]
 
     for config_id in sorted(yaml_doc):

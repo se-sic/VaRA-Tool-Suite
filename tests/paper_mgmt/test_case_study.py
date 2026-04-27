@@ -1,4 +1,5 @@
 """Test case study."""
+
 import os
 import random
 import unittest
@@ -6,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 import varats.paper_mgmt.case_study as MCS
-from tests.helper_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import UnitTestFixtures, run_in_test_environment
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.experiments.base.just_compile import JustCompileReport
 from varats.experiments.vara.commit_report_experiment import (
@@ -42,12 +43,12 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
         newest_processed = MCS.newest_processed_revision_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
-            CommitReportExperiment
+            CommitReportExperiment,
         )
 
         self.assertEqual(
             FullCommitHash('21ac39f7c8ca61c855be0bc38900abe7b5a0f67f'),
-            newest_processed
+            newest_processed,
         )
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
@@ -58,7 +59,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
         newest_processed = MCS.newest_processed_revision_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
-            CommitReportExperiment
+            CommitReportExperiment,
         )
 
         self.assertIsNone(newest_processed)
@@ -74,13 +75,13 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
         failed_revs = MCS.failed_revisions_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
-            CommitReportExperiment
+            CommitReportExperiment,
         )
 
         self.assertEqual(len(failed_revs), 1)
         self.assertTrue(
-            FullCommitHash('aaa4424d9bdeb10f8af5cb4599a0fc2bbaac5553') in
-            failed_revs
+            FullCommitHash('aaa4424d9bdeb10f8af5cb4599a0fc2bbaac5553')
+            in failed_revs
         )
 
     @run_in_test_environment(
@@ -94,13 +95,13 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
         process_revs = MCS.processed_revisions_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
-            CommitReportExperiment
+            CommitReportExperiment,
         )
 
         self.assertEqual(len(process_revs), 1)
         self.assertTrue(
-            FullCommitHash('21ac39f7c8ca61c855be0bc38900abe7b5a0f67f') in
-            process_revs
+            FullCommitHash('21ac39f7c8ca61c855be0bc38900abe7b5a0f67f')
+            in process_revs
         )
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
@@ -114,8 +115,9 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
             MCS.get_revisions_status_for_case_study(
                 get_paper_config().get_case_studies('brotli')[0],
                 CommitReportExperiment,
-                stage_num=9001
-            ), []
+                stage_num=9001,
+            ),
+            [],
         )
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
@@ -126,9 +128,12 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         self.assertRaises(
-            ValueError, MCS.get_revision_status_for_case_study,
+            ValueError,
+            MCS.get_revision_status_for_case_study,
             get_paper_config().get_case_studies('brotli')[0],
-            ShortCommitHash('0000000000'), CommitReportExperiment, CR
+            ShortCommitHash('0000000000'),
+            CommitReportExperiment,
+            CR,
         )
 
     @run_in_test_environment(
@@ -143,8 +148,11 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         self.assertEqual(
             MCS.get_revision_status_for_case_study(
                 get_paper_config().get_case_studies('brotli')[0],
-                ShortCommitHash('21ac39f7c8'), CommitReportExperiment, CR
-            ), FileStatusExtension.SUCCESS
+                ShortCommitHash('21ac39f7c8'),
+                CommitReportExperiment,
+                CR,
+            ),
+            FileStatusExtension.SUCCESS,
         )
 
     @run_in_test_environment(
@@ -161,14 +169,15 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         )
 
         now = datetime.now().timestamp()
-        file_path = Path(
-            str(vara_cfg()['result_dir'])
-        ) / 'brotli' / good_file.filename
+        file_path = (
+            Path(str(vara_cfg()['result_dir'])) / 'brotli' / good_file.filename
+        )
         os.utime(file_path, (now, now))
 
         newest_res_files = MCS.get_newest_result_files_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
-            Path(vara_cfg()['result_dir'].value), CR
+            Path(vara_cfg()['result_dir'].value),
+            CR,
         )
 
         # remove unnecessary files
@@ -177,7 +186,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
                 lambda res_file: res_file.commit_hash == good_file.commit_hash,
                 map(
                     lambda res_file: ReportFilename(res_file), newest_res_files
-                )
+                ),
             )
         )
 
@@ -197,14 +206,15 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         )
 
         now = datetime.now().timestamp()
-        file_path = Path(
-            str(vara_cfg()['result_dir'])
-        ) / 'brotli' / bad_file.filename
+        file_path = (
+            Path(str(vara_cfg()['result_dir'])) / 'brotli' / bad_file.filename
+        )
         os.utime(file_path, (now, now))
 
         newest_res_files = MCS.get_newest_result_files_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
-            Path(vara_cfg()['result_dir'].value), CR
+            Path(vara_cfg()['result_dir'].value),
+            CR,
         )
 
         # remove unnecessary files
@@ -213,7 +223,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
                 lambda res_file: res_file.commit_hash == bad_file.commit_hash,
                 map(
                     lambda res_file: ReportFilename(res_file), newest_res_files
-                )
+                ),
             )
         )
 
@@ -221,7 +231,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_get_newest_result_files_for_case_study_with_empty_res_dir(
-        self
+        self,
     ) -> None:
         """Check that we correctly handle the edge case where no result dir
         exists."""
@@ -231,8 +241,10 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         self.assertListEqual(
             MCS.get_newest_result_files_for_case_study(
                 get_paper_config().get_case_studies('brotli')[0],
-                Path(vara_cfg()['result_dir'].value), CR
-            ), []
+                Path(vara_cfg()['result_dir'].value),
+                CR,
+            ),
+            [],
         )
 
     @run_in_test_environment(
@@ -254,19 +266,24 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         )
 
         now = datetime.now().timestamp()
-        file_path_0 = Path(
-            str(vara_cfg()['result_dir'])
-        ) / 'SynthSAContextSensitivity' / config_0_file.filename
+        file_path_0 = (
+            Path(str(vara_cfg()['result_dir']))
+            / 'SynthSAContextSensitivity'
+            / config_0_file.filename
+        )
         os.utime(file_path_0, (now, now))
 
-        file_path_1 = Path(
-            str(vara_cfg()['result_dir'])
-        ) / 'SynthSAContextSensitivity' / config_1_file.filename
+        file_path_1 = (
+            Path(str(vara_cfg()['result_dir']))
+            / 'SynthSAContextSensitivity'
+            / config_1_file.filename
+        )
         os.utime(file_path_1, (now, now))
 
         newest_res_files = MCS.get_newest_result_files_for_case_study(
             get_paper_config().get_case_studies('SynthSAContextSensitivity')[0],
-            Path(vara_cfg()['result_dir'].value), CR
+            Path(vara_cfg()['result_dir'].value),
+            CR,
         )
 
         newest_res_files.sort(reverse=True)
@@ -297,19 +314,24 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         )
 
         now = datetime.now().timestamp()
-        file_path_0 = Path(
-            str(vara_cfg()['result_dir'])
-        ) / 'SynthSAContextSensitivity' / config_0_file.filename
+        file_path_0 = (
+            Path(str(vara_cfg()['result_dir']))
+            / 'SynthSAContextSensitivity'
+            / config_0_file.filename
+        )
         os.utime(file_path_0, (now, now))
 
-        file_path_1 = Path(
-            str(vara_cfg()['result_dir'])
-        ) / 'SynthSAContextSensitivity' / config_1_file.filename
+        file_path_1 = (
+            Path(str(vara_cfg()['result_dir']))
+            / 'SynthSAContextSensitivity'
+            / config_1_file.filename
+        )
         os.utime(file_path_1, (now, now))
 
         newest_res_files = MCS.get_newest_result_files_for_case_study(
             get_paper_config().get_case_studies('SynthSAContextSensitivity')[0],
-            Path(vara_cfg()['result_dir'].value), CR
+            Path(vara_cfg()['result_dir'].value),
+            CR,
         )
 
         newest_res_files.sort(reverse=True)
@@ -335,7 +357,6 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
 
 class TestCaseStudyExtenders(unittest.TestCase):
-
     @run_in_test_environment()
     def test_extend_with_revs_per_year(self) -> None:
         initialize_projects()
@@ -356,7 +377,7 @@ class TestCaseStudyExtenders(unittest.TestCase):
         )
         self.assertEqual(
             FullCommitHash("320601b2c7b08fc7da9da18d5bf7c3c1a189b080"),
-            cs.revisions[-1]
+            cs.revisions[-1],
         )
 
     @run_in_test_environment(
@@ -373,27 +394,30 @@ class TestCaseStudyExtenders(unittest.TestCase):
         )
 
         MCS.extend_with_smooth_revs(
-            cs, cmap, 0, True,
+            cs,
+            cmap,
+            0,
+            True,
             CaseStudyOverviewPlot(
                 PlotConfig.from_kwargs(False),
                 case_study=cs,
-                experiment_type=JustCompileReport
-            ), 1
+                experiment_type=JustCompileReport,
+            ),
+            1,
         )
         self.assertEqual(cs.num_stages, 2)
         self.assertEqual(len(cs.revisions), 7)
         self.assertIn(
             FullCommitHash("5814438791fb2d4394b46e5682a96b68cd092803"),
-            cs.stages[1].revisions
+            cs.stages[1].revisions,
         )
         self.assertIn(
             FullCommitHash("510131d1db47f91602f45b9a8d7b1ee54d12a629"),
-            cs.stages[1].revisions
+            cs.stages[1].revisions,
         )
 
 
 class TestCaseStudyConfigID(unittest.TestCase):
-
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
@@ -402,13 +426,19 @@ class TestCaseStudyConfigID(unittest.TestCase):
         load_paper_config()
 
         expected_config_ids = {
-            "SynthSAContextSensitivity":
-                ("06eac0edb6886a7e487867c8d5629cb2409b54fd", [0, 1]),
-            "SynthIPTemplate":
-                ("793035062810ea3a2d9a10f831cd199fbbb82090", [0, 1, 2, 3, 4]),
-            "SynthIPRuntime":
-                ("793035062810ea3a2d9a10f831cd199fbbb82090", [0, 1, 2, 3, 4]),
-            "xz": ("c5c7ceb08a011b97d261798033e2c39613a69eb7", [1])
+            "SynthSAContextSensitivity": (
+                "06eac0edb6886a7e487867c8d5629cb2409b54fd",
+                [0, 1],
+            ),
+            "SynthIPTemplate": (
+                "793035062810ea3a2d9a10f831cd199fbbb82090",
+                [0, 1, 2, 3, 4],
+            ),
+            "SynthIPRuntime": (
+                "793035062810ea3a2d9a10f831cd199fbbb82090",
+                [0, 1, 2, 3, 4],
+            ),
+            "xz": ("c5c7ceb08a011b97d261798033e2c39613a69eb7", [1]),
         }
 
     @run_in_test_environment(
