@@ -1,7 +1,6 @@
 """Module for code centrality tables."""
 import logging
 import typing as tp
-from pathlib import Path
 
 import pandas as pd
 

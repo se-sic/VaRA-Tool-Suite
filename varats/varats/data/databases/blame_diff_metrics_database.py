@@ -302,7 +302,6 @@ class BlameDiffMetricsDatabase(
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
         repo = get_local_project_repo(project_name)
-        pygit_repo = repo.pygit_repo
         commit_lookup = create_project_commit_lookup_helper(project_name)
 
         def create_dataframe_layout() -> pd.DataFrame:

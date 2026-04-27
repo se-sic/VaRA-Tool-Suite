@@ -5,11 +5,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from tests.helper_utils import (
-    run_in_test_environment,
-    TEST_INPUTS_DIR,
-    UnitTestFixtures,
-)
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper.case_study import load_case_study_from_file
 from varats.paper.paper_config import load_paper_config
 from varats.tools import driver_casestudy
