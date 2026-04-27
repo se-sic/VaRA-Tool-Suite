@@ -1,4 +1,5 @@
 """Module for test utility functions."""
+
 import contextlib
 import os
 import shutil
@@ -81,8 +82,13 @@ class RepoFixture(UnitTestFixture):
             settings.bb_cfg()["tmp_dir"] = bb_tmp
             base.CFG["tmp_dir"] = bb_tmp
             git(
-                "clone", "--dissociate", "--recurse-submodules", "--reference",
-                self.__local, self.__remote, f"{bb_tmp}/{self.__repo_name}"
+                "clone",
+                "--dissociate",
+                "--recurse-submodules",
+                "--reference",
+                self.__local,
+                self.__remote,
+                f"{bb_tmp}/{self.__repo_name}",
             )
 
     def cleanup(self) -> None:
@@ -92,6 +98,7 @@ class RepoFixture(UnitTestFixture):
 
 class UnitTestFixtures:
     """Collection/factory for test fixtures."""
+
     PAPER_CONFIGS = FileFixture(
         TEST_INPUTS_DIR / "paper_configs", Path("paper_configs")
     )
@@ -108,7 +115,7 @@ class UnitTestFixtures:
             local="vara_test_repos",
             refspec="origin/HEAD",
             shallow=False,
-            limit=None
+            limit=None,
         )
     )
 
@@ -208,7 +215,7 @@ class TestEnvironment:
 
 
 def run_in_test_environment(
-    *required_test_inputs: UnitTestFixture
+    *required_test_inputs: UnitTestFixture,
 ) -> TestFunctionTy:
     """Run a test in an isolated test environment.
 
@@ -231,7 +238,7 @@ def run_in_test_environment(
 
 
 def create_test_environment(
-    *required_test_inputs: UnitTestFixture
+    *required_test_inputs: UnitTestFixture,
 ) -> TestEnvironment:
     """Context manager that creates an isolated test environment.
 
@@ -281,8 +288,7 @@ class BBTestSource(FetchableSource):
     test_versions: list[str]
 
     def __init__(
-        self, test_versions: list[str], local: str,
-        remote: str | dict[str, str]
+        self, test_versions: list[str], local: str, remote: str | dict[str, str]
     ):
         super().__init__(local, remote)
         self.test_versions = test_versions
