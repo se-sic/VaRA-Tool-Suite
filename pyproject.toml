@@ -123,6 +123,9 @@ indent-width = 4
 
 [tool.ruff.lint]
 select = [
+  # pyupgrade
+  "UP",
+
   # Core Python correctness
   "F",      # Pyflakes (undefined names, unused imports, etc.)
   "E",      # pycodestyle errors
@@ -130,6 +133,7 @@ select = [
 
   # pydocstyle
   "D",
+  "D213",  # multi-line-summary-second-line
 
   # Ruff-specific rules
   "RUF",
@@ -161,9 +165,9 @@ select = [
   "PTH",    # flake8-use-pathlib
   "SIM",    # flake8-simplify
   "FIX",    # flake8-fixme
-  "BLE",  # flake8-blind-except
+  "BLE",    # flake8-blind-except
   "TID251", # banned-api (flake8-tidy-imports)
-
+  "TC",     # flake8-type-checking
 
   # Full Pylint coverage available in Ruff
   "PLE",    # pylint errors
@@ -193,6 +197,9 @@ ignore = [
   "ISC002", # multi-line-implicit-string-concatenation
 ]
 
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["D"]
 
 [tool.ruff.lint.pydocstyle]
 # Use Google-style docstrings.
