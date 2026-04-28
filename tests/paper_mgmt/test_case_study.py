@@ -6,9 +6,9 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 
-import varats.paper_mgmt.case_study as MCS
+import varats.paper_mgmt.case_study as mcs
 from tests.helper_utils import UnitTestFixtures, run_in_test_environment
-from varats.data.reports.commit_report import CommitReport as CR
+from varats.data.reports.commit_report import CommitReport
 from varats.experiments.base.just_compile import JustCompileReport
 from varats.experiments.vara.commit_report_experiment import (
     CommitReportExperiment,
@@ -41,7 +41,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
         load_paper_config()
 
-        newest_processed = MCS.newest_processed_revision_for_case_study(
+        newest_processed = mcs.newest_processed_revision_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
             CommitReportExperiment,
         )
@@ -57,7 +57,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
         load_paper_config()
 
-        newest_processed = MCS.newest_processed_revision_for_case_study(
+        newest_processed = mcs.newest_processed_revision_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
             CommitReportExperiment,
         )
@@ -73,7 +73,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
         load_paper_config()
 
-        failed_revs = MCS.failed_revisions_for_case_study(
+        failed_revs = mcs.failed_revisions_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
             CommitReportExperiment,
         )
@@ -93,7 +93,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
         load_paper_config()
 
-        process_revs = MCS.processed_revisions_for_case_study(
+        process_revs = mcs.processed_revisions_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
             CommitReportExperiment,
         )
@@ -112,7 +112,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         self.assertListEqual(
-            MCS.get_revisions_status_for_case_study(
+            mcs.get_revisions_status_for_case_study(
                 get_paper_config().get_case_studies('brotli')[0],
                 CommitReportExperiment,
                 stage_num=9001,
@@ -129,11 +129,11 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
         self.assertRaises(
             ValueError,
-            MCS.get_revision_status_for_case_study,
+            mcs.get_revision_status_for_case_study,
             get_paper_config().get_case_studies('brotli')[0],
             ShortCommitHash('0000000000'),
             CommitReportExperiment,
-            CR,
+            CommitReport,
         )
 
     @run_in_test_environment(
@@ -146,11 +146,11 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         self.assertEqual(
-            MCS.get_revision_status_for_case_study(
+            mcs.get_revision_status_for_case_study(
                 get_paper_config().get_case_studies('brotli')[0],
                 ShortCommitHash('21ac39f7c8'),
                 CommitReportExperiment,
-                CR,
+                CommitReport,
             ),
             FileStatusExtension.SUCCESS,
         )
@@ -174,19 +174,17 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         )
         os.utime(file_path, (now, now))
 
-        newest_res_files = MCS.get_newest_result_files_for_case_study(
+        newest_res_files = mcs.get_newest_result_files_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
             Path(vara_cfg()['result_dir'].value),
-            CR,
+            CommitReport,
         )
 
         # remove unnecessary files
         filtered_newest_res_files = list(
             filter(
                 lambda res_file: res_file.commit_hash == good_file.commit_hash,
-                map(
-                    lambda res_file: ReportFilename(res_file), newest_res_files
-                ),
+                [ReportFilename(res_file) for res_file in newest_res_files],
             )
         )
 
@@ -211,19 +209,17 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         )
         os.utime(file_path, (now, now))
 
-        newest_res_files = MCS.get_newest_result_files_for_case_study(
+        newest_res_files = mcs.get_newest_result_files_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
             Path(vara_cfg()['result_dir'].value),
-            CR,
+            CommitReport,
         )
 
         # remove unnecessary files
         filtered_newest_res_files = list(
             filter(
                 lambda res_file: res_file.commit_hash == bad_file.commit_hash,
-                map(
-                    lambda res_file: ReportFilename(res_file), newest_res_files
-                ),
+                [ReportFilename(res_file) for res_file in newest_res_files],
             )
         )
 
@@ -239,10 +235,10 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         self.assertListEqual(
-            MCS.get_newest_result_files_for_case_study(
+            mcs.get_newest_result_files_for_case_study(
                 get_paper_config().get_case_studies('brotli')[0],
                 Path(vara_cfg()['result_dir'].value),
-                CR,
+                CommitReport,
             ),
             [],
         )
@@ -280,10 +276,10 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         )
         os.utime(file_path_1, (now, now))
 
-        newest_res_files = MCS.get_newest_result_files_for_case_study(
+        newest_res_files = mcs.get_newest_result_files_for_case_study(
             get_paper_config().get_case_studies('SynthSAContextSensitivity')[0],
             Path(vara_cfg()['result_dir'].value),
-            CR,
+            CommitReport,
         )
 
         newest_res_files.sort(reverse=True)
@@ -328,10 +324,10 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         )
         os.utime(file_path_1, (now, now))
 
-        newest_res_files = MCS.get_newest_result_files_for_case_study(
+        newest_res_files = mcs.get_newest_result_files_for_case_study(
             get_paper_config().get_case_studies('SynthSAContextSensitivity')[0],
             Path(vara_cfg()['result_dir'].value),
-            CR,
+            CommitReport,
         )
 
         newest_res_files.sort(reverse=True)
@@ -351,7 +347,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         """Check that we correctly handle  case study filter generation even if
         no case study was provided."""
 
-        cs_filter = MCS.get_case_study_file_name_filter(None)
+        cs_filter = mcs.get_case_study_file_name_filter(None)
 
         self.assertFalse(cs_filter('foo/bar'))
 
@@ -368,7 +364,7 @@ class TestCaseStudyExtenders(unittest.TestCase):
             "xz", end="c5c7ceb08a011b97d261798033e2c39613a69eb7"
         )
 
-        MCS.extend_with_revs_per_year(cs, cmap, 0, True, repo, 2, True)
+        mcs.extend_with_revs_per_year(cs, cmap, 0, True, repo, 2, True)
         self.assertEqual(cs.num_stages, 17)
         self.assertEqual(len(cs.revisions), 31)
         self.assertEqual(
@@ -393,7 +389,7 @@ class TestCaseStudyExtenders(unittest.TestCase):
             "brotli", end="aaa4424d9bdeb10f8af5cb4599a0fc2bbaac5553"
         )
 
-        MCS.extend_with_smooth_revs(
+        mcs.extend_with_smooth_revs(
             cs,
             cmap,
             0,
@@ -440,6 +436,13 @@ class TestCaseStudyConfigID(unittest.TestCase):
             ),
             "xz": ("c5c7ceb08a011b97d261798033e2c39613a69eb7", [1]),
         }
+        for cs_name, rev_ids in expected_config_ids.items():
+            cs_obj = get_paper_config().get_case_studies(cs_name)[0]
+            expected_rev, expected_ids = rev_ids
+            config_ids = cs_obj.get_config_ids_for_revision(
+                FullCommitHash(expected_rev)
+            )
+            self.assertListEqual(config_ids, expected_ids)
 
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES

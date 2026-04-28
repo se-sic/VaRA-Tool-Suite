@@ -20,6 +20,8 @@ LOG = logging.getLogger(__name__)
 
 class ConfigurationMap:
     """
+    Maps unique IDs to project configurations.
+
     A configuration map builds a relation between a unique ID and the
     corresponding project configuration.
     """
@@ -27,6 +29,7 @@ class ConfigurationMap:
     DUMMY_CONFIG_ID = -1
 
     def __init__(self) -> None:
+        """Initialize an empty configuration map."""
         self.__configurations: dict[int, Configuration] = {}
 
     def add_configuration(self, config: Configuration) -> int:
@@ -54,7 +57,7 @@ class ConfigurationMap:
         if config_id == self.DUMMY_CONFIG_ID:
             return DummyConfiguration()
 
-        if config_id in self.__configurations.keys():
+        if config_id in self.__configurations:
             return self.__configurations[config_id]
 
         return None
@@ -68,9 +71,11 @@ class ConfigurationMap:
         return self.__configurations.items()
 
     def ids(self) -> list[int]:
+        """All configuration IDs stored in the config map."""
         return list(self.__configurations.keys())
 
     def __str__(self) -> str:
+        """String representation of the configuration map."""
         return str(self.__configurations)
 
     def __get_next_id(self) -> int:
@@ -90,7 +95,7 @@ def load_configuration_map(
 
     Returns: a new `ConfigurationMap` based on the parsed file
     """
-    with open(file_path) as stream:
+    with file_path.open() as stream:
         documents = yaml.load_all(stream, Loader=yaml.CLoader)
         version_header = VersionHeader(next(documents))
         version_header.raise_if_not_type("ConfigurationMap")
@@ -117,7 +122,7 @@ def store_configuration_map(
             ".yaml or .yml but dumped file is of type yaml."
         )
 
-    with open(file_path, 'w') as stream:
+    with file_path.open('w') as stream:
         version_header = VersionHeader.from_version_number(
             "ConfigurationMap", 1
         )

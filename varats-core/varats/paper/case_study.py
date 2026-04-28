@@ -1,4 +1,6 @@
 """
+Implementation of case studies for VaRA-TS.
+
 A case study is used to pin down the exact set of revisions that should be
 analysed for a project.
 """
@@ -24,11 +26,13 @@ from varats.provider.release.release_provider import ReleaseType
 from varats.utils.git_util import CommitHash, FullCommitHash, ShortCommitHash
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
-CSEntryMapTypes = tp.Union[str, int, list[int]]
+CSEntryMapTypes = str | int | list[int]
 
 
 class CSEntry:
     """
+    Entry for a case study.
+
     Combining a commit hash with a unique and ordered id, starting with 0 for
     the first commit in the repository.
     """
@@ -39,6 +43,7 @@ class CSEntry:
         commit_id: int,
         config_ids: list[int] | None = None,
     ) -> None:
+        """Initialize a new case study entry."""
         self.__commit_hash = commit_hash
         self.__commit_id = commit_id
 
@@ -66,17 +71,19 @@ class CSEntry:
 
     def get_dict(self) -> dict[str, CSEntryMapTypes]:
         """Get a dict representation of this commit and id."""
-        return dict(
-            commit_hash=self.commit_hash.hash,
-            commit_id=self.commit_id,
-            config_ids=self.config_ids,
-        )
+        return {
+            "commit_hash": self.commit_hash.hash,
+            "commit_id": self.commit_id,
+            "config_ids": self.config_ids,
+        }
 
     def __str__(self) -> str:
+        """String representation of the commit and id."""
         return f"({self.commit_id}: #{self.commit_hash.hash})"
 
     def __repr__(self) -> str:
-        return f"({self.commit_id}: #{self.commit_hash.hash})"
+        """String representation of the commit and id."""
+        return str(self)
 
 
 class CSStage:
@@ -93,6 +100,7 @@ class CSStage:
         release_type: ReleaseType | None = None,
         revisions: list[CSEntry] | None = None,
     ) -> None:
+        """Initialize a new stage."""
         self.__name: str | None = name
         self.__sampling_method: SamplingMethod | None = sampling_method
         self.__release_type: ReleaseType | None = release_type
@@ -208,9 +216,9 @@ class CSStage:
 
 class CaseStudy:
     """
-    A case study persists a set of revisions of a project to allow easy
-    reevaluation.
+    A case study persists a set of revisions of a project.
 
+    This allows for easy re-evaluation.
     Stored values:
      - name of the related benchbuild.project
      - a set of revisions
@@ -222,6 +230,7 @@ class CaseStudy:
         version: int,
         stages: list[CSStage] | None = None,
     ) -> None:
+        """Initialize a new case study."""
         self.__project_name = project_name
         self.__version = version
         self.__stages = stages if stages is not None else []
@@ -276,7 +285,9 @@ class CaseStudy:
 
     def get_stage_by_name(self, stage_name: str) -> CSStage | None:
         """
-        Get a stage by its name. Since multiple stages can have the same name,
+        Get a stage by its name.
+
+        Since multiple stages can have the same name,
         the first matching stage is returned.
 
         Args:
@@ -293,7 +304,9 @@ class CaseStudy:
 
     def get_stage_index_by_name(self, stage_name: str) -> int | None:
         """
-        Get a stage's index by its name. Since multiple stages can have the same
+        Get a stage's index by its name.
+
+        Since multiple stages can have the same
         name, the first matching stage is returned.
 
         Args:
@@ -316,11 +329,7 @@ class CaseStudy:
             ``True``, if the revision was found in one of the stages,
             ``False`` otherwise
         """
-        for stage in self.__stages:
-            if stage.has_revision(revision):
-                return True
-
-        return False
+        return any(stage.has_revision(revision) for stage in self.__stages)
 
     def has_revision_in_stage(
         self, revision: ShortCommitHash, num_stage: int
@@ -391,7 +400,9 @@ class CaseStudy:
 
     def shift_stage(self, from_index: int, offset: int) -> None:
         """
-        Shift a stage in the case-studies' stage list by an offset. Beware that
+        Shift a stage in the case-studies' stage list by an offset.
+
+        Beware that
         shifts to the left (offset<0) will destroy stages.
 
         Args:
@@ -415,7 +426,9 @@ class CaseStudy:
 
     def insert_empty_stage(self, pos: int) -> CSStage:
         """
-        Insert a new stage at the given index, shifting the list elements to the
+        Insert a new stage at the given index.
+
+        Shifts the list elements to the
         right. The newly created stage is returned.
 
         Args:
@@ -489,8 +502,7 @@ class CaseStudy:
 
     def get_revision_filter(self) -> tp.Callable[[CommitHash], bool]:
         """
-        Generate a case study specific revision filter that only allows revision
-        that are part of the case study.
+        Generate a case study specific revision filter.
 
         Returns:
             a callable filter function
@@ -507,11 +519,11 @@ class CaseStudy:
         str, str | int | list[dict[str, str | list[dict[str, CSEntryMapTypes]]]]
     ]:
         """Get a dict representation of this case study."""
-        return dict(
-            project_name=self.project_name,
-            version=self.version,
-            stages=[stage.get_dict() for stage in self.stages],
-        )
+        return {
+            "project_name": self.project_name,
+            "version": self.version,
+            "stages": [stage.get_dict() for stage in self.stages],
+        }
 
 
 def load_case_study_from_file(file_path: Path) -> CaseStudy:
