@@ -181,6 +181,10 @@ class ConfusionMatrix(tp.Generic[T]):
     def PN(self) -> int:  # pylint: disable=C0103
         return len(self.__predicted_negative_values)
 
+    @property
+    def actual_positive(self):
+        return self.__actual_positive_values
+
     ###################
     # Combined metrics
 

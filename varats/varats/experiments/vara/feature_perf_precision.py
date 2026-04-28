@@ -130,6 +130,9 @@ def get_threshold(project: VProject) -> int:
     if project.name in ["HyTeg", "PicoSATLoadTime"]:
         return 0
 
+    if project.name == "DunePerfRegression":
+        return 0
+
     return 100
 
 

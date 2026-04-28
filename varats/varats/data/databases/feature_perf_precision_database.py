@@ -176,6 +176,10 @@ class Profiler():
         if abs_mean_diff < old_rel_cut_off:
             return False
 
+        #TEMP: Check influence if we identify performance improvements and automatically ignore them for regression checking.
+        if new_mean < old_mean:
+            return False
+
         return True
 
     def _precise_pim_regression_check(
@@ -968,9 +972,19 @@ def _precise_pim_feature_regression_check(
     return is_regression
 
 
+def _values_valid(pim: tp.DefaultDict[str, tp.List[int]]) -> bool:
+    # Sanity check on values; Check for any negative values, as this should not happen
+    result = True
+    for feature, values in pim.items():
+        if any(value < 0 for value in values):
+            print(f"Invalid negative values for feature {feature}")
+            result = False
+    return result
+
+
 def get_feature_regressions_xray(
     report_path: ReportFilepath, patch_name: str, profiler: VXray
-) -> tp.Dict[str, bool]:
+) -> tp.Tuple[tp.Dict[str, bool], tp.Tuple[dict, dict]]:
     """Gets the predicted regressed features from the xray report."""
     multi_report = MultiPatchReport(report_path.full_path(), TEFReportAggregate)
     old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
@@ -991,14 +1005,24 @@ def get_feature_regressions_xray(
         for feature, value in pim.items():
             new_acc_pim[feature].append(value)
 
+    if not _values_valid(old_acc_pim):
+        print(
+            f"WXRay: Invalid values in PIM data for {report_path} and patch {patch_name} in original data"
+        )
+
+    if not _values_valid(new_acc_pim):
+        print(
+            f"WXRay: Invalid values in PIM data for {report_path} and patch {patch_name} in new data"
+        )
+
     return _precise_pim_feature_regression_check(
         old_acc_pim, new_acc_pim, profiler
-    )
+    ), (old_acc_pim, new_acc_pim)
 
 
 def get_feature_regressions_pim(
     report_path: ReportFilepath, patch_name: str, profiler: PIMTracer
-) -> tp.Dict[str, bool]:
+) -> tp.Tuple[tp.Dict[str, bool], tp.Tuple[dict, dict]]:
     """Gets the predicted regressed features from the pimtracer report."""
     multi_report = MultiPatchReport(
         report_path.full_path(), PerfInfluenceTraceReportAggregate
@@ -1016,16 +1040,26 @@ def get_feature_regressions_pim(
 
     new_acc_pim = profiler._PIMTracer__aggregate_pim_data(opt_mr.reports())
 
+    if not _values_valid(old_acc_pim):
+        print(
+            f"PIMTracer: Invalid values in PIM data for {report_path} and patch {patch_name} in original data"
+        )
+
+    if not _values_valid(new_acc_pim):
+        print(
+            f"PIMTracer: Invalid values in PIM data for {report_path} and patch {patch_name} in new data"
+        )
+
     results = _precise_pim_feature_regression_check(
         old_acc_pim, new_acc_pim, profiler
     )
 
-    return results
+    return results, (old_acc_pim, new_acc_pim)
 
 
 def get_feature_regressions_ebpf(
     report_path: ReportFilepath, patch_name: str, profiler: EbpfTraceTEF
-) -> tp.Dict[str, bool]:
+) -> tp.Tuple[tp.Dict[str, bool], tp.Tuple[dict, dict]]:
     """Gets the predicted regressed features from the ebpf report."""
     multi_report = MultiPatchReport(report_path.full_path(), TEFReportAggregate)
     old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
@@ -1046,9 +1080,19 @@ def get_feature_regressions_ebpf(
         for feature, value in pim.items():
             new_acc_pim[feature].append(value)
 
+    if not _values_valid(old_acc_pim):
+        print(
+            f"EBpf: Invalid values in PIM data for {report_path} and patch {patch_name} in original data"
+        )
+
+    if not _values_valid(new_acc_pim):
+        print(
+            f"EBpf: Invalid values in PIM data for {report_path} and patch {patch_name} in new data"
+        )
+
     return _precise_pim_feature_regression_check(
         old_acc_pim, new_acc_pim, profiler
-    )
+    ), (old_acc_pim, new_acc_pim)
 
 
 _PROFILER_FEATURE_REGRESSIONS = {
@@ -1066,9 +1110,18 @@ def load_precision_whitebox_data(
     for cs in case_studies:
         if cs.project_name != "DunePerfRegression":
             print(f"Skipping {cs.project_name}...")
-            #continue
+            continue
+
         print(f"Processing case study {cs.project_name}...")
         rev = cs.revisions[0]
+
+        # Set profiler cutoff
+        relative_cutoff = 0.01
+        if cs.project_name in ["DunePerfRegression"]:
+            relative_cutoff = 0.05
+
+        for profiler in profilers:
+            profiler.set_relative_cut_off(relative_cutoff)
 
         for config_id in cs.get_config_ids_for_revision(rev):
             print(f"Processing config id {config_id}...")
@@ -1117,6 +1170,9 @@ def load_precision_whitebox_data(
             )
 
             for patch in ground_truth_report.patch_names:
+                if "preconditioner" in patch:
+                    print(f"Skipping patch {patch}...")
+                    continue
                 relevant_patch = patch.removesuffix("detect") + "1000ms"
                 for profiler in profilers:
                     report_file, rpf = profiler_report_files[profiler]
@@ -1157,7 +1213,7 @@ def load_precision_whitebox_data(
                         all_features, ground_truth_report, [relevant_patch]
                     )
 
-                    regressed_features_predicted = _PROFILER_FEATURE_REGRESSIONS[
+                    regressed_features_predicted, pims = _PROFILER_FEATURE_REGRESSIONS[
                         profiler.name](rpf, relevant_patch, profiler)
 
                     for feature in regressed_features_gt:
@@ -1198,6 +1254,8 @@ def load_precision_whitebox_data(
                     new_row["FP"] = results.getFPs()
                     new_row["TN"] = results.getTNs()
                     new_row["FN"] = results.getFNs()
+                    new_row["old_pim"] = pims[0]
+                    new_row["new_pim"] = pims[1]
 
                     table_rows.append(new_row)
 
