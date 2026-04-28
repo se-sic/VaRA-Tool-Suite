@@ -5,7 +5,13 @@ from pathlib import Path
 
 import yaml
 
-from varats.base.configuration import Configuration, DummyConfiguration
+from varats.base.configuration import (
+    Configuration,
+    DummyConfiguration,
+    PlainCommandlineConfiguration,
+    PatchConfiguration,
+    PatchVariationConfiguration,
+)
 from varats.base.version_header import VersionHeader
 from varats.utils.exceptions import ConfigurationMapConfigIDMissmatch
 
@@ -140,7 +146,16 @@ def create_configuration_map_from_yaml_doc(
     """
 
     new_config_map = ConfigurationMap()
-    yaml_doc.pop("config_type", None)
+    raw_config_type = yaml_doc.pop("config_type", None)
+    if concrete_config_type is None:
+        if raw_config_type is None:
+            raise ValueError("Could not determine configuration type.")
+
+        concrete_config_type = {
+            "PlainCommandlineConfiguration": PlainCommandlineConfiguration,
+            "PatchConfiguration": PatchConfiguration,
+            "PatchVariationConfiguration": PatchVariationConfiguration
+        }[raw_config_type]
 
     for config_id in sorted(yaml_doc):
         parsed_config = concrete_config_type.create_configuration_from_str(
