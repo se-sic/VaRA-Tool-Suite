@@ -34,7 +34,7 @@ class MultiPatchReport(
 
             if not self.__base or not self.__patched_reports:
                 raise AssertionError(
-                    f"Reports where missing in the file {path=}"
+                    f"Reports were missing in the file {path=}"
                 )
 
     def get_baseline_report(self) -> ReportTy:
@@ -63,10 +63,13 @@ class MultiPatchReport(
         return file_name.startswith("baseline_")
 
     @staticmethod
-    def create_patched_report_name(patch: Patch, base_file_name: str) -> str:
+    def create_patched_report_name(
+        patch: Patch, base_file_name: str, **kwargs: tp.Any
+    ) -> str:
+        rendered_name = patch.rendered_name(**kwargs)
         return (
-            f"patched_{len(patch.shortname)}_" +
-            f"{patch.shortname}_{base_file_name}"
+            f"patched_{len(rendered_name)}_" +
+            f"{rendered_name}_{base_file_name}"
         )
 
     @staticmethod
