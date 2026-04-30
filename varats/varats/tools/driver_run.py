@@ -4,6 +4,7 @@ Driver module for `vara-container`.
 This module handles command-line parsing and maps the commands to tool suite
 internal functionality.
 """
+
 import getpass
 import itertools
 import logging
@@ -26,8 +27,8 @@ from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension
 from varats.ts_utils.cli_util import initialize_cli_tool, tee
 from varats.ts_utils.click_param_types import (
-    create_multi_experiment_type_choice,
     EnumChoice,
+    create_multi_experiment_type_choice,
 )
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
@@ -43,9 +44,10 @@ __SLURM_SCRIPT_PATTERN = re.compile(r"SLURM script written to (.*\.sh)")
 
 
 def __validate_project_parameters(
-    ctx: tp.Optional[click.Context], param: tp.Optional[click.Parameter],
-    value: tp.Tuple[str, ...]
-) -> tp.Tuple[str, ...]:
+    ctx: click.Context | None,
+    param: click.Parameter | None,
+    value: tuple[str, ...],
+) -> tuple[str, ...]:
     """
     Sanity-check project/version specification.
 
@@ -59,8 +61,8 @@ def __validate_project_parameters(
         project = split_input[0]
         version = split_input[1] if len(split_input) > 1 else None
 
-        projects: tp.Set[str] = set()
-        case_studies: tp.List[CaseStudy] = []
+        projects: set[str] = set()
+        case_studies: list[CaseStudy] = []
         try:
             paper_config = get_paper_config()
             case_studies = paper_config.get_all_case_studies()
@@ -100,7 +102,7 @@ def __validate_project_parameters(
     "--experiment",
     type=create_multi_experiment_type_choice(),
     required=True,
-    help="The experiment to run."
+    help="The experiment to run.",
 )
 @click.option("-p", "--pretend", is_flag=True, help="Do not run experiments.")
 @click.option(
@@ -108,14 +110,14 @@ def __validate_project_parameters(
     "--white-list",
     type=EnumChoice(FileStatusExtension, case_sensitive=False),
     multiple=True,
-    help="Override the file status whitelist."
+    help="Override the file status whitelist.",
 )
 @click.option(
     "-bl",
     "--black-list",
     type=EnumChoice(FileStatusExtension, case_sensitive=False),
     multiple=True,
-    help="Override the file status blacklist."
+    help="Override the file status blacklist.",
 )
 @click.argument("projects", nargs=-1, callback=__validate_project_parameters)
 def main(
@@ -124,11 +126,11 @@ def main(
     submit: bool,
     container: bool,
     debug: bool,
-    experiment: tp.List[tp.Type['VersionExperiment']],
-    projects: tp.List[str],
+    experiment: list[type['VersionExperiment']],
+    projects: list[str],
     pretend: bool,
-    white_list: tp.List[FileStatusExtension],
-    black_list: tp.List[FileStatusExtension],
+    white_list: list[FileStatusExtension],
+    black_list: list[FileStatusExtension],
 ) -> None:
     """
     Run benchbuild experiments.
@@ -141,8 +143,8 @@ def main(
     initialize_cli_tool()
     initialize_projects()
 
-    bb_command_args: tp.List[str] = ["--force-watch-unbuffered"]
-    bb_extra_args: tp.List[str] = []
+    bb_command_args: list[str] = ["--force-watch-unbuffered"]
+    bb_extra_args: list[str] = []
 
     if sys.stdout.isatty():
         bb_command_args.append("--force-tty")
@@ -189,27 +191,36 @@ def main(
         bb_command_args.append("-p")
 
     if not projects:
-        projects = list({
-            cs.project_name for cs in get_paper_config().get_all_case_studies()
-        })
+        projects = list(
+            {
+                cs.project_name
+                for cs in get_paper_config().get_all_case_studies()
+            }
+        )
 
     bb_args = list(
         itertools.chain(
-            bb_command_args, *[["-E", e.NAME] for e in experiment], projects,
-            bb_extra_args
+            bb_command_args,
+            *[["-E", e.NAME] for e in experiment],
+            projects,
+            bb_extra_args,
         )
     )
 
     env = {k: str(to_yaml(v)) for k, v in bb_cfg().to_env_dict().items()}
     if white_list:
         env |= {
-            k: str(to_yaml(v)) for k, v in vara_cfg()["experiment"]
-            ["file_status_whitelist"].to_env_dict().items()
+            k: str(to_yaml(v))
+            for k, v in vara_cfg()["experiment"]["file_status_whitelist"]
+            .to_env_dict()
+            .items()
         }
     if black_list:
         env |= {
-            k: str(to_yaml(v)) for k, v in vara_cfg()["experiment"]
-            ["file_status_blacklist"].to_env_dict().items()
+            k: str(to_yaml(v))
+            for k, v in vara_cfg()["experiment"]["file_status_blacklist"]
+            .to_env_dict()
+            .items()
         }
 
     stdout = ""
@@ -252,9 +263,9 @@ def main(
 def __prepare_slurm_for_container() -> None:
     """Prepare the benchbuild slurm config for container use."""
     node_dir = f"/tmp/{getpass.getuser()}"
-    template_path = Path(
-        str(vara_cfg()["benchbuild_root"])
-    ) / "slurm_container.sh.inc"
+    template_path = (
+        Path(str(vara_cfg()["benchbuild_root"])) / "slurm_container.sh.inc"
+    )
     bb_cfg()["jobs"] = 0
     bb_cfg()["slurm"]["template"] = str(template_path)
     bb_cfg()["slurm"]["node_dir"] = node_dir
@@ -262,16 +273,17 @@ def __prepare_slurm_for_container() -> None:
     bb_cfg()["slurm"]["container_runroot"] = f"{node_dir}/containers/run"
 
     __render_slurm_script_template(
-        template_path, [
+        template_path,
+        [
             repr(vara_cfg()["paper_config"]["folder"]),
             repr(vara_cfg()["paper_config"]["current_config"]),
-            repr(vara_cfg()["container"]["research_tool"])
-        ]
+            repr(vara_cfg()["container"]["research_tool"]),
+        ],
     )
 
 
 def __render_slurm_script_template(
-    output_path: Path, env_vars: tp.List[str]
+    output_path: Path, env_vars: list[str]
 ) -> None:
     loader = jinja2.PackageLoader('varats.tools', 'templates')
     env = jinja2.Environment(
