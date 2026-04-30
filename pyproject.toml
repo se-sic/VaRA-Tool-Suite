@@ -116,6 +116,125 @@ markers = [
     "slow: this test is slow."
 ]
 
+[tool.ruff]
+line-length = 80
+exclude = ["CVS", "gui", "filtertree_data.py", ".eggs", "docs/source/conf.py",]
+indent-width = 4
+
+[tool.ruff.lint]
+select = [
+  # pyupgrade
+  "UP",
+
+  # Core Python correctness
+  "F",      # Pyflakes (undefined names, unused imports, etc.)
+  "E",      # pycodestyle errors
+  "W",      # pycodestyle warnings
+
+  # pydocstyle
+  "D",
+  "D213",  # multi-line-summary-second-line
+
+  # Ruff-specific rules
+  "RUF",
+
+  # refurb
+  "FURB",
+
+  # Import sorting (replaces isort)
+  "I",
+
+  # Naming conventions (replaces BASIC naming rules)
+  "N",
+
+  # pandas-vet
+  "PD",
+
+  # NumPy-specific rules
+  "NPY",
+
+  # pyupgrade rules
+  "UP034",   # extraneous-parentheses
+
+  # flake8 rules
+  "COM",    # flake8-commas
+  "A",      # flake8-builtins
+  "C4",     # flake8-comprehensions
+  "RET",    # flake8-return
+  "ARG",    # flake8-unused-arguments
+  "PTH",    # flake8-use-pathlib
+  "SIM",    # flake8-simplify
+  "FIX",    # flake8-fixme
+  "BLE",    # flake8-blind-except
+  "TID251", # banned-api (flake8-tidy-imports)
+  "TC",     # flake8-type-checking
+
+  # Full Pylint coverage available in Ruff
+  "PLE",    # pylint errors
+  "PLW",    # pylint warnings
+  "PLR",    # pylint refactor
+  "PLC",    # pylint convention rules
+]
+
+# Ignoring specific rules that conflict with pre-ruff setup or are not needed
+ignore = [
+  "G004",     # logging-f-string
+  "PLR2004",  # magic-value-comparison
+  "PLR5501",  # collapsible-else-if
+  "FIX004",   # line-contains-hack
+
+  # Rules incompatible with ruff formatter
+  "Q",      # all flake-8 quote rules
+  "W191",   # tab-indentation
+  "E111",   # indentation-with-invalid-multiple
+  "E114",   # indentation-with-invalid-multiple-comment
+  "E117",   # over-indented
+  "D206",   # docstring-tab-indentation
+  "D212",  # multi-line-summary-first-line
+  "D300",   # triple-single-quotes
+  "COM812", # missing-trailing-comma
+  "COM819", # prohibited-trailing-comma
+  "ISC002", # multi-line-implicit-string-concatenation
+]
+
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
+ignore-var-parameters = true
+
+
+[tool.ruff.lint.isort]
+known-first-party = ["varats"]
+known-third-party = ["benchbuild"]
+
+
+[tool.ruff.lint.pylint]
+max-args = 10
+max-bool-expr=6
+max-branches=12
+max-locals=20
+max-positional-args=10
+max-public-methods=20
+max-returns=6
+max-statements=50
+max-nested-blocks=5
+
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"optparse".msg = "optparse is deprecated."
+"tkinter.tix".msg = "tkinter.tix is deprecated."
+
+
+# Ruff Formatter settings
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "preserve"
+
+
 [tool.mypy]
 warn_return_any = true
 warn_unused_configs = true

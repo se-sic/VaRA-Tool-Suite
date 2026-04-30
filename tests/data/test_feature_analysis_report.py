@@ -1,6 +1,5 @@
 """Test VaRA feature analysis reports."""
 
-import typing as tp
 import unittest
 import unittest.mock as mock
 from pathlib import Path
