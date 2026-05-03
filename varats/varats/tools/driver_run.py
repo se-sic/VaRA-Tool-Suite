@@ -271,7 +271,7 @@ def _run_benchbuild_non_interactive(
                     sys.exit(retcode)
         except ProcessExecutionError:
             sys.exit(1)
-    return "" 
+    return ""
 
 
 def _handle_slurm_output(stdout: str, submit: bool) -> None:
