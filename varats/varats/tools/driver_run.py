@@ -139,7 +139,6 @@ def main(
     restrict this to only certain projects or even revisions using BenchBuild-
     style project selectors: <project>[@<revision>]
     """
-    # pylint: disable=too-many-branches
     initialize_cli_tool()
     initialize_projects()
 
@@ -283,7 +282,6 @@ def _run_benchbuild_non_interactive(
                     sys.exit(retcode)
         except ProcessExecutionError:
             sys.exit(1)
-    return ""
 
 
 def _handle_slurm_output(stdout: str, submit: bool) -> None:
