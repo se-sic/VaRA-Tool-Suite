@@ -41,6 +41,7 @@ if tp.TYPE_CHECKING:
 LOG = logging.Logger(__name__)
 
 __SLURM_SCRIPT_PATTERN = re.compile(r"SLURM script written to (.*\.sh)")
+__INTERACTIVE_ARG_STR = "--interactive"
 
 
 def __validate_project_parameters(
@@ -169,7 +170,7 @@ def main(
         )
     )
 
-    if "--interactive" in bb_args:
+    if __INTERACTIVE_ARG_STR in bb_args:
         _run_benchbuild_interactive(bb_args)
     else:
         env = _get_environment_variables(black_list, white_list)
@@ -191,7 +192,7 @@ def _build_bb_extra_args(
         else:
             if debug:
                 bb_extra_args.append("--debug")
-                bb_extra_args.append("--interactive")
+                bb_extra_args.append(__INTERACTIVE_ARG_STR)
     return bb_extra_args
 
 
