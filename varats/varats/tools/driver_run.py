@@ -143,43 +143,15 @@ def main(
     initialize_cli_tool()
     initialize_projects()
 
-    bb_command_args: list[str] = ["--force-watch-unbuffered"]
-    bb_extra_args: list[str] = []
-
-    if sys.stdout.isatty():
-        bb_command_args.append("--force-tty")
-
-    if verbose:
-        bb_command_args.append("-" + ("v" * verbose))
-
     if pretend:
         click.echo("Running in pretend mode. No experiments will be executed.")
         # benchbuild only supports pretend in the normal run command
         slurm = False
         container = False
 
-    if slurm:
-        bb_command_args.append("slurm")
+    bb_command_args = _build_bb_command_args(container, pretend, slurm, verbose)
 
-    interactive = False
-    if container:
-        if slurm:
-            __prepare_slurm_for_container()
-            bb_extra_args = ["--", "container", "run"]
-            if bb_cfg()["container"]["import"].value:
-                bb_extra_args.append("--import")
-        else:
-            bb_command_args.append("container")
-            if debug:
-                bb_extra_args.append("--debug")
-                bb_extra_args.append("--interactive")
-                interactive = True
-
-    if not slurm:
-        bb_command_args.append("run")
-
-    if pretend:
-        bb_command_args.append("-p")
+    bb_extra_args = _build_bb_extra_args(container, debug, slurm)
 
     if not projects:
         projects = list(
@@ -198,13 +170,53 @@ def main(
         )
     )
 
-    if interactive:
+    if "--interactive" in bb_args:
         _run_benchbuild_interactive(bb_args)
     else:
         env = _get_environment_variables(black_list, white_list)
         stdout = _run_benchbuild_non_interactive(bb_args, env)
         if slurm:
             _handle_slurm_output(stdout, submit)
+
+
+def _build_bb_extra_args(
+    container: bool, debug: bool, slurm: bool
+) -> list[str]:
+    bb_extra_args: list[str] = []
+    if container:
+        if slurm:
+            __prepare_slurm_for_container()
+            bb_extra_args = ["--", "container", "run"]
+            if bb_cfg()["container"]["import"].value:
+                bb_extra_args.append("--import")
+        else:
+            if debug:
+                bb_extra_args.append("--debug")
+                bb_extra_args.append("--interactive")
+    return bb_extra_args
+
+
+def _build_bb_command_args(
+    container: bool, pretend: bool, slurm: bool, verbose: int
+) -> list[str]:
+    bb_command_args: list[str] = ["--force-watch-unbuffered"]
+    if sys.stdout.isatty():
+        bb_command_args.append("--force-tty")
+
+    if verbose:
+        bb_command_args.append("-" + ("v" * verbose))
+
+    if slurm:
+        bb_command_args.append("slurm")
+    else:
+        if container:
+            bb_command_args.append("container")
+
+        bb_command_args.append("run")
+
+    if pretend:
+        bb_command_args.append("-p")
+    return bb_command_args
 
 
 def _get_environment_variables(
