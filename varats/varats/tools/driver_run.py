@@ -175,15 +175,6 @@ def main(
                 bb_extra_args.append("--interactive")
                 interactive = True
 
-    if white_list:
-        vara_cfg()["experiment"]["file_status_whitelist"] = [
-            x.nice_name() for x in white_list
-        ]
-    if black_list:
-        vara_cfg()["experiment"]["file_status_blacklist"] = [
-            x.nice_name() for x in black_list
-        ]
-
     if not slurm:
         bb_command_args.append("run")
 
@@ -207,6 +198,29 @@ def main(
         )
     )
 
+    if interactive:
+        _run_benchbuild_interactive(bb_args)
+    else:
+        env = _get_environment_variables(black_list, white_list)
+        stdout = _run_benchbuild_non_interactive(bb_args, env)
+        if slurm:
+            _handle_slurm_output(stdout, submit)
+
+
+def _get_environment_variables(
+    white_list: list[FileStatusExtension],
+    black_list: list[FileStatusExtension],
+) -> dict[str, str]:
+
+    if white_list:
+        vara_cfg()["experiment"]["file_status_whitelist"] = [
+            x.nice_name() for x in white_list
+        ]
+    if black_list:
+        vara_cfg()["experiment"]["file_status_blacklist"] = [
+            x.nice_name() for x in black_list
+        ]
+
     env = {k: str(to_yaml(v)) for k, v in bb_cfg().to_env_dict().items()}
     if white_list:
         env |= {
@@ -222,42 +236,59 @@ def main(
             .to_env_dict()
             .items()
         }
+    return env
 
-    stdout = ""
+
+def _run_benchbuild_interactive(bb_args: list[str]) -> None:
+    """Run benchbuild in interactive foreground mode."""
     with local.cwd(vara_cfg()["benchbuild_root"].value):
         try:
-            if interactive:
-                benchbuild[bb_args].run_fg()
-            else:
-                with benchbuild[bb_args].bgrun(
-                    stdout=PIPE, stderr=PIPE, env=env
-                ) as bb_proc:
-                    try:
-                        _, stdout, _ = tee(bb_proc)
-                    except KeyboardInterrupt:
-                        # wait for BB to complete when Ctrl-C is pressed
-                        retcode, _, _ = tee(bb_proc)
-                        sys.exit(retcode)
+            benchbuild[bb_args].run_fg()
         except ProcessExecutionError:
             sys.exit(1)
 
-    if slurm:
-        match = __SLURM_SCRIPT_PATTERN.search(stdout)
-        if match:
-            slurm_script = match.group(1)
-            if submit:
-                click.echo(
-                    f"Submitting slurm script via sbatch: {slurm_script}"
-                )
-                sbatch(slurm_script)
-            else:
-                click.echo(
-                    f"Run the following command to submit the slurm:\n"
-                    f"sbatch {slurm_script}"
-                )
-        else:
-            click.echo("Could not find slurm script.")
+
+def _run_benchbuild_non_interactive(
+    bb_args: list[str], env: dict[str, str]
+) -> str:
+    """
+    Run benchbuild in background mode.
+
+    Returns:
+        stdout from benchbuild execution
+    """
+    with local.cwd(vara_cfg()["benchbuild_root"].value):
+        try:
+            with benchbuild[bb_args].bgrun(
+                stdout=PIPE, stderr=PIPE, env=env
+            ) as bb_proc:
+                try:
+                    _, stdout, _ = tee(bb_proc)
+                    return stdout
+                except KeyboardInterrupt:
+                    # wait for BB to complete when Ctrl-C is pressed
+                    retcode, _, _ = tee(bb_proc)
+                    sys.exit(retcode)
+        except ProcessExecutionError:
             sys.exit(1)
+    return ""  # unreachable, but satisfies type checker
+
+
+def _handle_slurm_output(stdout: str, submit: bool) -> None:
+    """Handle slurm script output and submission."""
+    if match := __SLURM_SCRIPT_PATTERN.search(stdout):
+        slurm_script = match.group(1)
+        if submit:
+            click.echo(f"Submitting slurm script via sbatch: {slurm_script}")
+            sbatch(slurm_script)
+        else:
+            click.echo(
+                f"Run the following command to submit the slurm:\n"
+                f"sbatch {slurm_script}"
+            )
+    else:
+        click.echo("Could not find slurm script.")
+        sys.exit(1)
 
 
 def __prepare_slurm_for_container() -> None:
