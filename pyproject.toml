@@ -1,44 +1,44 @@
 [project]
 name = "varats"
-version = "14.0.0"
+version = "14.1.0"
 dependencies = [
-  "Jinja2>=3.1.2",
-  "PyDriller>=2.4.1",
-  "PyGithub>=2.6.0",
-  "PyQt5-stubs>=5.10.0",
-  "PyQt5>=5.10.0",
-  "PyYAML>=6.0",
+  "Jinja2>=3.1.6",
+  "PyDriller>=2.9",
+  "PyGithub>=2.8.1",
+  "PyQt5-stubs>=5.15.6.0",
+  "PyQt5>=5.15.11",
+  "PyYAML>=6.0.3",
   "benchbuild>=6.8",
-  "click>=8.1.3",
+  "click>=8.3.1",
   "cliffs-delta>=1.0.0",
-  "distro>=1.5.0",
-  "graphviz>=0.14.2",
-  "ijson>=3.1.4",
-  "kaleido>=0.2.1",
-  "matplotlib>=3.8.2",
-  "networkx>=3.0",
-  "numpy>=1.24.2",
-  "packaging>=20.1",
-  "pandas>=1.5.3",
-  "plotly>=5.13.1",
-  "plumbum>=1.6",
-  "pygit2>=1.10,<1.14.0",
-  "pygraphviz>=1.7",
-  "pygtrie>=2.3",
-  "pylatex>=1.4.1",
-  "requests>=2.28.2",
-  "rich>=12.6",
-  "scikit-learn>=1.2.2",
-  "seaborn>=0.13.0",
+  "distro>=1.9.0",
+  "graphviz>=0.21",
+  "ijson>=3.4.0.post0",
+  "kaleido>=1.2.0",
+  "matplotlib>=3.10.8",
+  "networkx>=3.6.1",
+  "numpy>=2.4.1",
+  "packaging>=26.0",
+  "pandas>=3.0.0",
+  "plotly>=6.5.2",
+  "plumbum>=1.10.0",
+  "pygit2>=1.19.1,<1.20.0",
+  "pygraphviz>=1.14",
+  "pygtrie>=2.5.0",
+  "pylatex>=1.4.2",
+  "requests>=2.32.5",
+  "rich>=14.3.1",
+  "scikit-learn>=1.8.0",
+  "seaborn>=0.13.2",
   "tabulate>=0.9",
   "wllvm>=1.3.1",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 maintainers = [
   { name = "Florian Sattler", email = "sattlerf@cs.uni-saarland.de" }
 ]
 readme = "README.md"
-license = { text = "BSD 2-Clause"}
+license = "BSD-2-Clause"
 
 [project.scripts]
 vara-art = "varats.tools.driver_artefacts:main"
@@ -64,9 +64,50 @@ vara-buildsetup-gui = "varats.tools.driver_build_setup_gui:main"
 requires = ["setuptools>=61.0", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages.find]
-where = ["varats", "varats-core"]
-include = ["varats.*"]
+[tool.setuptools.package-dir]
+varats = "varats/varats"
+"varats.containers" = "varats/varats/containers"
+"varats.data" = "varats/varats/data"
+"varats.data.databases" = "varats/varats/data/databases"
+"varats.data.reports" = "varats/varats/data/reports"
+"varats.experiments" = "varats/varats/experiments"
+"varats.experiments.base" = "varats/varats/experiments/base"
+"varats.experiments.phasar" = "varats/varats/experiments/phasar"
+"varats.experiments.szz" = "varats/varats/experiments/szz"
+"varats.experiments.vara" = "varats/varats/experiments/vara"
+"varats.gui" = "varats/varats/gui"
+"varats.gui.cs_gen" = "varats/varats/gui/cs_gen"
+"varats.gui.views" = "varats/varats/gui/views"
+"varats.jupyterhelper" = "varats/varats/jupyterhelper"
+"varats.paper_mgmt" = "varats/varats/paper_mgmt"
+"varats.plot" = "varats/varats/plot"
+"varats.plots" = "varats/varats/plots"
+"varats.projects" = "varats/varats/projects"
+"varats.projects.cpp_projects" = "varats/varats/projects/cpp_projects"
+"varats.projects.c_projects" = "varats/varats/projects/c_projects"
+"varats.projects.perf_tests" = "varats/varats/projects/perf_tests"
+"varats.projects.test_projects" = "varats/varats/projects/test_projects"
+"varats.table" = "varats/varats/table"
+"varats.tables" = "varats/varats/tables"
+"varats.tools" = "varats/varats/tools"
+"varats.tools.research_tools" = "varats/varats/tools/research_tools"
+"varats.tools.templates" = "varats/varats/tools/templates"
+"varats.ts_utils" = "varats/varats/ts_utils"
+"varats.base" = "varats-core/varats/base"
+"varats.experiment" = "varats-core/varats/experiment"
+"varats.experiment.steps" = "varats-core/varats/experiment/steps"
+"varats.mapping" = "varats-core/varats/mapping"
+"varats.paper" = "varats-core/varats/paper"
+"varats.project" = "varats-core/varats/project"
+"varats.provider" = "varats-core/varats/provider"
+"varats.provider.bug" = "varats-core/varats/provider/bug"
+"varats.provider.cve" = "varats-core/varats/provider/cve"
+"varats.provider.feature" = "varats-core/varats/provider/feature"
+"varats.provider.patch" = "varats-core/varats/provider/patch"
+"varats.provider.release" = "varats-core/varats/provider/release"
+"varats.report" = "varats-core/varats/report"
+"varats.revision" = "varats-core/varats/revision"
+"varats.utils" = "varats-core/varats/utils"
 
 [tool.pytest.ini_options]
 testpaths = ["varats", "varats-core", "tests"]
@@ -74,6 +115,125 @@ addopts = "--doctest-modules --doctest-continue-on-failure --ignore=varats/proje
 markers = [
     "slow: this test is slow."
 ]
+
+[tool.ruff]
+line-length = 80
+exclude = ["CVS", "gui", "filtertree_data.py", ".eggs", "docs/source/conf.py",]
+indent-width = 4
+
+[tool.ruff.lint]
+select = [
+  # pyupgrade
+  "UP",
+
+  # Core Python correctness
+  "F",      # Pyflakes (undefined names, unused imports, etc.)
+  "E",      # pycodestyle errors
+  "W",      # pycodestyle warnings
+
+  # pydocstyle
+  "D",
+  "D213",  # multi-line-summary-second-line
+
+  # Ruff-specific rules
+  "RUF",
+
+  # refurb
+  "FURB",
+
+  # Import sorting (replaces isort)
+  "I",
+
+  # Naming conventions (replaces BASIC naming rules)
+  "N",
+
+  # pandas-vet
+  "PD",
+
+  # NumPy-specific rules
+  "NPY",
+
+  # pyupgrade rules
+  "UP034",   # extraneous-parentheses
+
+  # flake8 rules
+  "COM",    # flake8-commas
+  "A",      # flake8-builtins
+  "C4",     # flake8-comprehensions
+  "RET",    # flake8-return
+  "ARG",    # flake8-unused-arguments
+  "PTH",    # flake8-use-pathlib
+  "SIM",    # flake8-simplify
+  "FIX",    # flake8-fixme
+  "BLE",    # flake8-blind-except
+  "TID251", # banned-api (flake8-tidy-imports)
+  "TC",     # flake8-type-checking
+
+  # Full Pylint coverage available in Ruff
+  "PLE",    # pylint errors
+  "PLW",    # pylint warnings
+  "PLR",    # pylint refactor
+  "PLC",    # pylint convention rules
+]
+
+# Ignoring specific rules that conflict with pre-ruff setup or are not needed
+ignore = [
+  "G004",     # logging-f-string
+  "PLR2004",  # magic-value-comparison
+  "PLR5501",  # collapsible-else-if
+  "FIX004",   # line-contains-hack
+
+  # Rules incompatible with ruff formatter
+  "Q",      # all flake-8 quote rules
+  "W191",   # tab-indentation
+  "E111",   # indentation-with-invalid-multiple
+  "E114",   # indentation-with-invalid-multiple-comment
+  "E117",   # over-indented
+  "D206",   # docstring-tab-indentation
+  "D212",  # multi-line-summary-first-line
+  "D300",   # triple-single-quotes
+  "COM812", # missing-trailing-comma
+  "COM819", # prohibited-trailing-comma
+  "ISC002", # multi-line-implicit-string-concatenation
+]
+
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
+ignore-var-parameters = true
+
+
+[tool.ruff.lint.isort]
+known-first-party = ["varats"]
+known-third-party = ["benchbuild"]
+
+
+[tool.ruff.lint.pylint]
+max-args = 10
+max-bool-expr=6
+max-branches=12
+max-locals=20
+max-positional-args=10
+max-public-methods=20
+max-returns=6
+max-statements=50
+max-nested-blocks=5
+
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"optparse".msg = "optparse is deprecated."
+"tkinter.tix".msg = "tkinter.tix is deprecated."
+
+
+# Ruff Formatter settings
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "preserve"
+
 
 [tool.mypy]
 warn_return_any = true
@@ -98,7 +258,7 @@ module = [
   "pandas",
   "plotly.*",
   "pydriller",
-  "pygit2",
+  "pygtrie",
   "scipy.*",
   "sklearn.*",
   "PyQt5.*",

@@ -13,6 +13,8 @@ from benchbuild.environments.domain.model import (
     RunLayer,
     EntryPoint,
 )
+
+from tests.helper_utils import run_in_test_environment
 from varats.containers.containers import (
     ImageBase,
     StageBuilder,
@@ -22,8 +24,6 @@ from varats.containers.containers import (
 )
 from varats.tools.research_tools.research_tool import Distro
 from varats.utils.settings import vara_cfg, bb_cfg
-
-from tests.helper_utils import run_in_test_environment
 
 
 class TestImageBase(unittest.TestCase):

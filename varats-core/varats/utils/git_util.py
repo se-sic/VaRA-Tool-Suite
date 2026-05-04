@@ -13,6 +13,10 @@ from plumbum import TF, RETCODE
 from plumbum.commands.base import BoundCommand
 
 from varats.utils.exceptions import unwrap
+from varats.utils.git_commands import (
+    checkout_branch_or_commit,
+    update_all_submodules,
+)
 
 if tp.TYPE_CHECKING:
     from benchbuild.utils.revision_ranges import AbstractRevisionRange
@@ -165,7 +169,7 @@ class RepositoryHandle:
             self.__repo_path = Path(
                 unwrap(
                     pygit2.discover_repository(str(self.worktree_path)),
-                    f"No git repository found."
+                    "No git repository found."
                 )
             )
 
@@ -178,6 +182,29 @@ class RepositoryHandle:
             self.__libgit_repo = pygit2.Repository(str(self.repo_path))
 
         return self.__libgit_repo
+
+    def maybe_pygit_commit(
+        self, commit_hash: tp.Union[CommitHash, str]
+    ) -> tp.Optional[pygit2.Commit]:
+        """Get a pygit2 commit object for a given commit hash."""
+        if isinstance(commit_hash, CommitHash):
+            commit_hash = commit_hash.hash
+
+        return tp.cast(pygit2.Commit, self.pygit_repo.get(commit_hash))
+
+    def pygit_commit(
+        self, commit_hash: tp.Union[CommitHash, str]
+    ) -> pygit2.Commit:
+        """
+        Get a pygit2 commit object for a given commit hash.
+
+        Raises if commit is not found.
+        """
+        commit = self.maybe_pygit_commit(commit_hash)
+        if not commit:
+            raise KeyError(f"Commit {commit_hash} not found in repository.")
+
+        return commit
 
     def __eq__(self, other: tp.Any) -> bool:
         if not isinstance(other, RepositoryHandle):
@@ -199,18 +226,6 @@ def is_commit_hash(value: str) -> bool:
         value: to check
     """
     return re.search("^[a-fA-F0-9]{1,40}$", value) is not None
-
-
-def get_current_branch(repo: RepositoryHandle) -> str:
-    """
-    Get the current branch of a repository, e.g., HEAD.
-
-    Args:
-        repo: git repository handle
-
-    Returns: branch name
-    """
-    return tp.cast(str, repo("rev-parse", "--abbrev-ref", "HEAD").strip())
 
 
 def get_head_commit(repo: RepositoryHandle) -> FullCommitHash:
@@ -868,7 +883,7 @@ def __print_calc_repo_code_churn(
     churn_map = calc_repo_code_churn(repo, churn_config)
 
     for commit in repo.pygit_repo.walk(
-        repo.pygit_repo.head.target, pygit2.GIT_SORT_TIME
+        repo.pygit_repo.head.target, pygit2.enums.SortMode.TIME
     ):
         commit_hash = FullCommitHash.from_pygit_commit(commit)
         print(commit_hash)
@@ -978,17 +993,19 @@ class RepositoryAtCommit():
     def __init__(
         self, repo: RepositoryHandle, revision: ShortCommitHash
     ) -> None:
-        self.__repo = repo.pygit_repo
-        self.__initial_head = self.__repo.head
-        self.__revision = self.__repo.get(revision.hash)
+        self.__repo = repo
+        self.__initial_head = get_head_commit(self.__repo)
+        self.__revision = revision
 
     def __enter__(self) -> Path:
-        self.__repo.checkout_tree(self.__revision)
-        return Path(self.__repo.path).parent
+        checkout_branch_or_commit(self.__repo, self.__revision)
+        update_all_submodules(self.__repo, True, True)
+        return self.__repo.repo_path.parent
 
     def __exit__(
         self, exc_type: tp.Optional[tp.Type[BaseException]],
         exc_value: tp.Optional[BaseException],
         exc_traceback: tp.Optional[TracebackType]
     ) -> None:
-        self.__repo.checkout(self.__initial_head)
+        checkout_branch_or_commit(self.__repo, self.__initial_head)
+        update_all_submodules(self.__repo, True, True)
