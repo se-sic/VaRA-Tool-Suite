@@ -6,11 +6,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from tests.helper_utils import ConfigurationHelper
-from varats.base.configuration import (
-    DummyConfiguration,
-    ConfigurationImpl,
-    ConfigurationOptionImpl,
-)
+from varats.base.configuration import DummyConfiguration, ConfigurationImpl
 from varats.mapping.configuration_map import (
     ConfigurationMap,
     store_configuration_map,
