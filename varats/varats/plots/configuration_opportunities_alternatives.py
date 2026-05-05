@@ -17,6 +17,7 @@ from varats.data.databases.hidden_configurability_database import (
     get_configuration_points,
     extract_config_point,
     create_config_opportunities_value_map,
+    EffectSize,
 )
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
 from varats.experiments.vara.hidden_configurability_experiments import (
@@ -69,10 +70,6 @@ def _prepare_data(plot_kwargs, df: pd.DataFrame) -> pd.DataFrame:
             return row["significance"].pvalue < 0.05
 
         df = df[df.apply(keep_significant, axis=1)]
-
-    str_val_map = create_config_opportunities_value_map(
-        plot_kwargs["case_study"]
-    )
 
     return df
 
@@ -997,7 +994,7 @@ class SingleMinMaxAlternativesGenerator(
             "--config_id",
             type=int,
             required=True,
-            help="Draw mean values for each variation.",
+            help="Config ID to use.",
         ),
         make_cli_option(
             "--workload",
@@ -1150,6 +1147,74 @@ class AllHCPlotsGenerator(
                     workload=workload,
                     data_cache=df,
                     config_opportunity=None
+                )
+                for metric in metrics
+                for config_id in config_ids
+                for workload in workloads
+            ]
+
+            print(f"Added {len(plots) - old_size} plots for {cs.project_name}")
+
+        print(f"Number of plots to generate: {len(plots)}")
+        return plots
+
+
+class CurrentHCPlotsGenerator(
+    PlotGenerator,
+    generator_name="current_hc_plots",
+    options=[
+        make_cli_option(
+            "--case-studies",
+            type=create_multi_case_study_choice(),
+            required=True,
+            help="Case studies to plot",
+        )
+    ]
+):
+    """Generates all min-max alternatives plots for the given case studies."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies = self.plot_kwargs["case_studies"]
+        self.plot_kwargs.pop("case_studies", None)
+
+        plots = []
+
+        cs_config_ids = {
+            "7zip": [0],
+            "FastDownward": [None],
+            "brotli": [0],
+            "bzip2": [0],
+            "cadical": [None],
+            "cryptominisat": [None],
+            "lrzip": [None],
+            "mariadb": [None],
+            "xz": [None]
+        }
+        for cs in case_studies:
+            config_ids = cs_config_ids[cs.project_name]
+
+            # Create data cache for the case study
+            df = aggregate_data(cs, config_ids)
+
+            # Filter data for only significant results
+            df = df[
+                (df["significance"].apply(lambda x: x.pvalue < 0.05)) &
+                (df["effect_size"].apply(lambda x: abs(x) >= EffectSize.SMALL))]
+
+            # Get all workloads for the case study
+            workloads = df["binary-wl"].unique()
+            metrics = df["metric"].unique()
+
+            old_size = len(plots)
+
+            plots += [
+                SingleMinMaxAlternativesPlot(
+                    self.plot_config,
+                    case_study=cs,
+                    metric=metric,
+                    config_id=config_id,
+                    workload=workload,
+                    data_cache=df
                 )
                 for metric in metrics
                 for config_id in config_ids

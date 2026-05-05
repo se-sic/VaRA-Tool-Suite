@@ -12,6 +12,7 @@ from plumbum import local
 from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -48,6 +49,7 @@ class X264(VProject):
                 shallow=False
             )
         ),
+        PatchVariationSource(),
         HTTP(
             local="aspen-1080p.y4m",
             remote={
@@ -131,3 +133,9 @@ class X264(VProject):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)
+
+    def recompile(self):
+        """Recompile the project."""
+        x264_version_source = local.path(self.source_of_primary)
+        with local.cwd(x264_version_source):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))

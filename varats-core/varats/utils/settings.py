@@ -129,11 +129,11 @@ def create_new_varats_config() -> s.Configuration:
 
     cfg["benchbase"] = {
         "source_dir": {
-            "desc": "SZZUnleashed source directory",
+            "desc": "Benchbase source directory",
             "default": None
         },
         "install_dir": {
-            "desc": "SZZUnleashed install directory",
+            "desc": "Benchbase install directory",
             "default": None
         },
         "java_dir": {

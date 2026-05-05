@@ -41,7 +41,7 @@ class BenchbaseCodeBase(CodeBase):
 class Benchbase(ResearchTool[BenchbaseCodeBase]):
     """Research tool for benchbase."""
 
-    __DEPENDENCIES = Dependencies({Distro.DEBIAN: ["ninja-build"]})
+    __DEPENDENCIES = Dependencies({Distro.DEBIAN: [], Distro.ARCH: []})
 
     __SUPPORTED_PROFILES = ["postgres", "mysql", "mariadb"]
 
@@ -64,6 +64,9 @@ class Benchbase(ResearchTool[BenchbaseCodeBase]):
 
     @staticmethod
     def install_location() -> Path:
+        # Check if container environment variable is set
+        if (container_install_dir := local.env.get("BENCHBASE_INSTALL_DIR")):
+            return Path(container_install_dir)
         return Path(vara_cfg()["benchbase"]["install_dir"].value)
 
     @staticmethod
@@ -162,9 +165,100 @@ class Benchbase(ResearchTool[BenchbaseCodeBase]):
         print(" - Finished building benchbase")
 
     def get_install_binaries(self) -> tp.List[str]:
-        return []
+        return [
+            f"benchbase-{profile}.tgz" for profile in self.__SUPPORTED_PROFILES
+        ]
 
     def verify_build(
         self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
     ) -> bool:
         return True
+
+    #################################
+    # ContainerInstallable Protocol #
+    #################################
+
+    def container_install_dependencies(
+        self, stage_builder: 'containers.StageBuilder'
+    ) -> None:
+        """
+        Add layers for installing this research tool's dependencies to the given
+        container.
+
+        Args:
+            stage_builder: the builder object for the current container stage
+        """
+
+        if self.get_dependencies().has_dependencies_for_distro(
+            stage_builder.base.distro
+        ):
+            # Distribution-specific dependencies
+            ...
+
+    def container_install_tool(
+        self, stage_builder: 'containers.StageBuilder'
+    ) -> None:
+        """
+        Add layers for installing this research tool to the given container.
+
+        Args:
+            stage_builder: the builder object for the current container stage
+        """
+        img_name = stage_builder.base.name
+        benchbase_install_dir = str(self.install_location()) + "_" + img_name
+        if not self.install_exists(Path(benchbase_install_dir)):
+            raise AssertionError(
+                f"Could not find VaRA build for base container {img_name}.\n"
+                f"Run 'vara-buildsetup build vara --container={img_name}' "
+                f"to compile VaRA for this base image."
+            )
+
+        container_vara_dir = stage_builder.varats_root / (
+            "tools/benchbase_" + img_name
+        )
+        stage_builder.layers.copy_([benchbase_install_dir],
+                                   str(container_vara_dir))
+
+        # In addition, install stable Java 23 via Adoptium
+        jdk_download_url = "https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.2%2B7/OpenJDK23U-jdk_x64_linux_hotspot_23.0.2_7.tar.gz"
+        base_dir = self.code_base.base_dir
+        jdk_target = base_dir / "jdk-23.tar.gz"
+        if jdk_target.exists():
+            jdk_target.unlink()
+        local["wget"][jdk_download_url, "-O", str(jdk_target)]()
+
+        # Extract the JDK to the base directory and then copy it to the container
+        jdk_extract_path = base_dir / "jdk-23.0.2+7"
+        if jdk_extract_path.exists():
+            shutil.rmtree(jdk_extract_path)
+
+        local["tar"]["-xzf", str(jdk_target)]()
+
+        container_jdk_dir = stage_builder.varats_root / "jdk-23"
+        stage_builder.layers.copy_([str(jdk_extract_path)], container_jdk_dir)
+
+    def container_tool_env(
+        self, stage_builder: 'containers.StageBuilder'
+    ) -> tp.Dict[str, tp.List[str]]:
+        """
+        Tool-specific container configuration in the form of environment
+        variables.
+
+        Args:
+            stage_builder: the builder object for the current container stage
+        Returns:
+            a dictionary of environment variables and their values
+        """
+
+        # Paths to adapt for container environment:
+        # JAVA_HOME - To point to correct JDK installation in the container
+        # PATH - To include the bin directory of the JDK in the container
+        # BENCHBASE_INSTALL_DIR - To point to the correct location of the benchbase tgz in the container
+
+        return {
+            "JAVA_HOME": [str(stage_builder.varats_root / "jdk-23")],
+            "PATH": [str(stage_builder.varats_root / "jdk-23" / "bin")],
+            "BENCHBASE_INSTALL_DIR": [
+                "/varats_root/tools/benchbase_" + stage_builder.base.name
+            ]
+        }

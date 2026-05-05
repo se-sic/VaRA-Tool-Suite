@@ -7,6 +7,7 @@ import benchbuild as bb
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local, ProcessExecutionError
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.experiments.hidden_config.database_utils import (
     SupportsBenchbase,
     BENCHBASE_WORKLOAD_CONFIG_DIR,
@@ -54,6 +55,12 @@ class PostgreSQL(VProject):
         ),
         PatchVariationSource()
     ]
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
+        'apt', 'install', '-y', 'build-essential', 'clang', 'cmake',
+        'pkg-config', 'bison', "flex", 'libreadline-dev', 'zlib1g-dev',
+        'libicu-dev'
+    )
 
     @staticmethod
     def binaries_for_revision(

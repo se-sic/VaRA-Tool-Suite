@@ -104,12 +104,12 @@ class MySQL(VProject):
     ###############################
     # SupportsTestSuites Protocol #
     ###############################
-    @property
-    def id(self) -> str:
-        """We need to override the default id from benchbuild, as it contains
-        the @ symbol which causes issues with the test suite of mysql."""
-        version_str = str(self.revision)
-        return f"{self.name}-{self.group}-{version_str}"
+    #@property
+    #def id(self) -> str:
+    #    """We need to override the default id from benchbuild, as it contains
+    #    the @ symbol which causes issues with the test suite of mysql."""
+    #    version_str = str(self.revision)
+    #    return f"{self.name}-{self.group}-{version_str}"
 
     def prepare_test_environment(self) -> None:
         """
@@ -156,7 +156,6 @@ class MySQL(VProject):
 
         with local.cwd(build_dir):
             test_command = test_binary[
-                "--mem",
                 "--force",
                 "--max-test-fail=1000",  # We want to get as many results as possible, so we set a high limit for test failures
                 f"--parallel={get_number_of_jobs(bb_cfg())}",
