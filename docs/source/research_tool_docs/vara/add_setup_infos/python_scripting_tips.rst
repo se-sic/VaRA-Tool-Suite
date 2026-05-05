@@ -46,7 +46,7 @@ Force minimum python version
    import sys
 
 
-   MIN_PYTHON = (3, 6)
+   MIN_PYTHON = (3, 11)
 
 
    def main() -> None:

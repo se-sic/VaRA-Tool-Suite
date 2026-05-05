@@ -29,7 +29,7 @@ from varats.ts_utils.cli_util import initialize_cli_tool, add_cli_options
 LOG = logging.getLogger(__name__)
 
 
-class PlotCLI(click.MultiCommand):
+class PlotCLI(click.Group):
     """Command factory for plots."""
 
     def __init__(self, **attrs: tp.Any):

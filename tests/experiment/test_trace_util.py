@@ -207,17 +207,17 @@ class TestTraceUtil(unittest.TestCase):
                 {
                     "raw": TRACE_1,
                     "sanitized": TRACE_1_SANITIZED,
-                    "path": Path(tmp_dir) / f"trace_1_raw.json"
+                    "path": Path(tmp_dir) / "trace_1_raw.json"
                 },
                 {
                     "raw": TRACE_1_SANITIZED,
                     "sanitized": TRACE_1_SANITIZED,
-                    "path": Path(tmp_dir) / f"trace_1_sanitized.json"
+                    "path": Path(tmp_dir) / "trace_1_sanitized.json"
                 },
                 {
                     "raw": TRACE_2,
                     "sanitized": TRACE_2,
-                    "path": Path(tmp_dir) / f"trace_2_raw.json"
+                    "path": Path(tmp_dir) / "trace_2_raw.json"
                 },
             ]
             for trace in setup:
@@ -232,11 +232,11 @@ class TestTraceUtil(unittest.TestCase):
             setup = [
                 {
                     "raw": TRACE_1,
-                    "path": Path(tmp_dir) / f"trace_1.json"
+                    "path": Path(tmp_dir) / "trace_1.json"
                 },
                 {
                     "raw": TRACE_2,
-                    "path": Path(tmp_dir) / f"trace_2.json"
+                    "path": Path(tmp_dir) / "trace_2.json"
                 },
             ]
             for trace in setup:
