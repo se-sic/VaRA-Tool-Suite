@@ -12,8 +12,9 @@ from varats.tools.research_tools.vara import VaRA
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import vara_cfg
 
-ResearchToolTy = tp.Union[tp.Type[VaRA], tp.Type[Phasar], tp.Type[SZZUnleashed],
-                          tp.Type[HeapTrack]]
+ResearchToolTy = tp.Union[
+    type[VaRA], type[Phasar], type[SZZUnleashed], type[HeapTrack]
+]
 
 
 def get_research_tool_type(name: str) -> ResearchToolTy:
@@ -41,8 +42,7 @@ def get_research_tool_type(name: str) -> ResearchToolTy:
 
 
 def get_research_tool(
-    name: str,
-    source_location: tp.Optional[Path] = None
+    name: str, source_location: Path | None = None
 ) -> ResearchTool[tp.Any]:
     """
     Look up a research tool by name.
@@ -72,16 +72,18 @@ def get_research_tool(
     return rs_type(src_folder)
 
 
-def get_supported_research_tool_names() -> tp.List[str]:
+def get_supported_research_tool_names() -> list[str]:
     """Returns a list of all supported research tools."""
     return ["phasar", "vara", "szzunleashed", "heaptrack"]
 
 
 def configuration_lookup_error_handler(
-    func: tp.Callable[..., None]
+    func: tp.Callable[..., None],
 ) -> tp.Callable[..., None]:
-    """Wrapper for drivers to catch internal Exceptions and provide a helpful
-    message to the user."""
+    """
+    Wrapper for drivers to catch internal Exceptions and provide a helpful
+    message to the user.
+    """
 
     @wraps(func)
     def wrapper_configuration_lookup_error_handler(
