@@ -10,6 +10,7 @@ from varats.project.project_util import (
     RevisionBinaryMap,
 )
 from varats.projects.discover_projects import initialize_projects
+from varats.utils.git_commands import get_current_branch
 from varats.utils.git_util import (
     ChurnConfig,
     CommitRepoPair,
@@ -22,7 +23,6 @@ from varats.utils.git_util import (
     calc_code_churn,
     calc_commit_code_churn,
     get_all_revisions_between,
-    get_current_branch,
     get_initial_commit,
     get_submodule_head,
     calc_code_churn_range,
