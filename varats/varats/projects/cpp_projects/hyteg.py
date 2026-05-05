@@ -2,11 +2,13 @@
 import logging
 import os
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
 from benchbuild.utils.cmd import ninja, cmake, mkdir
 from benchbuild.utils.revision_ranges import SingleRevision
+from github.Repository import Repository
 from plumbum import local
 
 from varats.experiment.workload_util import WorkloadCategory, RSBinary
@@ -22,7 +24,13 @@ from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_commands import update_all_submodules
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, RepositoryHandle
+from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    TestResult,
+    ctest_run_testsuite,
+    ctest_get_test_names,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -87,6 +95,11 @@ class HyTeg(VProject):
         ]
     }
 
+    CMAKE_ARGS = [
+        "-G", "Ninja", "..", "-DWALBERLA_BUILD_WITH_MPI=OFF",
+        "-DHYTEG_BUILD_DOC=OFF"
+    ]
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
@@ -109,7 +122,9 @@ class HyTeg(VProject):
 
         mkdir("-p", hyteg_source / "build")
 
-        update_all_submodules(hyteg_source, recursive=True, init=True)
+        update_all_submodules(
+            RepositoryHandle(hyteg_source), recursive=True, init=True
+        )
 
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
@@ -143,3 +158,55 @@ class HyTeg(VProject):
 
     def run_tests(self) -> None:
         pass
+
+    def prepare_test_environment(self) -> None:
+        """Prepare the testsuite."""
+        hyteg_source = local.path(self.source_of(self.primary_source))
+
+        mkdir("-p", hyteg_source / "build")
+
+        update_all_submodules(
+            RepositoryHandle(hyteg_source), recursive=True, init=True
+        )
+        # with local.cwd(hyteg_source):
+        #     local["git"]["submodule"]("update", "--init", "--recursive")
+
+        cc_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
+        cmake_args = self.CMAKE_ARGS
+        if (eigen_path := os.getenv("EIGEN_PATH")):
+            cmake_args.append(f"-DEIGEN_DIR={eigen_path}")
+        else:
+            LOG.warning(
+                "EIGEN_PATH environment variable not set! This will cause"
+                " compilation errors when using configurations"
+            )
+
+        with local.cwd(hyteg_source / "build"):
+            with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
+                bb.watch(cmake)(cmake_args)
+
+    def build_tests(self) -> None:
+        """Build the tests."""
+        hyteg_source = local.path(self.source_of(self.primary_source))
+
+        with local.cwd(hyteg_source / "build"):
+            bb.watch(ninja)()
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """Get the test names."""
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_get_test_names(build_dir)
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        """Run the testsuite."""
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_run_testsuite(
+            build_dir, test_report_path, tests_to_run, tests_to_exclude
+        )

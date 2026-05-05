@@ -32,11 +32,13 @@ class IfThenElse(OutputFolderStep):
         then_step: tp.Optional[ProjectStep] = None,
         else_step: tp.Optional[ProjectStep] = None,
         valid_results: tp.Optional[tp.List[StepResult]] = None,
+        return_result: tp.Optional[StepResult] = None
     ) -> None:
         super().__init__(project)
         self.__condition = condition
         self.__then_step = then_step
         self.__else_step = else_step
+        self.__return_result = return_result
         if valid_results is None:
             self.__valid_results = [StepResult.OK, StepResult.CAN_CONTINUE]
         else:
@@ -50,10 +52,13 @@ class IfThenElse(OutputFolderStep):
         else:
             run_step = self.__else_step
 
-        if not run_step:
-            return result
+        if run_step:
+            result = _run_with_output_if_necessary(tmp_dir, run_step)
 
-        return _run_with_output_if_necessary(tmp_dir, run_step)
+        if not self.__return_result:
+            return result
+        else:
+            return self.__return_result
 
     def __call__(self) -> StepResult:
         result = self.__condition()
@@ -153,6 +158,6 @@ class AlwaysStatus(OutputFolderStep):
         )
 
 
-def AlwaysOk(project: Project, step: ProjectStep) -> AlwaysStatus:
+def AlwaysOk(step: ProjectStep) -> AlwaysStatus:
     """Returns OK regardless of the actual child step."""
-    return AlwaysStatus(project, step, StepResult.OK)
+    return AlwaysStatus(step.project, step, StepResult.OK)

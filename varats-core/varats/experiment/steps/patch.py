@@ -47,14 +47,21 @@ class ApplyPatch(actions.ProjectStep):
             )
             return StepResult.ERROR
 
+        repo_handle = RepositoryHandle(Path(self.project.source_of_primary))
+
+        # Fix for issues with patches and repositories having different line endings
         try:
-            apply_patch(
-                RepositoryHandle(Path(self.project.source_of_primary)),
-                patch_path
+            repo_handle("config", "--local", "core.autocrlf", "input")
+        except ProcessExecutionError:
+            print(
+                "Failed to set core.autocrlf to input, this may cause errors when trying to apply patches."
             )
 
-        except ProcessExecutionError:
-            print("Applying patch failed")
+        try:
+            apply_patch(repo_handle, patch_path)
+
+        except ProcessExecutionError as pee:
+            print(f"Applying patch failed: {pee}")
             self.status = StepResult.ERROR
 
         return self.status
@@ -97,11 +104,18 @@ class RevertPatch(actions.ProjectStep):
             )
             return StepResult.ERROR
 
+        repo_handle = RepositoryHandle(Path(self.project.source_of_primary))
+
+        # Fix for issues with patches and repositories having different line endings
         try:
-            revert_patch(
-                RepositoryHandle(Path(self.project.source_of_primary)),
-                patch_path
+            repo_handle("config", "--local", "core.autocrlf", "input")
+        except ProcessExecutionError:
+            print(
+                "Failed to set core.autocrlf to input, this may cause errors when trying to apply patches."
             )
+
+        try:
+            revert_patch(repo_handle, patch_path)
 
         except ProcessExecutionError:
             self.status = StepResult.ERROR

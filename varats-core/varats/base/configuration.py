@@ -6,6 +6,8 @@ import typing as tp
 from copy import deepcopy
 from dataclasses import dataclass
 
+from frozendict import frozendict
+
 
 class ConfigurationOption:
     """A configuration option for a software project."""
@@ -459,4 +461,62 @@ class PatchConfiguration(Configuration):
         return FrozenConfiguration(deepcopy(self))
 
     def unfreeze(self) -> Configuration:
+        return self
+
+
+class PatchVariationConfiguration(Configuration):
+    """
+    Meta-Configuration to allow parallel execution of the same revision with
+    different patch variations.
+
+    Mostly built to speed up execution of experiment with many patch variations.
+    """
+
+    def __init__(self, variations: tp.Dict[str, tp.Dict[str, tp.List]]):
+        # Convert variations such that all the lists are converted to tuples to make them hashable
+        values = {
+            name: {
+                key: tuple(value) if isinstance(value, list) else value
+                for key, value in variation.items()
+            } for name, variation in variations.items()
+        }
+
+        self.__variations: tp.Set[ConfigurationOption] = {
+            ConfigurationOptionImpl(name, frozendict(value))
+            for name, value in values.items()
+        }
+
+    @staticmethod
+    def create_configuration_from_str(config_str: str) -> 'Configuration':
+        patch_variations: tp.Dict = json.loads(config_str)
+        return PatchVariationConfiguration(patch_variations)
+
+    def add_config_option(self, option: ConfigurationOption) -> None:
+        self.__variations.add(option)
+
+    def set_config_option(self, option_name: str, value: tp.Any) -> None:
+        self.__variations = {
+            option for option in self.__variations if option.name != option_name
+        }
+        self.add_config_option(ConfigurationOptionImpl(option_name, value))
+
+    def get_config_value(self, option_name: str) -> tp.Optional[tp.Any]:
+        filtered_options = filter(
+            lambda option: (option.name == option_name), self.__variations
+        )
+        return any(filtered_options)
+
+    def options(self) -> tp.List[ConfigurationOption]:
+        return list(self.__variations)
+
+    def dump_to_string(self) -> str:
+        # Dump as dict to be able to reparse it later
+        return json.dumps({
+            option.name: option.value for option in self.__variations
+        })
+
+    def freeze(self) -> 'FrozenConfiguration':
+        return FrozenConfiguration(deepcopy(self))
+
+    def unfreeze(self) -> 'Configuration':
         return self

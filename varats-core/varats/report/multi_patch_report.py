@@ -82,5 +82,20 @@ class MultiPatchReport(
         fn_without_prefix = file_name[len("patched_"):]
         split_leftover_fn = fn_without_prefix.partition("_")
         shortname_length = int(split_leftover_fn[0])
-        patch_shortname = "".join(split_leftover_fn[2:])
+        patch_shortname = "".join(split_leftover_fn[2:])[:shortname_length]
         return patch_shortname
+
+    @staticmethod
+    def _parse_base_file_name_from_report_name(file_name: str) -> str:
+        """Parse the base file name from a given report."""
+        if MultiPatchReport.is_baseline_report(file_name):
+            return file_name[len("baseline_"):]
+        elif MultiPatchReport.is_patched_report(file_name):
+            fn_without_prefix = file_name[len("patched_"):]
+            split_leftover_fn = fn_without_prefix.partition("_")
+            shortname_length = int(split_leftover_fn[0])
+            base_file_name = "".join(split_leftover_fn[2:]
+                                    )[shortname_length + 1:]
+            return base_file_name
+        else:
+            raise ValueError(f"Invalid report file name: {file_name}")

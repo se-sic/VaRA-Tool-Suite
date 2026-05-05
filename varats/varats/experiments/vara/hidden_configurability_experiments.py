@@ -1,4 +1,3 @@
-import pprint
 import re
 import textwrap
 import typing as tp
@@ -8,11 +7,11 @@ from pathlib import Path
 import benchbuild as bb
 import benchbuild.extensions as bb_ext
 import yaml
-from benchbuild.command import cleanup, ProjectCommand
+from benchbuild.command import ProjectCommand, cleanup
 from benchbuild.utils import actions
-from benchbuild.utils.actions import StepResult, Echo, Step
+from benchbuild.utils.actions import Echo, Step, StepResult
 from benchbuild.utils.cmd import git
-from plumbum import local
+from plumbum import ProcessExecutionError, local
 
 from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
@@ -21,38 +20,56 @@ from varats.data.reports.hidden_configurability_report import (
 from varats.data.reports.llvm_cov_report import LLVMCoverageReport
 from varats.data.reports.text_report import PlainTextReport
 from varats.experiment.experiment_util import (
-    VersionExperiment,
     ExperimentHandle,
-    create_new_success_result_filepath,
+    VersionExperiment,
+    WithEnvironment,
     WithUnlimitedStackSize,
-    get_default_compile_error_wrapped,
-    get_config_patch_steps,
     ZippedExperimentSteps,
     ZippedReportFolder,
+    create_new_success_result_filepath,
+    create_stable_success_result_filepath,
+    get_config_patch_steps,
     get_config_reverse_patch_steps,
-    WithEnvironment,
+    get_default_compile_error_wrapped,
 )
-from varats.experiment.steps.combinators import OutputAdapter, AlwaysOk
+from varats.experiment.steps.combinators import (
+    AlwaysOk,
+    IfThenElse,
+)
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
 from varats.experiment.steps.testsuite import (
-    RunTestSuite,
-    PrepareTestSuite,
     BuildTestSuite,
+    PrepareTestSuite,
+    RunTestSuite,
 )
 from varats.experiment.workload_util import (
-    workload_commands,
     create_workload_specific_filename,
-    WorkloadCategory,
+    workload_commands,
 )
 from varats.experiments.coverage.collect_coverages import CollectBinaryCoverages
+from varats.experiments.hidden_config.hidden_config_utils import (
+    get_variations_as_dict,
+    sample_variations,
+)
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_precision import (
     AnalysisProjectStepBase,
 )
-from varats.project.project_util import ProjectBinaryWrapper, BinaryType
-from varats.project.varats_project import VProject, SupportsTestSuites
-from varats.provider.patch.patch_provider import PatchProvider
+from varats.project.project_util import BinaryType, ProjectBinaryWrapper
+from varats.project.varats_project import VProject
+from varats.projects.c_projects.brotli import Brotli
+from varats.projects.c_projects.bzip2 import Bzip2
+from varats.projects.c_projects.gzip import Gzip
+from varats.projects.c_projects.lrzip import Lrzip
+from varats.projects.c_projects.xz import Xz
+from varats.projects.cpp_projects.dune import DunePerfRegression
+from varats.projects.cpp_projects.ect import Ect
+from varats.projects.cpp_projects.fast_downward import FastDownward
+from varats.projects.cpp_projects.hyteg import HyTeg
+from varats.projects.cpp_projects.lepton import Lepton
+from varats.projects.cpp_projects.sevenZip import SevenZip
+from varats.provider.patch.patch_provider import Patch, PatchProvider
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.revision.revisions import get_processed_revisions_files
@@ -85,11 +102,14 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
 
     def analyze(self) -> actions.StepResult:
         """This step detects hidden configurability points in the project."""
+        print(
+            f"Running HiddenConfigurabilityDetector for {self.project.name}..."
+        )
         binary = self.project.binaries[0]
 
         result_file = create_new_success_result_filepath(
             self.__experiment_handle, HiddenConfigurabilityReport, self.project,
-            binary
+            binary, get_current_config_id(self.project)
         )
 
         project_directory = self.project.source_of_primary
@@ -131,16 +151,27 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
 
                 files.append(sm_path + "/" + line)
 
+        print(
+            f"Running HiddenConfigurabilityDetector for {len(files)} source code files..."
+        )
         # Run the HiddenConfigurabilityDetector
         hvf = local[VaRA.install_location() / "bin" /
                     "hidden-variability-finder"]
+
+        vara_lib_path = VaRA.install_location() / "lib"
+        hvf = hvf.with_env(LD_LIBRARY_PATH=str(vara_lib_path))
 
         with local.cwd(project_directory):
             run_cmd = hvf[f"--report-file={result_file}",
                           f"--root-dir={project_directory}"]
             run_cmd = run_cmd[files]
 
-            bb.watch(run_cmd)()
+            try:
+                bb.watch(run_cmd)()
+            except ProcessExecutionError as e:
+                print(
+                    f"Error while running HiddenConfigurabilityDetector for {self.project.name}: {e}"
+                )
 
         return actions.StepResult.OK
 
@@ -159,11 +190,23 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
     ]
 
     __PROJECT_SPECIFIC_IGNORED_PATTERNS = {
-        "HyTeg": ["eigen/"],
-        "7-Zip": ["Windows/", "UI/"],
-        "brotli": ["csharp/", "go/", "java/", "js/", "python/", "research/"],
-        "xz": ["debug/", "doc/", "windows/"],
-        "lepton": ["dependencies/", "test_suite/"]
+        HyTeg.NAME: ["eigen/"],
+        SevenZip.NAME: ["Windows/", "UI/"],
+        Brotli.NAME: ["csharp/", "go/", "java/", "js/", "python/", "research/"],
+        Xz.NAME: ["debug/", "doc/", "windows/"],
+        Lepton.NAME: ["dependencies/", "test_suite/"],
+        Ect.NAME: [
+            "libpng/", "leanify/", "lodepng/", "miniz/", "mozijpeg/",
+            "optipng/", "zlib/", "zopfli/"
+        ],
+        Lrzip.NAME: ["libzpaq/", "lzo/", "lzma/", "m4/"],
+        Bzip2.NAME: [],
+        Gzip.NAME: ["m4"],
+        FastDownward.NAME: [],
+        DunePerfRegression.NAME: ["dune-performance-regression/"],
+        "cryptominisat": ["tests/", "utils/"],
+        "cadical": ["test/", "contrib"],
+        "x264": ["extras/", "tools/"],
     }
 
     def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
@@ -203,9 +246,11 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
 
     def __filter_coverage_based(self, report_data: dict) -> dict:
         # Filter points that are not covered according to coverage report
+        exp_type = CollectBinaryCoverages
+
         coverage_reports = get_processed_revisions_files(
             self.project.name,
-            CollectBinaryCoverages,
+            exp_type,
             LLVMCoverageReport,
             config_id=get_current_config_id(self.project)
         )
@@ -216,7 +261,16 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
             )
             return report_data
 
-        coverage_report = LLVMCoverageReport(coverage_reports[0].full_path())
+        try:
+            coverage_report = LLVMCoverageReport(
+                coverage_reports[0].full_path()
+            )
+        except:
+            print(
+                f"Failed to load coverage report for {self.project.name} from "
+                f"{coverage_reports[0].full_path()}"
+            )
+            return report_data
         for _, points in report_data.items():
             for point in points:
                 # For each point create a map from files to lines they are used at
@@ -245,6 +299,19 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         #pprint.pprint(report_data)
         return report_data
 
+    def __filter_literal_bin_operations(self, report_data: dict) -> dict:
+        # Filter literal bin operations based on operand
+        __LITERAL_BIN_OP_KEY = "LiteralComp"
+
+        for point in report_data.get(__LITERAL_BIN_OP_KEY, []):
+            if point["Operator"] not in [
+                "==", "!=", "<", ">", "<=", ">=", "+=", "-=", "*=", "/="
+            ]:
+                point["tags"] = [*getattr(point, "tags", []),
+                                 "Excluded (Operand)"]
+
+        return report_data
+
     def filter(self) -> actions.StepResult:
         # Load the report
         reports = get_processed_revisions_files(
@@ -271,6 +338,8 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         report_data = self.__filter_ignored_patterns(report_data)
 
         report_data = self.__filter_coverage_based(report_data)
+
+        report_data = self.__filter_literal_bin_operations(report_data)
 
         result_filename = create_new_success_result_filepath(
             self.__experiment_handle, HiddenConfigurabilityReport, self.project,
@@ -351,70 +420,6 @@ class FilterHiddenConfigurabilityReport(VersionExperiment, shorthand="FCP"):
         return experiment_steps
 
 
-# Mapping of patches per project to possible variations
-# for patch rendering.
-PATCH_VARIATIONS = {
-    "libzmq": {
-        "hwm_template":
-            ("hwm", [x for x in range(100, 2000, 100) if x != 1000]),
-    },
-    "brotli": {
-        "command_block_cost": (
-            "command_block_cost",
-            [x / 10 for x in range(120, 150, 1) if x != 135]
-        ),
-        "literal_block_cost": (
-            "literal_block_cost",
-            [x / 10 for x in range(270, 300, 1) if x != 281]
-        ),
-        "distance_block_cost": (
-            "distance_block_cost",
-            [x / 10 for x in range(130, 160, 1) if x != 146]
-        ),
-        "min_entropy":
-            ("min_entropy", [x / 100 for x in range(650, 950, 10) if x != 792]),
-        "min_utf_ratio":
-            ("min_utf_ratio", [x / 100 for x in range(50, 100, 5) if x != 75]),
-        "sample_rate": (
-            "sample_rate", [x for x in range(10, 20) if x != 13] +
-            [13 * i for i in range(2, 6)]
-        ),
-    },
-    "DunePerfRegression": {
-        "hexa_gitter_refinement": (
-            "resolution",
-            [x for x in range(25, 100, 25)] + [x for x in range(100, 500, 50)]
-        ),
-        "alu_repartition": ("mem_factor", [x for x in range(3, 10, 1)]),
-    },
-    "FastDownward": {
-        "extra_columns": ("extra_columns", [x for x in range(1, 10)]),
-        "max_distance":
-            ("max_distance", [2**x for x in range(1, 10) if 2**x != 32]),
-        "memory_padding": (
-            "memory_padding_mb",
-            [25] + [x for x in range(50, 105, 5) if x != 75] + [150, 225, 300]
-        ),
-        "preconditions_to_test":
-            ("preconditions_to_test", [x for x in range(2, 11) if x != 5]),
-    },
-    "libvpx": {
-        "block_size_vp9_enc":
-            ("block_size", [2**x for x in range(1, 7) if x != 4]),
-        "cq_adjust_one_pass": ("cq_adjust", [0.05, 0.2, 0.4, 0.6, 0.8]),
-        "cq_adjust_two_pass": ("cq_adjust", [0.05, 0.2, 0.4, 0.6, 0.8]),
-        "kMaxMfBoost":
-            ("kMaxMfBoost", [250, 500, 1000, 1500, 3000, 4000, 10000]),
-        "min_filter_pick":
-            ("min_filter_level", [1, 2, 3, 4] + [x for x in range(5, 20, 2)]),
-        "min_filter_search":
-            ("min_filter_level", [1, 2, 3, 4] + [x for x in range(5, 20, 2)]),
-        "mv_threshold": ("mv_threshold", [25, 50, 150, 200, 400, 800, 1000]),
-        "pred_stride": ("pred_stride", [4, 8, 16, 32, 128]),
-        "pred_stride_rd": ("pred_stride", [4, 8, 16, 32, 128])
-    },
-}
-
 _PROJECT_WORKLOADS = {
     "DunePerfRegression": [
         "poisson-yasp-q2-3d", "poisson-alugrid", "poisson-non-separated"
@@ -422,7 +427,14 @@ _PROJECT_WORKLOADS = {
     "FastDownward": ["data-network-opt18-py", "sokoban-sat08-py"],
     "libvpx": ["nocturne-1080p"],
     "libzmq": ["bench-inproc-lat", "bench-inproc-thr", "bench-radix-tree"],
-    "brotli": ["geo-maps-countries-land-1km", "geo-maps-countries-land-2km5"]
+    "brotli": ["geo-maps-countries-land-1km", "geo-maps-countries-land-2km5"],
+    "xz": ["countries-land-10m", "countries-land-250m"],
+    "7zip": ["countries-10m-geo", "countries-100m-geo"],
+    "cryptominisat": ["traffic-kkb-unknown"],
+    "bzip2": ["med-geo-compress"],
+    "x264": ["aspen-1080p", "old-town-2160p"],
+    "lrzip": ["countries-land-10m", "countries-land-100m"],
+    "cadical": ["traffic-kkb-unknown"]
 }
 
 
@@ -432,6 +444,9 @@ def variation_value_to_str(value: tp.Any) -> str:
 
 def _filter_workloads(project: VProject,
                       binary: ProjectBinaryWrapper) -> tp.List[ProjectCommand]:
+    if project.name not in _PROJECT_WORKLOADS:
+        print(f"Warning: No workload defined for {project.name}")
+        return []
     return [
         cmd for cmd in workload_commands(project, binary, [])
         if cmd.command.label in _PROJECT_WORKLOADS[project.name]
@@ -460,15 +475,15 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
                             "time_report", prj_command.command, rep, ".txt"
                         )
 
-                        pb_cmd = prj_command.command.as_plumbum(
+                        run_cmd = prj_command.command.as_plumbum_wrapped_with(
+                            local["time"]["-v", "-o", f"{time_report_file}"],
                             project=self.project
                         )
-                        run_cmd = local["time"]["-v", "-o",
-                                                f"{time_report_file}",
-                                                pb_cmd.formulate()]
 
                         with cleanup(prj_command):
-                            bb.watch(run_cmd)()
+                            bb.watch(run_cmd)(
+                                retcode=self._binary.valid_exit_codes
+                            )
 
         return StepResult.OK
 
@@ -518,85 +533,101 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
 
         analysis_actions = get_config_patch_steps(project)
 
-        analysis_actions.append(actions.Compile(project))
+        variations = get_variations_as_dict(project)
+        zipped_steps = []
 
-        for binary in _get_project_binaries(project):
-            if len(
-                workload_commands(
-                    project, binary, [
-                        WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL,
-                        WorkloadCategory.MEDIUM
-                    ]
+        if len(variations) == 0:
+            # Baseline step, test normal program behavior without any patch applied
+            analysis_actions.append(actions.Compile(project))
+
+            zipped_steps.extend([
+                TimePatchedWorkloadsStep(
+                    project,
+                    binary,
+                    file_name=MPRTimeWLAggregate.create_baseline_report_name(
+                        binary.name
+                    ) + ".zip",
+                    report_file_ending=".txt",
+                    reps=NUM_REPETITIONS
+                ) for binary in _get_project_binaries(project)
+            ])
+        else:
+            # Filter patches based on the variations specified in the configuration
+            patches_filtered: tp.List[Patch] = [
+                patch for patch in patches if patch.shortname in variations
+            ]
+
+            if len(patches_filtered) == 0:
+                print(f"No patch found with shortname {[variations.keys()]}.")
+                print(
+                    f"Available patches: {[patch.shortname for patch in patches]}"
                 )
-            ) == 0:
-                analysis_actions.append(
-                    Echo(
-                        f"Skipping binary {binary.name} as it has no workloads."
-                    )
-                )
-                continue
 
-            result_filepath = create_new_success_result_filepath(
-                self.get_handle(), self.REPORT_SPEC.main_report, project,
-                binary, get_current_config_id(project)
-            )
+            for patch in patches_filtered:
+                patch_variations = variations[patch.shortname]
 
-            if not isinstance(analysis_actions[-1], actions.Compile):
-                analysis_actions.append(ReCompile(project))
-
-            patch_steps = []
-
-            for patch in patches:
-                # Skip patches without any variations
-                if patch.shortname not in PATCH_VARIATIONS[project.name]:
+                if len(patch_variations) != 1:
                     print(
-                        f"Skipping patch {patch.shortname} for project "
-                        f"{project.name} as it has no variations."
+                        f"Warning: Patch '{patch.shortname}' defines more than one argument. This is not supported currently. Skipping this patch."
                     )
                     continue
+                arg_name = next(iter(patch_variations))
+                values: tp.List[int] = list(patch_variations[arg_name])
 
-                arg_name, values = PATCH_VARIATIONS[project.name][
-                    patch.shortname]
+                if arg_name not in patch.arguments:
+                    print(
+                        f"Warning: Patch '{patch.shortname}' does not define argument '{arg_name}'."
+                    )
+                    print(f"Available arguments: {patch.arguments}")
+                    continue
+
+                num_samples = 20
+                values.extend(sample_variations(values, num_samples))
 
                 for value in values:
-                    patch_steps.append(
+                    zipped_steps.append(
                         ApplyPatch(project, patch, **{arg_name: value})
                     )
-                    patch_steps.append(ReCompile(project))
-                    patch_steps.append(
-                        AlwaysOk(
-                            project,
-                            TimePatchedWorkloadsStep(
+
+                    if len(zipped_steps) == 1:
+                        # First iteration, perform a full compile
+                        condition = actions.Compile(project)
+                    else:
+                        condition = ReCompile(project)
+
+                    for b in _get_project_binaries(project):
+                        zipped_steps.append(
+                            IfThenElse(
                                 project,
-                                binary,
-                                file_name=MPRTimeWLAggregate.
-                                create_patched_report_name(
-                                    patch, binary.name, **{arg_name: value}
-                                ),
-                                report_file_ending=".txt",
-                                reps=NUM_REPETITIONS
+                                condition=condition,
+                                then_step=AlwaysOk(
+                                    TimePatchedWorkloadsStep(
+                                        project,
+                                        b,
+                                        file_name=MPRTimeWLAggregate.
+                                        create_patched_report_name(
+                                            patch, b.name, **{arg_name: value}
+                                        ) + ".zip",
+                                        report_file_ending=".txt",
+                                        reps=NUM_REPETITIONS
+                                    )
+                                )
                             )
                         )
-                    )
 
-                    patch_steps.append(
+                    zipped_steps.append(
                         RevertPatch(project, patch, **{arg_name: value})
                     )
 
-            analysis_actions.append(
-                ZippedExperimentSteps(
-                    result_filepath, [
-                        TimePatchedWorkloadsStep(
-                            project,
-                            binary,
-                            file_name=MPRTimeWLAggregate.
-                            create_baseline_report_name(binary.name),
-                            report_file_ending=".txt",
-                            reps=NUM_REPETITIONS
-                        )
-                    ] + patch_steps
-                )
-            )
+        fake_binary = ProjectBinaryWrapper("ALL", Path(), BinaryType.EXECUTABLE)
+        result_filepath = create_stable_success_result_filepath(
+            self.get_handle(), MPRTimeWLAggregate, project, fake_binary,
+            get_current_config_id(project)
+        )
+
+        analysis_actions.append(
+            ZippedExperimentSteps(result_filepath, zipped_steps)
+        )
 
         analysis_actions.extend(get_config_reverse_patch_steps(project))
         analysis_actions.append(actions.Clean(project))
@@ -637,83 +668,106 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
         )
 
         patch_provider = PatchProvider.get_provider_for_project(type(project))
+        print(
+            f"{patch_provider.get_patches_for_revision(ShortCommitHash(project.version_of_primary))=}"
+        )
         patches = patch_provider.get_patches_for_revision(
             ShortCommitHash(project.version_of_primary)
         )["hidden-config"]
 
         analysis_actions = get_config_patch_steps(project)
 
-        analysis_actions.append(PrepareTestSuite(project))
-        analysis_actions.append(BuildTestSuite(project))
-
-        patch_steps = []
         fake_binary = ProjectBinaryWrapper(
             "TESTSUITE", Path(), BinaryType.EXECUTABLE
         )
 
-        result_file = create_new_success_result_filepath(
+        result_file = create_stable_success_result_filepath(
             self.get_handle(), MPTextReport, project, fake_binary,
             get_current_config_id(project)
         )
 
-        def adapt_test_step_output(test_step: RunTestSuite, tmp_dir: Path):
-            test_step.set_output_path(tmp_dir / test_step.output_path.name)
+        variations = get_variations_as_dict(project)
+        zipped_steps = []
 
-        for patch in patches:
-            # Skip patches without any variations
-            if patch.shortname not in PATCH_VARIATIONS[project.name]:
-                print(
-                    f"Skipping patch {patch.shortname} for project "
-                    f"{project.name} as it has no variations."
-                )
-                continue
+        if len(variations) == 0:
+            # Baseline step, test normal program behavior without any patch applied
+            analysis_actions.append(AlwaysOk(PrepareTestSuite(project)))
+            analysis_actions.append(BuildTestSuite(project))
 
-            arg_name, values = PATCH_VARIATIONS[project.name][patch.shortname]
-
-            for value in values:
-                patch_steps.append(
-                    ApplyPatch(project, patch, **{arg_name: value})
-                )
-                patch_steps.append(BuildTestSuite(project))
-                patch_steps.append(
-                    AlwaysOk(
+            zipped_steps.append(
+                AlwaysOk(
+                    RunTestSuite(
                         project,
-                        OutputAdapter(
+                        Path(
+                            MultiPatchReport.
+                            create_baseline_report_name("testsuite")
+                        )
+                    )
+                )
+            )
+        else:
+            # Filter patches based on the variations specified in the configuration
+            patches_filtered: tp.List[Patch] = [
+                patch for patch in patches if patch.shortname in variations
+            ]
+
+            # Test specific patch variations
+            for patch in patches_filtered:
+                patch_variations = variations[patch.shortname]
+
+                if len(patch_variations) != 1:
+                    print(
+                        f"Warning: Patch '{patch.shortname}' defines more than one argument. This is not supported currently. Skipping this patch."
+                    )
+                    continue
+
+                arg_name = next(iter(patch_variations))
+                values: tp.List[int] = list(patch_variations[arg_name])
+
+                if arg_name not in patch.arguments:
+                    print(
+                        f"Warning: Patch '{patch.shortname}' does not define argument '{arg_name}'."
+                    )
+                    print(f"Available arguments: {patch.arguments}")
+                    continue
+
+                # TODO: Change me
+                num_samples = 20
+                values.extend(sample_variations(values, num_samples))
+
+                for value in values:
+                    zipped_steps.append(
+                        ApplyPatch(project, patch, **{arg_name: value})
+                    )
+
+                    if len(zipped_steps) == 1:
+                        zipped_steps.append(AlwaysOk(PrepareTestSuite(project)))
+
+                    zipped_steps.append(
+                        IfThenElse(
                             project,
-                            RunTestSuite(
-                                project,
-                                Path(
-                                    MPTextReport.create_patched_report_name(
-                                        patch, "testsuite", **{arg_name: value}
+                            condition=BuildTestSuite(project),
+                            then_step=AlwaysOk(
+                                RunTestSuite(
+                                    project,
+                                    Path(
+                                        MPTextReport.create_patched_report_name(
+                                            patch, "testsuite",
+                                            **{arg_name: value}
+                                        )
                                     )
                                 )
-                            ), adapt_test_step_output
+                            ),
+                            return_result=StepResult.OK
                         )
                     )
-                )
 
-                patch_steps.append(
-                    RevertPatch(project, patch, **{arg_name: value})
-                )
+                    zipped_steps.append(
+                        RevertPatch(project, patch, **{arg_name: value})
+                    )
 
         analysis_actions.append(
-            ZippedExperimentSteps(
-                result_file, [
-                    AlwaysOk(
-                        project,
-                        OutputAdapter(
-                            project,
-                            RunTestSuite(
-                                project,
-                                Path(
-                                    MultiPatchReport.
-                                    create_baseline_report_name("testsuite")
-                                )
-                            ), adapt_test_step_output
-                        )
-                    )
-                ] + patch_steps
-            )
+            ZippedExperimentSteps(result_file, zipped_steps)
         )
 
         analysis_actions.extend(get_config_reverse_patch_steps(project))

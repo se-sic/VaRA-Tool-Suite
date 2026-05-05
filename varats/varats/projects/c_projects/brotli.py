@@ -22,6 +22,7 @@ from varats.experiment.workload_util import (
     ConfigParams,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -38,6 +39,7 @@ from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     ctest_run_testsuite,
     ctest_get_test_names,
+    TestResult,
 )
 
 
@@ -70,6 +72,7 @@ class Brotli(VProject):
             )
         ),
         FeatureSource(),
+        PatchVariationSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={
@@ -186,7 +189,7 @@ class Brotli(VProject):
 
         mkdir("-p", run_dir)
 
-        return run_dir, build_method
+        return Path(run_dir), build_method
 
     @staticmethod
     def binaries_for_revision(
@@ -284,8 +287,9 @@ class Brotli(VProject):
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None
-    ) -> bool:
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
         """
         Executes the test suite for brotli.
 
@@ -304,7 +308,9 @@ class Brotli(VProject):
                 "Test suites are only supported for revisions using CMake."
             )
 
-        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
+        return ctest_run_testsuite(
+            build_dir, test_report_path, tests_to_run, tests_to_exclude
+        )
 
     def compile(self) -> None:
         """Compile the project."""

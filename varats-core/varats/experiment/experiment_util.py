@@ -1,11 +1,13 @@
 """Utility module for BenchBuild experiments."""
+import fcntl
 import os
 import random
-import shutil
 import tempfile
 import textwrap
 import traceback
 import typing as tp
+import uuid
+import zipfile
 from abc import abstractmethod
 from collections import defaultdict
 from pathlib import Path
@@ -33,6 +35,7 @@ from varats.report.report import (
     ReportFilename,
 )
 from varats.utils.config import get_config_patches
+from varats.utils.filesystem_util import lock_file
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
@@ -513,9 +516,26 @@ class ZippedReportFolder(TempDir):
     ) -> None:
         # Don't create an empty zip archive.
         if os.listdir(self.name):
-            shutil.make_archive(
-                str(self.__result_report_name), "zip", Path(self.name)
-            )
+            archive_path = Path(str(self.__result_report_name) + ".zip")
+            with open(archive_path, 'a+b') as fh:
+                print("trying to acquire lock for zipping report folder...")
+                fcntl.flock(fh, fcntl.LOCK_EX)
+                print("lock acquired, zipping report folder...")
+                try:
+                    with zipfile.ZipFile(
+                        archive_path,
+                        mode='a',
+                        compression=zipfile.ZIP_DEFLATED
+                    ) as zf:
+                        for root, _, files in os.walk(self.name):
+                            for fname in files:
+                                full_path = os.path.join(root, fname)
+                                arcname = os.path.relpath(full_path, self.name)
+                                zf.write(full_path, arcname)
+                    fh.flush()
+                    os.fsync(fh.fileno())
+                finally:
+                    fcntl.flock(fh, fcntl.LOCK_UN)
 
         super().__exit__(exc_type, exc_value, exc_traceback)
 
@@ -553,13 +573,20 @@ def AsOutputFolderStep(property_name: str):
             )
 
         def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
-            original_output = getattr(self, property_name)
+            # Special handling for private properties
+            if property_name.startswith("__"):
+                mangled_name = f"_{cls.__name__}{property_name}"
+                property_name_to_use = mangled_name
+            else:
+                property_name_to_use = property_name
+
+            original_output = getattr(self, property_name_to_use)
             if original_output is None:
                 raise ValueError(f"The property {property_name} is None.")
             if not isinstance(original_output, Path):
                 raise ValueError(f"The property {property_name} is not a Path.")
 
-            self.__dict__[property_name] = tmp_dir / original_output.name
+            self.__dict__[property_name_to_use] = tmp_dir / original_output.name
 
             return self()
 
@@ -596,9 +623,15 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
 
         for child in self.actions:
             if isinstance(child, OutputFolderStep):
-                results.append(child.call_with_output_folder(tmp_folder))
+                r = child.call_with_output_folder(tmp_folder)
+                if r not in [StepResult.OK, StepResult.CAN_CONTINUE]:
+                    print(f"Child step {child} returned {r}")
+                results.append(r)
             else:
-                results.append(child())
+                r = child()
+                if r not in [StepResult.OK, StepResult.CAN_CONTINUE]:
+                    print(f"Child step {child} returned {r}")
+                results.append(r)
 
         return results
 
@@ -678,6 +711,36 @@ def __create_new_result_filepath_impl(
         config_folder.mkdir(parents=True, exist_ok=True)
 
     return result_filepath
+
+
+def create_stable_success_result_filepath(
+    exp_handle: ExperimentHandle,
+    report_type: tp.Type[BaseReport],
+    project: VProject,
+    binary: ProjectBinaryWrapper,
+    config_id: tp.Optional[int] = None
+) -> ReportFilepath:
+    """
+    Create a result filepath for a successful report of the executed
+    experiment/project combination. The "stable" variant fixes the uuid, which
+    allows to run experiments in parallel with the ZippedReportFolder.
+
+    Args:
+        exp_handle: handle to the current experiment
+        report_type: type of the report
+        project: current project
+        binary: current binary
+        config_id: optional id to specify the used configuration
+
+    Returns: formatted success filepath
+    """
+    project.run_uuid = uuid.UUID(
+        hex="00000000-0000-0000-0000-000000000000", version=4
+    )  # type: ignore
+    return __create_new_result_filepath_impl(
+        exp_handle, report_type, project, binary, FileStatusExtension.SUCCESS,
+        config_id
+    )
 
 
 def create_new_success_result_filepath(

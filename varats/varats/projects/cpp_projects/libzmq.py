@@ -1,4 +1,6 @@
 """Project file for zeromq."""
+import shutil
+import tempfile
 import typing as tp
 from pathlib import Path
 
@@ -13,8 +15,10 @@ from varats.experiment.workload_util import (
     WorkloadCategory,
     RSBinary,
     ConfigParams,
+    WorkloadSpecificReportAggregate,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -26,11 +30,14 @@ from varats.project.project_util import (
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
+from varats.report.multi_patch_report import MultiPatchReport
+from varats.report.report import BaseReport
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     ctest_get_test_names,
     ctest_run_testsuite,
+    TestResult,
 )
 
 
@@ -52,7 +59,8 @@ class Libzmq(VProject):
             limit=None,
             shallow=False
         ),
-        FeatureSource()
+        FeatureSource(),
+        PatchVariationSource()
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
@@ -165,8 +173,134 @@ class Libzmq(VProject):
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None
-    ) -> bool:
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"
-        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
+        return ctest_run_testsuite(
+            build_dir, test_report_path, tests_to_run, tests_to_exclude
+        )
+
+
+class LibZMQBenchmarkReport(BaseReport, shorthand="ZBR", file_type=".txt"):
+    """LibZMQ benchmark report."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path)
+
+        self.__message_size = None
+        self.__count = None
+        self.__latency = None
+        self.__throughput_msg = None
+        self.__throughput_mb = None
+
+        with open(path) as f:
+            for line in f:
+                if "message size" in line:
+                    self.__message_size = int(line.split(" ")[2].strip())
+                if "count" in line:
+                    self.__count = int(line.split(" ")[2].strip())
+                if "latency" in line:
+                    self.__latency = float(line.split(" ")[2].strip())
+                if "throughput" in line and "msg/s" in line:
+                    self.__throughput_msg = float(line.split(" ")[2].strip())
+                if "throughput" in line and "Mb/s" in line:
+                    self.__throughput_mb = float(line.split(" ")[2].strip())
+
+    @property
+    def message_size(self) -> int:
+        return self.__message_size
+
+    @property
+    def count(self) -> int:
+        return self.__count
+
+    @property
+    def latency(self) -> float:
+        return self.__latency
+
+    @property
+    def throughput_msg(self) -> float:
+        return self.__throughput_msg
+
+    @property
+    def throughput_mb(self) -> float:
+        return self.__throughput_mb
+
+
+class LibZMQ_WLAggregate(
+    WorkloadSpecificReportAggregate[LibZMQBenchmarkReport],
+    shorthand="ZBR_WLA",
+    file_type=".zip"
+):
+    """LibZMQ workload report aggregate."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(
+            path, LibZMQBenchmarkReport, label_method=lambda p: "Default"
+        )
+
+        self._latencies: tp.List[float] = [
+            report.latency
+            for report in self.reports("Default")
+            if report.latency is not None
+        ]
+
+        self._throughputs_msg: tp.List[float] = [
+            report.throughput_msg
+            for report in self.reports("Default")
+            if report.throughput_msg is not None
+        ]
+
+        self._throughputs_mb: tp.List[float] = [
+            report.throughput_mb
+            for report in self.reports("Default")
+            if report.throughput_mb is not None
+        ]
+
+    @property
+    def latencies(self) -> tp.List[float]:
+        return self._latencies
+
+    @property
+    def throughputs_msg(self) -> tp.List[float]:
+        return self._throughputs_msg
+
+    @property
+    def throughputs_mb(self) -> tp.List[float]:
+        return self._throughputs_mb
+
+
+class LibZMQMPReport(
+    MultiPatchReport[LibZMQ_WLAggregate], shorthand="ZBR_MPA", file_type=".zip"
+):
+    """LibZMQ multi-patch report aggregate."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, LibZMQ_WLAggregate)
+        self.__patched_reports: tp.Dict[str, LibZMQ_WLAggregate] = {}
+        self.__base = None
+        self.__bases = []
+
+        with tempfile.TemporaryDirectory() as tmp_result_dir:
+            shutil.unpack_archive(path, extract_dir=tmp_result_dir)
+
+            for report in Path(tmp_result_dir).iterdir():
+                if self.is_baseline_report(report.name):
+                    base_report = LibZMQ_WLAggregate(report)
+                    self.__base = base_report
+                    self.__bases.append(base_report)
+                elif self.is_patched_report(report.name):
+                    self.__patched_reports[
+                        self._parse_patch_shorthand_from_report_name(
+                            report.name
+                        )] = LibZMQ_WLAggregate(report)
+
+            if not self.__base or not self.__patched_reports:
+                raise AssertionError(
+                    f"Reports were missing in the file {path=}"
+                )
+
+    def all_baseline_reports(self) -> tp.List[LibZMQ_WLAggregate]:
+        return self.__bases
