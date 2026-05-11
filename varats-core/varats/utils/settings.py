@@ -101,6 +101,17 @@ def create_new_varats_config() -> s.Configuration:
         },
     }
 
+    cfg["heaptrack"] = {
+        "source_dir": {
+            "desc": "HeapTrack source directory",
+            "default": None
+        },
+        "install_dir": {
+            "desc": "HeapTrack install directory",
+            "default": None
+        }
+    }
+
     cfg["phasar"] = {
         "source_dir": {
             "desc": "Phasar source directory",
@@ -350,8 +361,8 @@ def create_missing_bb_folders() -> None:
     create_missing_folder_for_cfg("tmp_dir")
     create_missing_folder_for_cfg("node_dir", bb_cfg()["slurm"])
     create_missing_folder_for_cfg("logs", bb_cfg()["slurm"])
-    #create_missing_folder_for_cfg("root", bb_cfg()["container"])
-    #create_missing_folder_for_cfg("runroot", bb_cfg()["container"])
+#    create_missing_folder_for_cfg("root", bb_cfg()["container"])
+#    create_missing_folder_for_cfg("runroot", bb_cfg()["container"])
     create_missing_folder_for_cfg("export", bb_cfg()["container"])
     create_missing_folder_for_cfg("import", bb_cfg()["container"])
 

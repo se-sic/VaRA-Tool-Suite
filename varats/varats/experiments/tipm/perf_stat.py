@@ -32,7 +32,7 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 
-INTERVAL = 10
+INTERVAL = 50
 
 
 def fix_json_format(file_path: Path) -> None:
@@ -111,7 +111,8 @@ class PerfStat(OutputFolderStep):
                     run_cmd = prj_command.command.as_plumbum_wrapped_with(
                         perf_cmd, project=self.project
                     )
-                    benchbuild.watch(run_cmd)()
+                    #benchbuild.watch(run_cmd)()
+                    run_cmd()
 
                 fix_json_format(run_report_name)
 
