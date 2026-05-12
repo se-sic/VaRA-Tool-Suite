@@ -125,7 +125,7 @@ def create_new_varats_config() -> s.Configuration:
             "desc": "SZZUnleashed install directory",
             "default": None
         },
-    },
+    }
 
     cfg["benchbase"] = {
         "source_dir": {
