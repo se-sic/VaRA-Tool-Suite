@@ -16,10 +16,7 @@ from varats.utils.settings import save_config, vara_cfg
 
 LOG = logging.getLogger(__name__)
 
-# TODO: Fetch template from template repo (https://github.com/se-sic/vara-test-repos)
-# instead of hardcoding it
 TEMPLATE_FOLDERS = ["projects", "experiments", "tables", "plots", "reports"]
-
 # Template repository reference
 TEMPLATE_REPO = "https://github.com/se-sic/varats-oot-template/tree/test-oot"
 
@@ -36,8 +33,6 @@ def validate_external_repo(repo_path: Path) -> tuple[bool, list[str]]:
         - is_valid: True if all template folders exist
         - missing_folders: List of missing folders
     """
-    # TODO: Extend validation to check folder contents (e.g., __init__.py files)
-
     if not repo_path.exists():
         return False, ["Repository path does not exist"]
 
@@ -58,6 +53,22 @@ def validate_external_repo(repo_path: Path) -> tuple[bool, list[str]]:
 
     is_valid = len(missing_folders) == 0
     return is_valid, missing_folders
+
+
+def register_external_repository(repo_path: Path) -> None:
+    """Add repo_path to config and save. Raises on failure."""
+    current_repos = vara_cfg()['external_source_repositories'].value
+    current_repos.append(str(repo_path))
+    vara_cfg()['external_source_repositories'] = current_repos
+    save_config()
+
+
+def unregister_external_repository(repo_path: Path) -> None:
+    """Add repo_path to config and save. Raises on failure."""
+    current_repos = vara_cfg()['external_source_repositories'].value
+    current_repos.remove(str(repo_path))
+    vara_cfg()['external_source_repositories'] = current_repos
+    save_config()
 
 
 @click.group("vara-external")
@@ -93,23 +104,33 @@ def _set_external_repository(path: str) -> None:
     repo_is_registered = str(repo_path) in current_repos
 
     if not is_valid:
-        LOG.error("Repository Not Complying To Template")
-        LOG.error(f"  Repository path: {repo_path}")
-        LOG.error("  Missing or invalid folders:")
-        for error in validation_errors:
-            LOG.error(f"    - {error}")
-
-        LOG.error(f"\n  Template example: {TEMPLATE_REPO}")
-        LOG.error("  Expected structure:")
         source_root = esh.determine_project_source_root(repo_path)
+        msg_lines = [
+            "Repository Not Complying To Template",
+            f"  Repository path: {repo_path}",
+            "  Missing or invalid folders:",
+        ]
+        for error in validation_errors:
+            msg_lines.append(f"    - {error}")
+
+        msg_lines.append("")
+        msg_lines.append(f"  Template example: {TEMPLATE_REPO}")
+        msg_lines.append("  Expected structure:")
+
         for folder in TEMPLATE_FOLDERS:
-            LOG.error(f"    {source_root / folder}")
+            msg_lines.append(f"    {source_root / folder}")
 
-        # TODO: should we unregister the repo?
         if repo_is_registered:
-            pass
-
-        return
+            if click.confirm(
+                "The repository is already registered but does not match the template. "
+                "Unregister it from the configuration?",
+                default=False,
+            ):
+                unregister_external_repository(repo_path=repo_path)
+                LOG.info(f"Unregistered invalid external repository: {repo_path}")
+            return
+        
+        raise click.ClickException("\n".join(msg_lines))
 
     if repo_is_registered:
         LOG.info(f"Repository already registered at: {repo_path}")
@@ -117,10 +138,9 @@ def _set_external_repository(path: str) -> None:
 
     # Add repository to config
     try:
-        current_repos.append(str(repo_path))
-        vara_cfg()['external_source_repositories'] = current_repos
-        save_config()
+        register_external_repository(repo_path=repo_path)
         LOG.info(f"Success - External repository configured at: {repo_path}")
     except Exception as exc:
-        LOG.error(f"Failure - Could not set external repository configuration: {exc}")
-        raise
+        raise click.ClickException(
+            f"Failure - Could not set external repository configuration: {exc}"
+        ) from exc
