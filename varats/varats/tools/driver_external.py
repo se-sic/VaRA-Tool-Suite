@@ -129,7 +129,7 @@ def _set_external_repository(path: str) -> None:
                 unregister_external_repository(repo_path=repo_path)
                 LOG.info(f"Unregistered invalid external repository: {repo_path}")
             return
-        
+
         raise click.ClickException("\n".join(msg_lines))
 
     if repo_is_registered:
