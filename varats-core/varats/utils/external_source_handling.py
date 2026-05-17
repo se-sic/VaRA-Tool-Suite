@@ -15,10 +15,6 @@ from pathlib import Path
 LOG = logging.getLogger(__name__)
 
 
-def determine_project_source_root(project_folder: Path) -> Path:
-    return project_folder / project_folder.name
-
-
 def relative_module_folder(project_folder: Path, module_folder: Path) -> Path:
     return module_folder.absolute().relative_to(project_folder.absolute())
 

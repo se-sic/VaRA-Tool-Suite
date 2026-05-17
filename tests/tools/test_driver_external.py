@@ -27,13 +27,13 @@ def create_mock_external_repo(tmp_path: Path) -> Path:
     Returns:
         Path to the mock repository root
     """
-    # Create nested structure: tmp_path/tmp_path.name/
-    nested_root = tmp_path / tmp_path.name
-    nested_root.mkdir(parents=True, exist_ok=True)
+    # Create non-nested (flat) structure: template folders directly under tmp_path
+    root = tmp_path
+    root.mkdir(parents=True, exist_ok=True)
 
     # Create template folders
     for folder in driver_external.TEMPLATE_FOLDERS:
-        (nested_root / folder).mkdir(exist_ok=True)
+        (root / folder).mkdir(exist_ok=True)
 
     return tmp_path
 
@@ -210,7 +210,7 @@ class TestDriverExternal(unittest.TestCase):
         self.assertEqual(0, register_result.exit_code)
 
         # Break the structure so validation fails on the next invocation.
-        shutil.rmtree(repo_path / repo_path.name / driver_external.TEMPLATE_FOLDERS[0])
+        shutil.rmtree(repo_path / driver_external.TEMPLATE_FOLDERS[0])
 
         with patch("varats.tools.driver_external.click.confirm", return_value=True):
             result = runner.invoke(driver_external.main, ["set", str(repo_path)])
@@ -234,7 +234,7 @@ class TestDriverExternal(unittest.TestCase):
         self.assertEqual(0, register_result.exit_code)
 
         # Break the structure so validation fails on the next invocation.
-        shutil.rmtree(repo_path / repo_path.name / driver_external.TEMPLATE_FOLDERS[0])
+        shutil.rmtree(repo_path / driver_external.TEMPLATE_FOLDERS[0])
 
         with patch("varats.tools.driver_external.click.confirm", return_value=False):
             result = runner.invoke(driver_external.main, ["set", str(repo_path)])

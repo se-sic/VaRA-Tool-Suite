@@ -40,14 +40,12 @@ def validate_external_repo(repo_path: Path) -> tuple[bool, list[str]]:
         return False, ["Repository path is not a directory"]
 
     # Apply nested structure pattern: path/path_name/
-    source_root = esh.determine_project_source_root(repo_path)
-
-    if not source_root.exists():
-        return False, [f"Nested structure not found at {source_root}"]
+    if not repo_path.exists():
+        return False, [f"Nested structure not found at {repo_path}"]
 
     missing_folders = []
     for folder in TEMPLATE_FOLDERS:
-        folder_path = source_root / folder
+        folder_path = repo_path / folder
         if not folder_path.exists():
             missing_folders.append(str(folder_path))
 
@@ -104,7 +102,6 @@ def _set_external_repository(path: str) -> None:
     repo_is_registered = str(repo_path) in current_repos
 
     if not is_valid:
-        source_root = esh.determine_project_source_root(repo_path)
         msg_lines = [
             "Repository Not Complying To Template",
             f"  Repository path: {repo_path}",
@@ -118,7 +115,7 @@ def _set_external_repository(path: str) -> None:
         msg_lines.append("  Expected structure:")
 
         for folder in TEMPLATE_FOLDERS:
-            msg_lines.append(f"    {source_root / folder}")
+            msg_lines.append(f"    {repo_path / folder}")
 
         if repo_is_registered:
             if click.confirm(

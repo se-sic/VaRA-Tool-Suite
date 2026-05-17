@@ -13,19 +13,18 @@ Instead of modifying the core VaRA-TS codebase, you can organize your extensions
 Repository Structure
 --------------------
 
-External repositories must follow a specific template structure with a nested directory layout:
+External repositories must follow a specific template structure with the required folders placed directly under the repository root:
 
 .. code-block:: text
 
-   your-repository/
-   └── your-repository/              # Nested structure (path/path_name/)
-       ├── projects/                 # Custom projects
-       ├── experiments/              # Custom experiments
-       ├── tables/                   # Custom tables
-       ├── plots/                    # Custom plots
-       └── reports/                  # Custom reports
+    your-repository/
+    ├── projects/                 # Custom projects
+    ├── experiments/              # Custom experiments
+    ├── tables/                   # Custom tables
+    ├── plots/                    # Custom plots
+    └── reports/                  # Custom reports
 
-**Important:** The nested structure (where the inner directory has the same name as the root) is required and automatically detected by **vara-external**.
+**Important:** The repository should contain the required folders directly at its root; **vara-external** detects this layout automatically.
 
 Usage
 -----
@@ -61,17 +60,17 @@ If the repository structure is invalid:
 
     Repository Not Complying To Template
       Repository path: /path/to/repo
-      Missing or invalid folders:
-        - /path/to/repo/repo/projects
-        - /path/to/repo/repo/experiments
+        Missing or invalid folders:
+                - /path/to/repo/projects
+                - /path/to/repo/experiments
 
-    Template example: https://github.com/se-sic/varats-oot-template/tree/test-oot
-    Expected structure:
-      /path/to/repo/repo/projects
-      /path/to/repo/repo/experiments
-      /path/to/repo/repo/tables
-      /path/to/repo/repo/plots
-      /path/to/repo/repo/reports
+        Template example: https://github.com/se-sic/varats-oot-template/tree/test-oot
+        Expected structure:
+            /path/to/repo/projects
+            /path/to/repo/experiments
+            /path/to/repo/tables
+            /path/to/repo/plots
+            /path/to/repo/reports
 
 Invalid Registered Repositories
 ...............................
@@ -133,7 +132,7 @@ Navigate to your cloned repository and add your custom projects, experiments, ta
 
 .. code-block:: console
 
-    cd my-vara-extensions/my-vara-extensions/
+    cd my-vara-extensions/
     # Add your projects, experiments, etc.
 
 **Step 3: Register with VaRA-TS using vara-external**
@@ -155,7 +154,7 @@ If you prefer to create the structure manually instead of cloning:
 
 .. code-block:: console
 
-    mkdir -p my-vara-extensions/my-vara-extensions/{projects,experiments,tables,plots,reports}
+    mkdir -p my-vara-extensions/{projects,experiments,tables,plots,reports}
 
 Template Repository
 -------------------
@@ -187,19 +186,19 @@ The path points to a file, not a directory. Provide the repository directory pat
 
     vara-external set /path/to/repo/  # Directory, not file
 
-**Error: "Nested structure not found"**
+**Error: "Required structure not found"**
 
-The required nested directory structure (path/path_name/) is missing. Create it:
+The required directory structure (folders at repository root) is missing. Create it:
 
 .. code-block:: console
 
-    mkdir -p repo-name/repo-name/{projects,experiments,tables,plots,reports}
+    mkdir -p repo-name/{projects,experiments,tables,plots,reports}
 
 **Error: "Missing or invalid folders"**
 
-Some required folders are missing. Create them in the nested structure:
+Some required folders are missing. Create them at the repository root:
 
 .. code-block:: console
 
-    cd repo-name/repo-name/
+    cd repo-name/
     mkdir -p projects experiments tables plots reports
