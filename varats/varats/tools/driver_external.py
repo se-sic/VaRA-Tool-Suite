@@ -5,18 +5,25 @@ This module provides a command line interface for setting up and managing
 external source repositories that contain custom projects, experiments,
 tables, plots, and reports.
 """
+
 import logging
 from pathlib import Path
 
 import click
 
-import varats.utils.external_source_handling as esh
 from varats.ts_utils.cli_util import initialize_cli_tool
 from varats.utils.settings import save_config, vara_cfg
 
 LOG = logging.getLogger(__name__)
 
-TEMPLATE_FOLDERS = ["projects", "experiments", "tables", "plots", "reports"]
+TEMPLATE_FOLDERS = [
+    "projects",
+    "experiments",
+    "research_tools",
+    "tables",
+    "plots",
+    "reports",
+]
 # Template repository reference
 TEMPLATE_REPO = "https://github.com/se-sic/varats-oot-template/tree/test-oot"
 
@@ -75,7 +82,7 @@ def main() -> None:
     Main function for managing external source repositories.
 
     `vara-external` provides commands to set up external repositories
-    containing custom projects, experiments, tables, plots, and reports.
+        containing custom projects, research tools, experiments, tables, plots, and reports.
     """
     initialize_cli_tool()
 
@@ -124,7 +131,9 @@ def _set_external_repository(path: str) -> None:
                 default=False,
             ):
                 unregister_external_repository(repo_path=repo_path)
-                LOG.info(f"Unregistered invalid external repository: {repo_path}")
+                LOG.info(
+                    f"Unregistered invalid external repository: {repo_path}"
+                )
             return
 
         raise click.ClickException("\n".join(msg_lines))

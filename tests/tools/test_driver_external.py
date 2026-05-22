@@ -1,10 +1,11 @@
 """
 Tests for the vara-external driver tool.
 """
+
 import logging
-import unittest
-import tempfile
 import shutil
+import tempfile
+import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -44,7 +45,9 @@ class TestValidateExternalRepo(unittest.TestCase):
     def test_incorrect_repo_path(self) -> None:
         """Non-existent path returns False with appropriate error message."""
         non_existent_path = Path("/non/existent/path/that/should/not/exist")
-        is_valid, errors = driver_external.validate_external_repo(non_existent_path)
+        is_valid, errors = driver_external.validate_external_repo(
+            non_existent_path
+        )
 
         self.assertFalse(is_valid)
         self.assertIn("Repository path does not exist", errors)
@@ -71,6 +74,16 @@ class TestValidateExternalRepo(unittest.TestCase):
 
         self.assertFalse(is_valid)
         self.assertTrue(len(errors) > 0)
+
+    @run_in_test_environment()
+    def test_valid_structure(self) -> None:
+        tmp_path = Path(tempfile.mkdtemp())
+
+        repo_path = create_mock_external_repo(tmp_path)
+        is_valid, errors = driver_external.validate_external_repo(repo_path)
+
+        self.assertTrue(is_valid)
+        self.assertEqual([], errors)
 
 
 class TestRegisterExternalRepository(unittest.TestCase):
@@ -147,7 +160,9 @@ class TestDriverExternal(unittest.TestCase):
             'varats.tools.driver_external.register_external_repository',
             side_effect=Exception("Mock config write failure"),
         ):
-            result = runner.invoke(driver_external.main, ["set", str(repo_path)])
+            result = runner.invoke(
+                driver_external.main, ["set", str(repo_path)]
+            )
 
         # Verify exit code is non-zero and error message is shown
         self.assertNotEqual(0, result.exit_code)
@@ -206,14 +221,20 @@ class TestDriverExternal(unittest.TestCase):
         runner = CliRunner()
 
         # Register the repo while it is valid.
-        register_result = runner.invoke(driver_external.main, ["set", str(repo_path)])
+        register_result = runner.invoke(
+            driver_external.main, ["set", str(repo_path)]
+        )
         self.assertEqual(0, register_result.exit_code)
 
         # Break the structure so validation fails on the next invocation.
         shutil.rmtree(repo_path / driver_external.TEMPLATE_FOLDERS[0])
 
-        with patch("varats.tools.driver_external.click.confirm", return_value=True):
-            result = runner.invoke(driver_external.main, ["set", str(repo_path)])
+        with patch(
+            "varats.tools.driver_external.click.confirm", return_value=True
+        ):
+            result = runner.invoke(
+                driver_external.main, ["set", str(repo_path)]
+            )
 
         self.assertEqual(0, result.exit_code)
         self.assertLogs("Unregistered invalid external repository")
@@ -230,14 +251,20 @@ class TestDriverExternal(unittest.TestCase):
         runner = CliRunner()
 
         # Register the repo while it is valid.
-        register_result = runner.invoke(driver_external.main, ["set", str(repo_path)])
+        register_result = runner.invoke(
+            driver_external.main, ["set", str(repo_path)]
+        )
         self.assertEqual(0, register_result.exit_code)
 
         # Break the structure so validation fails on the next invocation.
         shutil.rmtree(repo_path / driver_external.TEMPLATE_FOLDERS[0])
 
-        with patch("varats.tools.driver_external.click.confirm", return_value=False):
-            result = runner.invoke(driver_external.main, ["set", str(repo_path)])
+        with patch(
+            "varats.tools.driver_external.click.confirm", return_value=False
+        ):
+            result = runner.invoke(
+                driver_external.main, ["set", str(repo_path)]
+            )
 
         self.assertEqual(0, result.exit_code)
         self.assertNoLogs()

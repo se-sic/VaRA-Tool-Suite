@@ -1,7 +1,11 @@
-"""This modules provides the base classes for research tools that allow
+"""
+This modules provides the base classes for research tools that allow
 developers to setup and configure their own research tool by inheriting and
-implementing the base classes ``ResearchTool`` and ``CodeBase``."""
+implementing the base classes ``ResearchTool`` and ``CodeBase``.
+"""
+
 import abc
+import inspect
 import typing as tp
 from enum import Enum
 from pathlib import Path
@@ -13,25 +17,25 @@ from benchbuild.utils.cmd import apt, pacman
 from varats.tools.research_tools.vara_manager import BuildType
 from varats.utils.filesystem_util import FolderAlreadyPresentError
 from varats.utils.git_commands import (
-    get_branches,
-    fetch_remote,
-    get_tags,
-    init_all_submodules,
-    update_all_submodules,
-    pull_current_branch,
-    push_current_branch,
+    add_remote,
     checkout_branch_or_commit,
     checkout_new_branch,
     download_repo,
-    add_remote,
-    show_status,
+    fetch_remote,
+    get_branches,
     get_current_branch,
+    get_tags,
+    init_all_submodules,
+    pull_current_branch,
+    push_current_branch,
+    show_status,
+    update_all_submodules,
 )
 from varats.utils.git_util import (
+    RepositoryHandle,
+    branch_has_upstream,
     has_branch,
     has_remote_branch,
-    branch_has_upstream,
-    RepositoryHandle,
 )
 from varats.utils.logger_util import log_without_linesep
 
@@ -41,6 +45,7 @@ if tp.TYPE_CHECKING:
 
 class Distro(Enum):
     """Linux distributions supported by the tool suite."""
+
     value: str
 
     DEBIAN = "debian"
@@ -65,7 +70,7 @@ class Distro(Enum):
 _install_commands = {
     Distro.DEBIAN: "apt install -y",
     Distro.ARCH: "pacman -S --noconfirm",
-    Distro.FEDORA: "dnf install"
+    Distro.FEDORA: "dnf install",
 }
 
 _checker_commands = {Distro.DEBIAN: apt["list"], Distro.ARCH: pacman["-Qi"]}
@@ -76,11 +81,11 @@ _expected_check_output = {Distro.DEBIAN: "installed", Distro.ARCH: "Installed"}
 class Dependencies:
     """Models the dependencies for a research tool."""
 
-    def __init__(self, dependencies: tp.Dict[Distro, tp.List[str]]):
+    def __init__(self, dependencies: dict[Distro, list[str]]):
         self.__dependencies = dependencies
 
     @property
-    def distros(self) -> tp.List[Distro]:
+    def distros(self) -> list[Distro]:
         return list(self.__dependencies.keys())
 
     def has_dependencies_for_distro(self, distro: Distro) -> bool:
@@ -108,6 +113,7 @@ class Dependencies:
     def has_all_dependencies_for_distro(self, distro: Distro) -> bool:
         """
         Given a distro, return if all specified dependencies are installed.
+
         Args:
             distro: the distro tu use
 
@@ -116,23 +122,25 @@ class Dependencies:
         """
         return len(self.get_missing_dependencies_for_distro(distro)) == 0
 
-    def get_missing_dependencies_for_distro(self,
-                                            distro: Distro) -> tp.List[str]:
+    def get_missing_dependencies_for_distro(self, distro: Distro) -> list[str]:
         """
         Given a distro, return all not installed dependencies.
+
         Args:
             distro: the distro to use
 
         Returns:
             a list containing all not installed dependencies
         """
-        not_installed: tp.List[str] = []
+        not_installed: list[str] = []
 
-        if distro not in _checker_commands or \
-                distro not in _expected_check_output:
+        if (
+            distro not in _checker_commands
+            or distro not in _expected_check_output
+        ):
             raise NotImplementedError(
-                "Check/Expected commands are currently " +
-                f"not implemented for {distro}"
+                "Check/Expected commands are currently "
+                + f"not implemented for {distro}"
             )
 
         base_command = _checker_commands[distro]
@@ -146,6 +154,7 @@ class Dependencies:
     def get_install_command(self, distro: Distro) -> str:
         """
         Given a distro, return a command how the dependencies can be installed.
+
         Args:
             distro: the distro to use
 
@@ -160,13 +169,17 @@ class Dependencies:
         >>> deps.get_install_command(Distro.ARCH)
         'pacman -S --noconfirm baz'
         """
-        return f"{_install_commands[distro]} " \
-               f"{' '.join(self.__dependencies[distro])}"
+        return (
+            f"{_install_commands[distro]} "
+            f"{' '.join(self.__dependencies[distro])}"
+        )
 
 
-class SubProject():
-    """Encapsulates a sub project, e.g., a library or tool, defining how it can
-    be downloaded and integrated inside a ``CodeBase``."""
+class SubProject:
+    """
+    Encapsulates a sub project, e.g., a library or tool, defining how it can
+    be downloaded and integrated inside a ``CodeBase``.
+    """
 
     def __init__(
         self,
@@ -175,7 +188,7 @@ class SubProject():
         url: str,
         remote: str,
         sub_path: str,
-        is_submodule: bool = False
+        is_submodule: bool = False,
     ):
         self.__name = name
         self.__parent_base_dir = parent_base_dir
@@ -234,20 +247,23 @@ class SubProject():
         update_all_submodules(self.__repo)
 
     def clone(self) -> None:
-        """Clone the sub project into the specified folder relative to the base
-        dir of the ``CodeBase``."""
+        """
+        Clone the sub project into the specified folder relative to the base
+        dir of the ``CodeBase``.
+        """
         print(f"Cloning {self.name} into {self.__parent_base_dir}")
         if self.__repo.worktree_path.exists():
             raise FolderAlreadyPresentError(self.__repo.worktree_path)
         download_repo(
-            self.__repo.worktree_path.parent, self.url, self.path.name,
-            self.remote, log_without_linesep(print)
+            self.__repo.worktree_path.parent,
+            self.url,
+            self.path.name,
+            self.remote,
+            log_without_linesep(print),
         )
 
     def has_branch(
-        self,
-        branch_name: str,
-        remote_to_check: tp.Optional[str] = None
+        self, branch_name: str, remote_to_check: str | None = None
     ) -> bool:
         """
         Check if the sub project has a branch with the specified ``branch
@@ -266,9 +282,7 @@ class SubProject():
 
         return has_remote_branch(self.__repo, branch_name, remote_to_check)
 
-    def get_branches(self,
-                     extra_args: tp.Optional[tp.List[str]
-                                            ] = None) -> tp.List[str]:
+    def get_branches(self, extra_args: list[str] | None = None) -> list[str]:
         """
         Get branch names from this sub project.
 
@@ -301,7 +315,7 @@ class SubProject():
         checkout_branch_or_commit(self.__repo, branch_name)
 
     def checkout_new_branch(
-        self, branch_name: str, remote_branch: tp.Optional[str] = None
+        self, branch_name: str, remote_branch: str | None = None
     ) -> None:
         """
         Create and checkout out a new branch in the sub project.
@@ -312,16 +326,16 @@ class SubProject():
         checkout_new_branch(self.__repo, branch_name, remote_branch)
 
     def fetch(
-        self,
-        remote: tp.Optional[str] = None,
-        extra_args: tp.Optional[tp.List[str]] = None
+        self, remote: str | None = None, extra_args: list[str] | None = None
     ) -> None:
         """Fetch updates from the remote."""
         fetch_remote(self.__repo, remote, extra_args)
 
     def pull(self) -> None:
-        """Pull updates from the remote of the current branch into the sub
-        project."""
+        """
+        Pull updates from the remote of the current branch into the sub
+        project.
+        """
         pull_current_branch(self.__repo)
 
     def push(self) -> None:
@@ -339,14 +353,13 @@ class SubProject():
     def __str__(self) -> str:
         return f"{self.name} [{self.url}:{self.remote}] {self.path}"
 
-    def get_tags(self,
-                 extra_args: tp.Optional[tp.List[str]] = None) -> tp.List[str]:
+    def get_tags(self, extra_args: list[str] | None = None) -> list[str]:
         """Get the list of available git tags."""
         tag_list = get_tags(self.__repo, extra_args)
         return tag_list
 
 
-class CodeBase():
+class CodeBase:
     """
     A ``CodeBase`` depicts the layout of a project, specifying where the a
     research tool lives and how different sub projects should be cloned.
@@ -355,7 +368,7 @@ class CodeBase():
     other repository manipulations.
     """
 
-    def __init__(self, base_dir: Path, sub_projects: tp.List[SubProject]):
+    def __init__(self, base_dir: Path, sub_projects: list[SubProject]):
         self.__sub_projects = sub_projects
         self.__base_dir = base_dir
 
@@ -391,7 +404,7 @@ class CodeBase():
     def map_sub_projects(
         self,
         func: tp.Callable[[SubProject], None],
-        exclude_submodules: bool = False
+        exclude_submodules: bool = False,
     ) -> None:
         """
         Execute a callable ``func`` on all sub projects of the code base.
@@ -410,15 +423,36 @@ class CodeBase():
 
 SpecificCodeBase = tp.TypeVar("SpecificCodeBase", bound=CodeBase)
 
+ResearchToolTy = type['ResearchTool[tp.Any]']
+"""Type alias for research tool classes."""
 
-class ResearchTool(tp.Generic[SpecificCodeBase]):
-    """ResearchTool is an abstract base class for specifying research tools that
+
+class ResearchTool(abc.ABC, tp.Generic[SpecificCodeBase]):
+    """
+    ResearchTool is an abstract base class for specifying research tools that
     are set up by VaRA-TS and usable through the tool suites experiments and
-    tools."""
+    tools.
+    """
+
+    _BUILTIN_TOOL_ORDER = ["phasar", "vara", "szzunleashed"]
+    """Stable ordering for built-in research tools."""
+
+    REGISTRY: dict[str, ResearchToolTy] = {}
+    """Registry for concrete research tools."""
+
+    def __init_subclass__(cls, **kwargs: tp.Any) -> None:
+        super().__init_subclass__(**kwargs)
+
+        if cls is ResearchTool or inspect.isabstract(cls):
+            return
+
+        ResearchTool.REGISTRY[cls.__name__.lower()] = cls
 
     def __init__(
-        self, tool_name: str, supported_build_types: tp.List[BuildType],
-        code_base: SpecificCodeBase
+        self,
+        tool_name: str,
+        supported_build_types: list[BuildType],
+        code_base: SpecificCodeBase,
     ) -> None:
         self.__name = tool_name
         self.__supported_build_types = supported_build_types
@@ -434,6 +468,33 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
     def is_build_type_supported(self, build_type: BuildType) -> bool:
         return build_type in self.__supported_build_types
+
+    @classmethod
+    def get_registered_tool_names(cls) -> list[str]:
+        """Returns the names of all registered research tools."""
+        tool_names = [
+            name for name in cls._BUILTIN_TOOL_ORDER if name in cls.REGISTRY
+        ]
+        tool_names.extend(
+            sorted(
+                name
+                for name in cls.REGISTRY
+                if name not in cls._BUILTIN_TOOL_ORDER
+            )
+        )
+        return tool_names
+
+    @classmethod
+    def get_tool_type(cls, name: str) -> ResearchToolTy:
+        """Look up a research tool class by name."""
+        tool_name = name.lower()
+        if tool_name not in cls.REGISTRY:
+            raise LookupError(
+                f"Could not find research tool {name}. "
+                f"Available tools: {', '.join(cls.get_registered_tool_names())}"
+            )
+
+        return cls.REGISTRY[tool_name]
 
     @classmethod
     @abc.abstractmethod
@@ -462,8 +523,10 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
     @abc.abstractmethod
     def setup(
-        self, source_folder: tp.Optional[Path], install_prefix: Path,
-        version: tp.Optional[int]
+        self,
+        source_folder: Path | None,
+        install_prefix: Path,
+        version: int | None,
     ) -> None:
         """
         Setup a research tool with it's code base. This method sets up all
@@ -479,8 +542,10 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
     @abc.abstractmethod
     def find_highest_sub_prj_version(self, sub_prj_name: str) -> int:
-        """Returns the highest release version number for the specified
-        ``SubProject`` name."""
+        """
+        Returns the highest release version number for the specified
+        ``SubProject`` name.
+        """
 
     @abc.abstractmethod
     def is_up_to_date(self) -> bool:
@@ -492,8 +557,10 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
     @abc.abstractmethod
     def build(
-        self, build_type: BuildType, install_location: Path,
-        build_folder_suffix: tp.Optional[str]
+        self,
+        build_type: BuildType,
+        install_location: Path,
+        build_folder_suffix: str | None,
     ) -> None:
         """
         Build/Compile the research tool in the specified ``build_type`` and
@@ -507,9 +574,11 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
 
     @abc.abstractmethod
-    def get_install_binaries(self) -> tp.List[str]:
-        """Returns a list of binaries to check when validating the
-        installation."""
+    def get_install_binaries(self) -> list[str]:
+        """
+        Returns a list of binaries to check when validating the
+        installation.
+        """
 
     def invalidate_install(self, install_location: Path) -> None:
         """
@@ -551,7 +620,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
     @abc.abstractmethod
     def verify_build(
-        self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
+        self, build_type: BuildType, build_folder_suffix: str | None
     ) -> bool:
         """
         Verify if the research tool was built correctly for a given build_type.
@@ -593,7 +662,7 @@ class ContainerInstallable(Protocol):
 
     def container_tool_env(
         self, stage_builder: 'containers.StageBuilder'
-    ) -> tp.Dict[str, tp.List[str]]:
+    ) -> dict[str, list[str]]:
         """
         Tool-specific container configuration in the form of environment
         variables.
