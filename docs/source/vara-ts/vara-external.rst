@@ -1,12 +1,12 @@
 Managing External Repositories with vara-external
 ===================================================
 
-**vara-external** is a tool for managing external source repositories that contain custom projects, experiments, tables, plots, and reports for the VaRA-TS suite.
+**vara-external** is a tool for managing external source repositories that contain custom projects, experiments, research_tools, tables, plots, and reports for the VaRA-TS suite.
 
 Overview
 --------
 
-External repositories allow you to extend VaRA-TS with your own **Projects, Experiments, Tables, Plots and Reports**
+External repositories allow you to extend VaRA-TS with your own **Projects, Experiments, Research Tools,  Tables, Plots and Reports**
 
 Instead of modifying the core VaRA-TS codebase, you can organize your extensions in separate repositories and register them with the tool suite.
 
@@ -20,6 +20,7 @@ External repositories must follow a specific template structure with the require
     your-repository/
     ├── projects/                 # Custom projects
     ├── experiments/              # Custom experiments
+    ├── research_tools/           # Custom research_tools
     ├── tables/                   # Custom tables
     ├── plots/                    # Custom plots
     └── reports/                  # Custom reports
@@ -68,6 +69,7 @@ If the repository structure is invalid:
         Expected structure:
             /path/to/repo/projects
             /path/to/repo/experiments
+            /path/to/repo/research_tools
             /path/to/repo/tables
             /path/to/repo/plots
             /path/to/repo/reports
@@ -128,7 +130,7 @@ Or fork it on GitHub and clone your fork for better portability:
 
 **Step 2: Add your custom content**
 
-Navigate to your cloned repository and add your custom projects, experiments, tables, plots, and reports to the respective folders:
+Navigate to your cloned repository and add your custom projects, experiments, research_tools, tables, plots, and reports to the respective folders:
 
 .. code-block:: console
 
@@ -154,7 +156,7 @@ If you prefer to create the structure manually instead of cloning:
 
 .. code-block:: console
 
-    mkdir -p my-vara-extensions/{projects,experiments,tables,plots,reports}
+    mkdir -p my-vara-extensions/{projects,experiments,research_tools,tables,plots,reports}
 
 Template Repository
 -------------------
@@ -192,7 +194,7 @@ The required directory structure (folders at repository root) is missing. Create
 
 .. code-block:: console
 
-    mkdir -p repo-name/{projects,experiments,tables,plots,reports}
+    mkdir -p repo-name/{projects,experiments,research_tools,tables,plots,reports}
 
 **Error: "Missing or invalid folders"**
 
@@ -201,4 +203,4 @@ Some required folders are missing. Create them at the repository root:
 .. code-block:: console
 
     cd repo-name/
-    mkdir -p projects experiments tables plots reports
+    mkdir -p projects experiments research_tools tables plots reports
