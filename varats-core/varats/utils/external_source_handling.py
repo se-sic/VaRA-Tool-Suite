@@ -29,7 +29,7 @@ def load_python_modules_from_external_project(
     export_context: tp.Optional[tp.List[tp.Any]] = None
 ) -> None:
     """
-    Load additional python modules from a external project.
+    Load additional python modules from an external project.
 
     Args:
         project_folder: of the project we want to load from

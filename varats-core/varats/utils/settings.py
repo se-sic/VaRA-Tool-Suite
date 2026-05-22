@@ -45,7 +45,7 @@ def create_new_varats_config() -> s.Configuration:
             },
             "external_source_repositories": {
                 "desc":
-                    "List of external repositories from where we local extra "
+                    "List of external repositories from where we load extra "
                     "projects/experiments/tables/plots.",
                 "default": []
             },
