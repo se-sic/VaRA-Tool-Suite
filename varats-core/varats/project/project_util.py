@@ -15,7 +15,6 @@ from benchbuild.utils.revision_ranges import AbstractRevisionRange
 from plumbum import local
 from plumbum.commands.base import BoundCommand
 
-from varats.utils.git_commands import get_submodule_updates
 from varats.utils.git_util import (
     RepositoryHandle,
     FullCommitHash,
@@ -27,8 +26,6 @@ from varats.utils.git_util import (
     ShortCommitHash,
     CommitRepoPair,
     CommitLookupTy,
-    get_all_revisions_between,
-    get_submodule_update_commits,
 )
 from varats.utils.settings import bb_cfg
 

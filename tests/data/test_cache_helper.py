@@ -1,6 +1,5 @@
 """Test the cache_helper module."""
 import unittest
-from pathlib import Path
 
 import pandas as pd
 

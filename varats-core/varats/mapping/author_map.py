@@ -53,9 +53,9 @@ class Author():
 
     def add_data(self, name: str, mail: str) -> None:
         """Add additional name and mail to the author."""
-        if not name in self.names:
+        if name not in self.names:
             self.names.add(name)
-        if not mail in self.mail:
+        if mail not in self.mail:
             self.mail_addresses.add(mail)
 
     def merge(self, other: 'Author') -> 'Author':

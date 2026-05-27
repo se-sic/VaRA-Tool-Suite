@@ -1,6 +1,5 @@
 """Test varats container tool."""
 import re
-import traceback
 import unittest
 import unittest.mock as mock
 from pathlib import Path
@@ -9,8 +8,8 @@ from click.testing import CliRunner
 
 from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper.paper_config import load_paper_config
-from varats.tools import driver_run, driver_container
-from varats.utils.settings import vara_cfg, save_config, bb_cfg, save_bb_config
+from varats.tools import driver_run
+from varats.utils.settings import vara_cfg, save_config, bb_cfg
 
 
 class TestDriverRun(unittest.TestCase):
