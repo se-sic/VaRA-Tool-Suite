@@ -7,12 +7,11 @@ from pathlib import Path
 import benchbuild as bb
 import benchbuild.extensions as bb_ext
 import yaml
-from benchbuild.command import cleanup, ProjectCommand
+from benchbuild.command import ProjectCommand, cleanup
 from benchbuild.utils import actions
-from benchbuild.utils.actions import StepResult, Echo, Step
+from benchbuild.utils.actions import Echo, Step, StepResult
 from benchbuild.utils.cmd import git
-from benchbuild.utils.settings import get_number_of_jobs
-from plumbum import local, ProcessExecutionError
+from plumbum import ProcessExecutionError, local
 
 from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
@@ -21,33 +20,32 @@ from varats.data.reports.hidden_configurability_report import (
 from varats.data.reports.llvm_cov_report import LLVMCoverageReport
 from varats.data.reports.text_report import PlainTextReport
 from varats.experiment.experiment_util import (
-    VersionExperiment,
     ExperimentHandle,
-    create_new_success_result_filepath,
+    VersionExperiment,
+    WithEnvironment,
     WithUnlimitedStackSize,
-    get_default_compile_error_wrapped,
-    get_config_patch_steps,
     ZippedExperimentSteps,
     ZippedReportFolder,
-    get_config_reverse_patch_steps,
-    WithEnvironment,
+    create_new_success_result_filepath,
     create_stable_success_result_filepath,
+    get_config_patch_steps,
+    get_config_reverse_patch_steps,
+    get_default_compile_error_wrapped,
 )
 from varats.experiment.steps.combinators import (
-    OutputAdapter,
     AlwaysOk,
     IfThenElse,
 )
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
 from varats.experiment.steps.testsuite import (
-    RunTestSuite,
-    PrepareTestSuite,
     BuildTestSuite,
+    PrepareTestSuite,
+    RunTestSuite,
 )
 from varats.experiment.workload_util import (
-    workload_commands,
     create_workload_specific_filename,
+    workload_commands,
 )
 from varats.experiments.coverage.collect_coverages import CollectBinaryCoverages
 from varats.experiments.hidden_config.benchbase_experiments import (
@@ -62,7 +60,7 @@ from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_precision import (
     AnalysisProjectStepBase,
 )
-from varats.project.project_util import ProjectBinaryWrapper, BinaryType
+from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.projects.c_projects.brotli import Brotli
 from varats.projects.c_projects.bzip2 import Bzip2
@@ -79,7 +77,7 @@ from varats.projects.cpp_projects.lepton import Lepton
 from varats.projects.cpp_projects.mariadb import MariaDB
 from varats.projects.cpp_projects.mysql import MySQL
 from varats.projects.cpp_projects.sevenZip import SevenZip
-from varats.provider.patch.patch_provider import PatchProvider, Patch
+from varats.provider.patch.patch_provider import Patch, PatchProvider
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.revision.revisions import get_processed_revisions_files
@@ -90,7 +88,7 @@ from varats.utils.git_util import ChurnConfig, ShortCommitHash
 NUM_REPETITIONS = 10
 
 
-class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
+class HiddenConfigurabilityDetector(actions.ProjectStep):  # type: ignore
     """Detects hidden configurability points in the project."""
 
     NAME = "HiddenConfigurabilityDetector"
@@ -107,7 +105,7 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
             f"* {self.project.name}: Find Hidden Configuration Points",
-            " " * indent
+            " " * indent,
         )
 
     def analyze(self) -> actions.StepResult:
@@ -118,8 +116,11 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
         binary = self.project.binaries[0]
 
         result_file = create_new_success_result_filepath(
-            self.__experiment_handle, HiddenConfigurabilityReport, self.project,
-            binary, get_current_config_id(self.project)
+            self.__experiment_handle,
+            HiddenConfigurabilityReport,
+            self.project,
+            binary,
+            get_current_config_id(self.project),
         )
 
         project_directory = self.project.source_of_primary
@@ -134,16 +135,19 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
 
         with local.cwd(project_directory):
             files = [
-                file for file in git(
+                file
+                for file in git(
                     "ls-tree",
                     "-r",
                     "--name-only",
                     "HEAD",
-                ).splitlines() if file_pattern.match(file)
+                ).splitlines()
+                if file_pattern.match(file)
             ]
 
             submodule_files = [
-                line for line in git(
+                line
+                for line in git(
                     "submodule",
                     "foreach",
                     "--recursive",
@@ -165,15 +169,18 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
             f"Running HiddenConfigurabilityDetector for {len(files)} source code files..."
         )
         # Run the HiddenConfigurabilityDetector
-        hvf = local[VaRA.install_location() / "bin" /
-                    "hidden-variability-finder"]
+        hvf = local[
+            VaRA.install_location() / "bin" / "hidden-variability-finder"
+        ]
 
         vara_lib_path = VaRA.install_location() / "lib"
         hvf = hvf.with_env(LD_LIBRARY_PATH=str(vara_lib_path))
 
         with local.cwd(project_directory):
-            run_cmd = hvf[f"--report-file={result_file}",
-                          f"--root-dir={project_directory}"]
+            run_cmd = hvf[
+                f"--report-file={result_file}",
+                f"--root-dir={project_directory}",
+            ]
             run_cmd = run_cmd[files]
 
             try:
@@ -186,7 +193,7 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
         return actions.StepResult.OK
 
 
-class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
+class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  # type: ignore
     """Filters hidden configurability points from the report."""
 
     NAME = "FilterHiddenConfigurabilityPoints"
@@ -206,8 +213,14 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         Xz.NAME: ["debug/", "doc/", "windows/"],
         Lepton.NAME: ["dependencies/", "test_suite/"],
         Ect.NAME: [
-            "libpng/", "leanify/", "lodepng/", "miniz/", "mozijpeg/",
-            "optipng/", "zlib/", "zopfli/"
+            "libpng/",
+            "leanify/",
+            "lodepng/",
+            "miniz/",
+            "mozijpeg/",
+            "optipng/",
+            "zlib/",
+            "zopfli/",
         ],
         Lrzip.NAME: ["libzpaq/", "lzo/", "lzma/", "m4/"],
         Bzip2.NAME: [],
@@ -233,7 +246,7 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
             f"* {self.project.name}: Filter Hidden Configuration Points",
-            " " * indent
+            " " * indent,
         )
 
     def __filter_ignored_patterns(self, report_data: dict) -> dict:
@@ -250,11 +263,12 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
 
         for _, points in report_data.items():
             for point in points:
-                #print(point["Location"]["Filename"])
+                # print(point["Location"]["Filename"])
                 if ignored_patterns.search(point["Location"]["Filename"]):
-                    #print("Filename matched ignored pattern")
-                    point["tags"] = getattr(point, "tags",
-                                            []) + ["Excluded (Filename)"]
+                    # print("Filename matched ignored pattern")
+                    point["tags"] = getattr(point, "tags", []) + [
+                        "Excluded (Filename)"
+                    ]
 
         return report_data
 
@@ -269,7 +283,7 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
             self.project.name,
             exp_type,
             LLVMCoverageReport,
-            config_id=get_current_config_id(self.project)
+            config_id=get_current_config_id(self.project),
         )
 
         if not coverage_reports or len(coverage_reports) > 1:
@@ -313,7 +327,7 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
                     else:
                         point["tags"] = ["Excluded (Coverage)"]
 
-        #pprint.pprint(report_data)
+        # pprint.pprint(report_data)
         return report_data
 
     def __filter_literal_bin_operations(self, report_data: dict) -> dict:
@@ -322,18 +336,29 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
 
         for point in report_data.get(__LITERAL_BIN_OP_KEY, []):
             if point["Operator"] not in [
-                "==", "!=", "<", ">", "<=", ">=", "+=", "-=", "*=", "/="
+                "==",
+                "!=",
+                "<",
+                ">",
+                "<=",
+                ">=",
+                "+=",
+                "-=",
+                "*=",
+                "/=",
             ]:
-                point["tags"] = getattr(point, "tags",
-                                        []) + ["Excluded (Operand)"]
+                point["tags"] = getattr(point, "tags", []) + [
+                    "Excluded (Operand)"
+                ]
 
         return report_data
 
     def filter(self) -> actions.StepResult:
         # Load the report
         reports = get_processed_revisions_files(
-            self.project.name, FindHiddenConfigurationPoints,
-            HiddenConfigurabilityReport
+            self.project.name,
+            FindHiddenConfigurationPoints,
+            HiddenConfigurabilityReport,
         )
 
         if not reports:
@@ -349,7 +374,7 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         # and then filter it, as we do not have bindings for the data types
         # in the report generated from LLVM.
 
-        with open(reports[0].full_path(), "r") as f:
+        with open(reports[0].full_path()) as f:
             report_data = yaml.safe_load(f)
 
         report_data = self.__filter_ignored_patterns(report_data)
@@ -359,8 +384,10 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         report_data = self.__filter_literal_bin_operations(report_data)
 
         result_filename = create_new_success_result_filepath(
-            self.__experiment_handle, HiddenConfigurabilityReport, self.project,
-            self.project.binaries[0]
+            self.__experiment_handle,
+            HiddenConfigurabilityReport,
+            self.project,
+            self.project.binaries[0],
         )
 
         with open(result_filename.full_path(), "w") as f:
@@ -375,20 +402,23 @@ class FindHiddenConfigurationPoints(VersionExperiment, shorthand="HCP"):
     NAME = "FindHiddenConfigurationPoints"
     REPORT_SPEC = ReportSpecification(HiddenConfigurabilityReport)
 
-    def actions_for_project(self, project: VProject) -> tp.List[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in the
-        call in a fixed order."""
+    def actions_for_project(self, project: VProject) -> list[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the
+        call in a fixed order.
+        """
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = bb_ext.run.RuntimeExtension(
-            project, self
-        ) << bb_ext.time.RunWithTime()
+        project.runtime_extension = (
+            bb_ext.run.RuntimeExtension(project, self)
+            << bb_ext.time.RunWithTime()
+        )
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = bb_ext.compiler.RunCompiler(
-            project, self
-        ) << WithUnlimitedStackSize() << WithEnvironment({
-            "CMAKE_EXPORT_COMPILE_COMMANDS": "1"
-        })
+        project.compiler_extension = (
+            bb_ext.compiler.RunCompiler(project, self)
+            << WithUnlimitedStackSize()
+            << WithEnvironment({"CMAKE_EXPORT_COMPILE_COMMANDS": "1"})
+        )
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
@@ -399,28 +429,31 @@ class FindHiddenConfigurationPoints(VersionExperiment, shorthand="HCP"):
         # While it helps us to have a compile_commands.json, some projects might
         # not compile but the HiddenConfigurabilityDetector might still work to a certain extent.
         experiment_steps = [
-            actions.Any([
-                actions.Compile(project),
-                HiddenConfigurabilityDetector(project, self.get_handle()),
-                actions.Clean(project)
-            ])
+            actions.Any(
+                [
+                    actions.Compile(project),
+                    HiddenConfigurabilityDetector(project, self.get_handle()),
+                    actions.Clean(project),
+                ]
+            )
         ]
 
         return experiment_steps
 
 
 class FilterHiddenConfigurabilityReport(VersionExperiment, shorthand="FCP"):
-
     NAME = "FilterHiddenConfigurabilityReport"
     REPORT_SPEC = ReportSpecification(HiddenConfigurabilityReport)
 
-    def actions_for_project(self,
-                            project: VProject) -> tp.MutableSequence[Step]:
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[Step]:
         # Check whether the project already has a hidden configurability report
         # Load the report
         reports = get_processed_revisions_files(
-            project.name, FindHiddenConfigurationPoints,
-            HiddenConfigurabilityReport
+            project.name,
+            FindHiddenConfigurationPoints,
+            HiddenConfigurabilityReport,
         )
 
         if not reports:
@@ -438,22 +471,31 @@ class FilterHiddenConfigurabilityReport(VersionExperiment, shorthand="FCP"):
 
 
 _PROJECT_WORKLOADS = {
+    # Dune
     "DunePerfRegression": [
-        "poisson-yasp-q2-3d", "poisson-alugrid", "poisson-non-separated"
+        "poisson-yasp-q2-3d",
+        "poisson-alugrid",
+        "poisson-non-separated",
     ],
-    "FastDownward": ["data-network-opt18-py", "sokoban-sat08-py"],
-    "libvpx": ["nocturne-1080p"],
+    # FD
+    "FastDownward": ["data-network-opt18-py"],
+    # Video Encoding
+    "libvpx": ["aspen-1080p", "old-town-2160p", "nocturne-1080p"],
+    "x264": ["aspen-1080p", "old-town-2160p", "nocturne-1080p"],
+    # ZMQ
     "libzmq": ["bench-inproc-lat", "bench-inproc-thr", "bench-radix-tree"],
+    # Compression
     "brotli": ["geo-maps-countries-land-1km", "geo-maps-countries-land-2km5"],
     "xz": ["countries-land-10m", "countries-land-250m"],
     "7zip": ["countries-10m-geo", "countries-100m-geo"],
-    "cryptominisat": ["traffic-kkb-unknown"],
     "bzip2": ["med-geo-compress"],
-    "x264": ["aspen-1080p", "old-town-2160p"],
     "lrzip": ["countries-land-10m", "countries-land-100m"],
+    # Databases
     "mariadb": ["tpcc", "tpch", "auctionmark"],
     "postgresql": ["tpcc", "tpch", "auctionmark"],
-    "cadical": ["traffic-kkb-unknown"]
+    # SAT Solvers
+    "cadical": ["traffic-kkb-unknown"],
+    "cryptominisat": ["traffic-kkb-unknown"],
 }
 
 
@@ -461,13 +503,15 @@ def variation_value_to_str(value: tp.Any) -> str:
     return str(value).replace('.', '')
 
 
-def _filter_workloads(project: VProject,
-                      binary: ProjectBinaryWrapper) -> tp.List[ProjectCommand]:
+def _filter_workloads(
+    project: VProject, binary: ProjectBinaryWrapper
+) -> list[ProjectCommand]:
     if project.name not in _PROJECT_WORKLOADS:
         print(f"Warning: No workload defined for {project.name}")
         return []
     return [
-        cmd for cmd in workload_commands(project, binary, [])
+        cmd
+        for cmd in workload_commands(project, binary, [])
         if cmd.command.label in _PROJECT_WORKLOADS[project.name]
     ]
 
@@ -490,13 +534,16 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
                         self.project, self._binary
                     ):
                         print(f"Running {prj_command.command.label}...")
-                        time_report_file = reps_tmp_dir / create_workload_specific_filename(
-                            "time_report", prj_command.command, rep, ".txt"
+                        time_report_file = (
+                            reps_tmp_dir
+                            / create_workload_specific_filename(
+                                "time_report", prj_command.command, rep, ".txt"
+                            )
                         )
 
                         run_cmd = prj_command.command.as_plumbum_wrapped_with(
                             local["time"]["-v", "-o", f"{time_report_file}"],
-                            project=self.project
+                            project=self.project,
                         )
 
                         with cleanup(prj_command):
@@ -509,7 +556,7 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
             f"* {self.project.name}: Time patched workloads for binary {self._binary.name}",
-            " " * indent
+            " " * indent,
         )
 
 
@@ -531,15 +578,18 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in the
-        call in a fixed order."""
-
+        """
+        Returns the specified steps to run the project(s) specified in the
+        call in a fixed order.
+        """
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = bb_ext.run.RuntimeExtension(project, self)
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = bb_ext.compiler.RunCompiler(project, self) \
-                                     << bb_ext.run.WithTimeout()
+        project.compiler_extension = (
+            bb_ext.compiler.RunCompiler(project, self)
+            << bb_ext.run.WithTimeout()
+        )
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
@@ -559,20 +609,24 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
             # Baseline step, test normal program behavior without any patch applied
             analysis_actions.append(actions.Compile(project))
 
-            zipped_steps.extend([
-                TimePatchedWorkloadsStep(
-                    project,
-                    binary,
-                    file_name=MPRTimeWLAggregate.create_baseline_report_name(
-                        binary.name
-                    ) + ".zip",
-                    report_file_ending=".txt",
-                    reps=NUM_REPETITIONS
-                ) for binary in _get_project_binaries(project)
-            ])
+            zipped_steps.extend(
+                [
+                    TimePatchedWorkloadsStep(
+                        project,
+                        binary,
+                        file_name=MPRTimeWLAggregate.create_baseline_report_name(
+                            binary.name
+                        )
+                        + ".zip",
+                        report_file_ending=".txt",
+                        reps=NUM_REPETITIONS,
+                    )
+                    for binary in _get_project_binaries(project)
+                ]
+            )
         else:
             # Filter patches based on the variations specified in the configuration
-            patches_filtered: tp.List[Patch] = [
+            patches_filtered: list[Patch] = [
                 patch for patch in patches if patch.shortname in variations
             ]
 
@@ -591,7 +645,7 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                     )
                     continue
                 arg_name = next(iter(patch_variations))
-                values: tp.List[int] = list(patch_variations[arg_name])
+                values: list[int] = list(patch_variations[arg_name])
 
                 if arg_name not in patch.arguments:
                     print(
@@ -623,14 +677,14 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                                     TimePatchedWorkloadsStep(
                                         project,
                                         b,
-                                        file_name=MPRTimeWLAggregate.
-                                        create_patched_report_name(
+                                        file_name=MPRTimeWLAggregate.create_patched_report_name(
                                             patch, b.name, **{arg_name: value}
-                                        ) + ".zip",
+                                        )
+                                        + ".zip",
                                         report_file_ending=".txt",
-                                        reps=NUM_REPETITIONS
+                                        reps=NUM_REPETITIONS,
                                     )
-                                )
+                                ),
                             )
                         )
 
@@ -640,8 +694,11 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
 
         fake_binary = ProjectBinaryWrapper("ALL", Path(), BinaryType.EXECUTABLE)
         result_filepath = create_stable_success_result_filepath(
-            self.get_handle(), MPRTimeWLAggregate, project, fake_binary,
-            get_current_config_id(project)
+            self.get_handle(),
+            MPRTimeWLAggregate,
+            project,
+            fake_binary,
+            get_current_config_id(project),
         )
 
         analysis_actions.append(
@@ -657,7 +714,7 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
 class MPTextReport(
     MultiPatchReport,
     shorthand="MP" + PlainTextReport.shorthand(),
-    file_type="zip"
+    file_type="zip",
 ):
     """Aggregate for MultiPatchReports that contain WLTimeReports."""
 
@@ -666,21 +723,27 @@ class MPTextReport(
 
 
 class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
-
     NAME = "TestPatchVariations"
     REPORT_SPEC = ReportSpecification(MPTextReport)
 
-    def actions_for_project(self,
-                            project: VProject) -> tp.MutableSequence[Step]:
-        """Returns the specified steps to run the project(s) specified in the
-        call in a fixed order."""
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the
+        call in a fixed order.
+        """
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = bb_ext.run.RuntimeExtension(project, self) \
-                                    << bb_ext.time.RunWithTime()
+        project.runtime_extension = (
+            bb_ext.run.RuntimeExtension(project, self)
+            << bb_ext.time.RunWithTime()
+        )
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = bb_ext.compiler.RunCompiler(project, self) \
-                                     << bb_ext.run.WithTimeout()
+        project.compiler_extension = (
+            bb_ext.compiler.RunCompiler(project, self)
+            << bb_ext.run.WithTimeout()
+        )
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
@@ -701,8 +764,11 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
         )
 
         result_file = create_stable_success_result_filepath(
-            self.get_handle(), MPTextReport, project, fake_binary,
-            get_current_config_id(project)
+            self.get_handle(),
+            MPTextReport,
+            project,
+            fake_binary,
+            get_current_config_id(project),
         )
 
         variations = get_variations_as_dict(project)
@@ -718,15 +784,16 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
                     RunTestSuite(
                         project,
                         Path(
-                            MultiPatchReport.
-                            create_baseline_report_name("testsuite")
-                        )
+                            MultiPatchReport.create_baseline_report_name(
+                                "testsuite"
+                            )
+                        ),
                     )
                 )
             )
         else:
             # Filter patches based on the variations specified in the configuration
-            patches_filtered: tp.List[Patch] = [
+            patches_filtered: list[Patch] = [
                 patch for patch in patches if patch.shortname in variations
             ]
 
@@ -741,7 +808,7 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
                     continue
 
                 arg_name = next(iter(patch_variations))
-                values: tp.List[int] = list(patch_variations[arg_name])
+                values: list[int] = list(patch_variations[arg_name])
 
                 if arg_name not in patch.arguments:
                     print(
@@ -771,13 +838,14 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
                                     project,
                                     Path(
                                         MPTextReport.create_patched_report_name(
-                                            patch, "testsuite",
-                                            **{arg_name: value}
+                                            patch,
+                                            "testsuite",
+                                            **{arg_name: value},
                                         )
-                                    )
+                                    ),
                                 )
                             ),
-                            return_result=StepResult.OK
+                            return_result=StepResult.OK,
                         )
                     )
 
