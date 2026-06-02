@@ -169,14 +169,15 @@ def draw_code_churn(
         -x if x < CODE_CHURN_DELETION_LIMIT else -1.3 *
         CODE_CHURN_DELETION_LIMIT for x in code_churn.deletions
     ]
+    ylim = min(CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT,
+               max(code_churn["insertions"].max(), code_churn["deletions"].max()))
 
-    axis.set_ylim(-CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT)
-    axis.fill_between(revision_strs, clipped_insertions, 0, facecolor='green')
-    axis.fill_between(
+    axis.set_ylim(-ylim, ylim)
+    axis.bar(revision_strs, clipped_insertions, facecolor='green')
+    axis.bar(
         revision_strs,
         # we need a - here to visualize deletions as negative additions
         clipped_deletions,
-        0,
         facecolor='red'
     )
 
@@ -211,14 +212,15 @@ def draw_code_churn_for_revisions(
         CODE_CHURN_DELETION_LIMIT for x in churn_data.deletions
     ]
     revision_strs: tp.List[str] = [rev.short_hash for rev in revisions]
+    ylim = min(CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT,
+               max(churn_data["insertions"].max(), churn_data["deletions"].max()))
 
-    axis.set_ylim(-CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT)
-    axis.fill_between(revision_strs, clipped_insertions, 0, facecolor='green')
-    axis.fill_between(
+    axis.set_ylim(-ylim, ylim)
+    axis.bar(revision_strs, clipped_insertions, facecolor='green')
+    axis.bar(
         revision_strs,
         # we need a - here to visualize deletions as negative additions
         clipped_deletions,
-        0,
         facecolor='red'
     )
     revision_strs = churn_data.time_id.astype(
