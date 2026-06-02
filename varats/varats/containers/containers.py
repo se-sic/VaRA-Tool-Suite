@@ -225,13 +225,13 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
             .workingdir('/')
             # install cmake
             .run('pip3', 'install', 'cmake')
-            # install llvm 16
+            # install llvm 20
             .run('wget', 'https://apt.llvm.org/llvm.sh')
             .run('chmod', '+x', './llvm.sh')
-            .run('./llvm.sh', '16', 'all')
-            .run('ln', '-s', '/usr/bin/clang-16', '/usr/bin/clang')
-            .run('ln', '-s', '/usr/bin/clang++-16', '/usr/bin/clang++')
-            .run('ln', '-s', '/usr/bin/lld-16', '/usr/bin/lld')),
+            .run('./llvm.sh', '20', 'all')
+            .run('ln', '-s', '/usr/bin/clang-20', '/usr/bin/clang')
+            .run('ln', '-s', '/usr/bin/clang++-20', '/usr/bin/clang++')
+            .run('ln', '-s', '/usr/bin/lld-20', '/usr/bin/lld')),
     ImageBase.DEBIAN_11:
         _create_layers_helper(lambda ctx: ctx.layers
             .from_("docker.io/library/debian:11")
@@ -239,11 +239,14 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
             .run('apt', 'install', '-y', 'wget', 'curl', 'gnupg', 'lsb-release',
                  'software-properties-common', 'musl-dev', 'git', 'gcc',
                  'libgit2-dev', 'libffi-dev', 'libyaml-dev', 'graphviz-dev',
-                 'python3', 'python3-pip', 'python3-virtualenv', 'clang-16',
-                 'lld-16', 'time')
-            .run('ln', '-s', '/usr/bin/clang-16', '/usr/bin/clang')
-            .run('ln', '-s', '/usr/bin/clang++-16', '/usr/bin/clang++')
-            .run('ln', '-s', '/usr/bin/lld-16', '/usr/bin/lld')),
+                 'python3', 'python3-pip', 'python3-virtualenv', 'time')
+            # install llvm 20
+            .run('wget', 'https://apt.llvm.org/llvm.sh')
+            .run('chmod', '+x', './llvm.sh')
+            .run('./llvm.sh', '20', 'all')
+            .run('ln', '-s', '/usr/bin/clang-20', '/usr/bin/clang')
+            .run('ln', '-s', '/usr/bin/clang++-20', '/usr/bin/clang++')
+            .run('ln', '-s', '/usr/bin/lld-20', '/usr/bin/lld')),
     ImageBase.DEBIAN_12:
         _create_layers_helper(lambda ctx: ctx.layers
             .from_("docker.io/library/debian:12")
@@ -252,8 +255,15 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
                  'lsb-release', 'software-properties-common', 'musl-dev', 'git',
                  'gcc', 'libgit2-dev', 'libffi-dev', 'libyaml-dev',
                  'graphviz-dev', 'python3', 'python3-pip', 'python3-virtualenv',
-                 'clang', 'lld', 'libc++-dev', 'libc++abi-dev', 'libtbb12',
+                 'libc++-dev', 'libc++abi-dev', 'libtbb12',
                  'time', 'linux-perf')
+            # install llvm 20
+            .run('wget', 'https://apt.llvm.org/llvm.sh')
+            .run('chmod', '+x', './llvm.sh')
+            .run('./llvm.sh', '20', 'all')
+            .run('ln', '-s', '/usr/bin/clang-20', '/usr/bin/clang')
+            .run('ln', '-s', '/usr/bin/clang++-20', '/usr/bin/clang++')
+            .run('ln', '-s', '/usr/bin/lld-20', '/usr/bin/lld')
             # set locale to UTF-8
             .run('sed', '-i', '/en_US.UTF-8/s/^# //g', '/etc/locale.gen')
             .run('locale-gen')
