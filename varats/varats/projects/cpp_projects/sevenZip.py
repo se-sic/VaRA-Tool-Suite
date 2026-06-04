@@ -1,10 +1,12 @@
 """Project file for 7zip."""
+import typing
 import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
+from benchbuild.source.http import HTTPUnzip
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local, ProcessExecutionError
 
@@ -34,7 +36,7 @@ from varats.utils.testsuite_utils import TestResult
 class SevenZip(VProject):
     """Compression and decompression tool SevenZip (fetched by Git)"""
 
-    __SOURCE_FILES = [
+    __COUNTRIES_SOURCE_FILES: typing.ClassVar = [
         "countries-land-1m.geo.json", "countries-land-10m.geo.json",
         "countries-land-100m.geo.json", "countries-land-10km.geo.json",
         "countries-land-1km.geo.json", "countries-land-250m.geo.json",
@@ -48,7 +50,7 @@ class SevenZip(VProject):
     GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.COMPRESSION
 
-    SOURCE = [
+    SOURCE: typing.ClassVar = [
         PaperConfigSpecificGit(
             project_name="7zip",
             remote="https://github.com/mcmilk/7-Zip.git",
@@ -66,12 +68,31 @@ class SevenZip(VProject):
                     "https://github.com/simonepri/geo-maps/releases/"
                     "download/v0.6.0"
             },
-            files=__SOURCE_FILES
+            files=__COUNTRIES_SOURCE_FILES
         ),
+        HTTPUnzip(
+            local="silesia.zip",
+            remote = {
+                "1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"
+            },
+        ),
+        HTTPUnzip(
+            local="lukas_2d_16_dicom.zip",
+            remote = {
+                "1.0": "http://www.data-compression.info/files/corpora/lukas_2d_16_dicom.zip"
+            },
+        ),
+        HTTPUnzip(
+            local="enwik8.zip",
+            remote = {
+                "1.0": "https://mattmahoney.net/dc/enwik8.zip"
+            },
+        ),
+
         # TODO: Compressed Data for decompression workload ?
     ]
 
-    WORKLOADS = {
+    WORKLOADS: typing.ClassVar = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("7zip") / RSBinary("7zz"),
@@ -100,6 +121,54 @@ class SevenZip(VProject):
                 ],
                 requires_all_args={"a"}
             ),
+            VCommand(
+                SourceRoot("7zip") / RSBinary("7zz"),
+                ConfigParams(),
+                "geo-maps/countries-land-250m.geo.json.7z",
+                "--",
+                "geo-maps/countries-land-250m.geo.json",
+                label="countries-250m-geo",
+                creates=[
+                    "geo-maps/countries-land-250m.geo.json.7z",
+                ],
+                requires_all_args={"a"}
+            ),
+            VCommand(
+                SourceRoot("7zip") / RSBinary("7zz"),
+                ConfigParams(),
+                "silesia.7z",
+                "--",
+                "silesia.zip/",
+                label="silesia",
+                creates=[
+                    "silesia.7z",
+                ],
+                requires_all_args={"a"}
+            ),
+            VCommand(
+                SourceRoot("7zip") / RSBinary("7zz"),
+                ConfigParams(),
+                "lukas_2d_16_dicom.7z",
+                "--",
+                "lukas_2d_16_dicom.zip/",
+                label="lukas-2d-16-dicom",
+                creates=[
+                    "lukas_2d_16_dicom.7z",
+                ],
+                requires_all_args={"a"}
+            ),
+                VCommand(
+                SourceRoot("7zip") / RSBinary("7zz"),
+                ConfigParams(),
+                "enwik8.7z",
+                "--",
+                "enwik8.zip/enwik8",
+                label="enwik8",
+                creates=[
+                    "enwik8.7z",
+                ],
+                requires_all_args={"a"}
+            )
             #TODO: Decompression workload ?
         ],
         WorkloadSet(WorkloadCategory.LARGE): [
@@ -184,7 +253,7 @@ class SevenZip(VProject):
         return test_results
 
     def get_test_names(self) -> tp.List[str]:
-        return self.__SOURCE_FILES
+        return self.__COUNTRIES_SOURCE_FILES
 
     def __end_to_end_test(self, file: Path) -> TestResult:
         """

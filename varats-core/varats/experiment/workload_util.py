@@ -174,3 +174,40 @@ class WorkloadSpecificReportAggregate(
 
     def workload_names(self) -> tp.Collection[str]:
         return self.keys()
+
+# Compression Workloads Helper constants
+SILESIA_FILES = (
+    "dickens",
+    "mozilla",
+    "mr",
+    "nci",
+    "ooffice",
+    "reymont",
+    "samba",
+    "sao",
+    "webster",
+    "x-ray"
+)
+
+LUKAS_DICOM_FILES = (
+    "breast_0.dcm",
+    "breast_1.dcm",
+    "food_0.dcm",
+    "food_1.dcm",
+    "hand_0.dcm",
+    "hand_1.dcm",
+    "head_0.dcm",
+    "head_1.dcm",
+    "knee_0.dcm",
+    "knee_1.dcm",
+    "leg_0.dcm",
+    "leg_1.dcm",
+    "pelvis_0.dcm",
+    "pelvis_1.dcm",
+    "sinus_0.dcm",
+    "sinus_1.dcm",
+    "spine_0.dcm",
+    "spine_1.dcm",
+    "thorax_0.dcm",
+    "thorax_1.dcm",
+)

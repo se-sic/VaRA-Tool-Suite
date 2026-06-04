@@ -1,3 +1,4 @@
+import typing
 import typing as tp
 from pathlib import Path
 
@@ -31,7 +32,7 @@ class Cadical(VProject):
     GROUP = "cpp_projects"
     DOMAIN = ProjectDomains.SOLVER
 
-    SOURCE = [
+    SOURCE: typing.ClassVar = [
         PaperConfigSpecificGit(
             project_name="cadical",
             remote="https://github.com/arminbiere/cadical.git",
@@ -48,6 +49,15 @@ class Cadical(VProject):
                     "https://github.com/se-sic/picoSAT-mirror/releases/"
                     "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
             }
+        ),
+        HTTPUntar(
+            local="childsnack_p11.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/"
+                    "UNSAT_H_instances_childsnack_p11.hddl_1.cnf.tar.gz"
+            }
         )
     ]
 
@@ -60,12 +70,17 @@ class Cadical(VProject):
         'clang',
     )
 
-    WORKLOADS = {
+    WORKLOADS: typing.ClassVar = {
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("cadical") / RSBinary("cadical"),
                 "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf",
                 label="traffic-kkb-unknown"
+            ),
+            VCommand(
+                SourceRoot("cadical") / RSBinary("cadical"),
+                "childsnack_p11.cnf/UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
+                label="childsnack-p11"
             )
         ]
     }

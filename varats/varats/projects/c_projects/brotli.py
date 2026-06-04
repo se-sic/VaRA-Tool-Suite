@@ -4,32 +4,35 @@ from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.command import WorkloadSet, SourceRoot
+from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
-from benchbuild.utils.cmd import cmake, mkdir, make
+from benchbuild.source.http import HTTPUnzip
+from benchbuild.utils.cmd import cmake, make, mkdir
 from benchbuild.utils.revision_ranges import (
     RevisionRange,
-    block_revisions,
     SingleRevision,
+    block_revisions,
 )
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.containers.containers import get_base_image, ImageBase
+from varats.containers.containers import ImageBase, get_base_image
 from varats.experiment.workload_util import (
-    WorkloadCategory,
-    RSBinary,
+    LUKAS_DICOM_FILES,
+    SILESIA_FILES,
     ConfigParams,
+    RSBinary,
+    WorkloadCategory,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    ProjectBinaryWrapper,
     BinaryType,
+    ProjectBinaryWrapper,
+    RevisionBinaryMap,
     get_local_project_repo,
     verify_binaries,
-    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
@@ -37,9 +40,9 @@ from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
-    ctest_run_testsuite,
-    ctest_get_test_names,
     TestResult,
+    ctest_get_test_names,
+    ctest_run_testsuite,
 )
 
 
@@ -50,7 +53,7 @@ class Brotli(VProject):
     GROUP = 'c_projects'
     DOMAIN = ProjectDomains.COMPRESSION
 
-    SOURCE = [
+    SOURCE: tp.ClassVar = [
         block_revisions([
             RevisionRange(
                 '8f30907d0f2ef354c2b31bdee340c2b11dda0fb0',
@@ -86,10 +89,28 @@ class Brotli(VProject):
                 "countries-land-250m.geo.json", "countries-land-100m.geo.json",
                 "countries-land-10m.geo.json", "countries-land-1m.geo.json"
             ]
-        )
+        ),
+        HTTPUnzip(
+            local="silesia.zip",
+            remote={
+                "1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"
+            },
+        ),
+        HTTPUnzip(
+            local="lukas_2d_16_dicom.zip",
+            remote={
+                "1.0": "http://www.data-compression.info/files/corpora/lukas_2d_16_dicom.zip"
+            },
+        ),
+        HTTPUnzip(
+            local="enwik8.zip",
+            remote={
+                "1.0": "https://mattmahoney.net/dc/enwik8.zip"
+            },
+        ),
     ]
 
-    WORKLOADS = {
+    WORKLOADS: tp.ClassVar = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("brotli_git") / RSBinary("brotli"),
@@ -127,6 +148,27 @@ class Brotli(VProject):
                 ConfigParams(),
                 "geo-maps/countries-land-250m.geo.json",
                 label="geo-maps-countries-land-250m"
+            ),
+            VCommand(
+                SourceRoot("brotli_git") / RSBinary("brotli"),
+                "-fkn",
+                ConfigParams(),
+                *[f"silesia.zip/{f}" for f in SILESIA_FILES],
+                label="silesia"
+            ),
+            VCommand(
+                SourceRoot("brotli_git") / RSBinary("brotli"),
+                "-fkn",
+                ConfigParams(),
+                *[f"lukas_2d_16_dicom.zip/lukas_2d_16_{f}" for f in LUKAS_DICOM_FILES],
+                label="lukas-2d-16-dicom"
+            ),
+            VCommand(
+                SourceRoot("brotli_git") / RSBinary("brotli"),
+                "-fkn",
+                ConfigParams(),
+                "enwik8.zip/enwik8",
+                label="enwik8"
             )
         ],
         WorkloadSet(WorkloadCategory.LARGE): [

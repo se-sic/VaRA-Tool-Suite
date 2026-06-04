@@ -1,4 +1,5 @@
 """Project file for x264."""
+import typing
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
@@ -33,7 +34,7 @@ class X264(VProject):
     GROUP = 'c_projects'
     DOMAIN = ProjectDomains.CODEC
 
-    SOURCE = [
+    SOURCE: typing.ClassVar = [
         block_revisions(
             [
                 GoodBadSubgraph(
@@ -77,7 +78,7 @@ class X264(VProject):
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
-    WORKLOADS = {
+    WORKLOADS: typing.ClassVar = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("x264") / RSBinary("x264"),

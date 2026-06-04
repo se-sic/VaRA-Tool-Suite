@@ -478,24 +478,26 @@ _PROJECT_WORKLOADS = {
         "poisson-non-separated",
     ],
     # FD
-    "FastDownward": ["data-network-opt18-py"],
+    "FastDownward": ["elevators-opt08-p06",
+                     "data-network-opt18-p17",
+                     "childsnack-opt14-p01-py"],
     # Video Encoding
     "libvpx": ["aspen-1080p", "old-town-2160p", "nocturne-1080p"],
     "x264": ["aspen-1080p", "old-town-2160p", "nocturne-1080p"],
     # ZMQ
     "libzmq": ["bench-inproc-lat", "bench-inproc-thr", "bench-radix-tree"],
     # Compression
-    "brotli": ["geo-maps-countries-land-1km", "geo-maps-countries-land-2km5"],
-    "xz": ["countries-land-10m", "countries-land-250m"],
-    "7zip": ["countries-10m-geo", "countries-100m-geo"],
-    "bzip2": ["med-geo-compress"],
-    "lrzip": ["countries-land-10m", "countries-land-100m"],
+    "brotli": ["geo-maps-countries-land-250m", "silesia", "lukas_2d_16_dicom", "enwik8"],
+    "xz": ["countries-land-250m", "silesia", "lukas_2d_16_dicom", "enwik8"],
+    "7zip": ["countries-250m-geo", "silesia", "lukas_2d_16_dicom", "enwik8"],
+    "bzip2": ["med-geo-compress", "silesia", "lukas_2d_16_dicom", "enwik8"],
+    "lrzip": ["countries-land-250m", "silesia", "lukas_2d_16_dicom", "enwik8"],
     # Databases
     "mariadb": ["tpcc", "tpch", "auctionmark"],
     "postgresql": ["tpcc", "tpch", "auctionmark"],
     # SAT Solvers
     "cadical": ["traffic-kkb-unknown"],
-    "cryptominisat": ["traffic-kkb-unknown"],
+    "cryptominisat": ["traffic-kkb-unknown", "childsnack-p11"],
 }
 
 

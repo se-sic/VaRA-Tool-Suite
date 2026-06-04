@@ -7,6 +7,7 @@ from unittest import TestResult
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
+from benchbuild.source.http import HTTPUnzip
 from benchbuild.utils.cmd import cmake, make, mkdir
 from benchbuild.utils.revision_ranges import RevisionRange, GoodBadSubgraph
 from benchbuild.utils.settings import get_number_of_jobs
@@ -16,7 +17,7 @@ from varats.containers.containers import ImageBase, get_base_image
 from varats.experiment.workload_util import (
     RSBinary,
     WorkloadCategory,
-    ConfigParams,
+    ConfigParams, SILESIA_FILES, LUKAS_DICOM_FILES,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
@@ -51,7 +52,7 @@ class Bzip2(VProject):
     GROUP = 'c_projects'
     DOMAIN = ProjectDomains.COMPRESSION
 
-    SOURCE = [
+    SOURCE: tp.ClassVar = [
         PaperConfigSpecificGit(
             project_name="bzip2",
             remote="https://github.com/libarchive/bzip2.git",
@@ -86,7 +87,25 @@ class Bzip2(VProject):
                 "countries-land-10m.geo.json.bz2",
                 "countries-land-1m.geo.json.bz2"
             ]
-        )
+        ),
+        HTTPUnzip(
+            local="silesia.zip",
+            remote={
+                "1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"
+            },
+        ),
+        HTTPUnzip(
+            local="lukas_2d_16_dicom.zip",
+            remote={
+                "1.0": "http://www.data-compression.info/files/corpora/lukas_2d_16_dicom.zip"
+            },
+        ),
+        HTTPUnzip(
+            local="enwik8.zip",
+            remote={
+                "1.0": "https://mattmahoney.net/dc/enwik8.zip"
+            },
+        ),
     ]
     _AUTOTOOLS_VERSIONS = GoodBadSubgraph([
         "8cfd87aed5ba8843af50569fb440489b1ca74259"
@@ -96,7 +115,7 @@ class Bzip2(VProject):
         "33d134030248633ffa7d60c0a35a783c46da034b"
     ], ["8cfd87aed5ba8843af50569fb440489b1ca74259"], "Uses a basic Makefile")
 
-    CONTAINER = [
+    CONTAINER: tp.ClassVar = [
         (
             RevisionRange("ad723d6558718e9bbaca930e7e715c9ee754e90e",
                           "HEAD"), get_base_image(ImageBase.DEBIAN_10)
@@ -113,7 +132,7 @@ class Bzip2(VProject):
         AUTOTOOLS = 1
         CMAKE = 2
 
-    WORKLOADS = {
+    WORKLOADS: tp.ClassVar = {
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
@@ -150,6 +169,30 @@ class Bzip2(VProject):
                     "geo-maps-compr/countries-land-100m.geo.json"
                 ],
                 requires_all_args={"--decompress"}
+            ),
+            VCommand(
+                SourceRoot("bzip2") / RSBinary("bzip2"),
+                ConfigParams(),
+                "--keep",
+                *[f"silesia.zip/{file}" for file in SILESIA_FILES],
+                label="silesia",
+                requires_all_args={"--compress"}
+            ),
+            VCommand(
+                SourceRoot("bzip2") / RSBinary("bzip2"),
+                ConfigParams(),
+                "--keep",
+                *[f"lukas_2d_16_dicom.zip/lukas_2d_16_{file}" for file in LUKAS_DICOM_FILES],
+                label="lukas-2d-16-dicom",
+                requires_all_args={"--compress"}
+            ),
+            VCommand(
+                SourceRoot("bzip2") / RSBinary("bzip2"),
+                ConfigParams(),
+                "--keep",
+                "enwik8.zip/enwik8",
+                label="enwik8",
+                requires_all_args={"--compress"}
             )
         ],
     }

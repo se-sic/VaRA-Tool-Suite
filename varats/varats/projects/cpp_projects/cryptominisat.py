@@ -1,22 +1,23 @@
 import shutil
+import typing
 import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.command import WorkloadSet, SourceRoot
+from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import Git, HTTPUntar
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import WorkloadCategory, RSBinary
+from varats.containers.containers import ImageBase, get_base_image
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
+    BinaryType,
     RevisionBinaryMap,
     get_local_project_repo,
-    BinaryType,
 )
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
@@ -36,7 +37,7 @@ class CryptoMiniSAT(VProject):
     GROUP = "cpp_projects"
     DOMAIN = ProjectDomains.SOLVER
 
-    SOURCE = [
+    SOURCE: typing.ClassVar = [
         PaperConfigSpecificGit(
             project_name="cryptominisat",
             remote="https://github.com/msoos/cryptominisat.git",
@@ -70,15 +71,29 @@ class CryptoMiniSAT(VProject):
                     "https://github.com/se-sic/picoSAT-mirror/releases/"
                     "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
             }
+        ),
+        HTTPUntar(
+            local="childsnack_p11.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/"
+                    "UNSAT_H_instances_childsnack_p11.hddl_1.cnf.tar.gz"
+            }
         )
     ]
 
-    WORKLOADS = {
+    WORKLOADS: typing.ClassVar = {
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("cryptominisat") / RSBinary("cryptominisat5"),
                 "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf",
                 label="traffic-kkb-unknown"
+            ),
+            VCommand(
+                SourceRoot("cryptominisat") / RSBinary("cryptominisat5"),
+                "childsnack_p11.cnf/childsnack_p11.cnf",
+                label="childsnack-p11"
             )
         ]
     }

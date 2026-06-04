@@ -2,6 +2,7 @@
 
 import os
 import re
+import typing
 import typing as tp
 from pathlib import Path
 
@@ -274,21 +275,29 @@ class FastDownward(VProject, ReleaseProviderHook):
             "sokoban-sat08-strips/p01.pddl",
             "data-network-opt18-strips/domain.pddl",
             "data-network-opt18-strips/p05.pddl",
+            "data-network-opt18-strips/p17.pddl",
             "childsnack-opt14-strips/domain.pddl",
             "childsnack-opt14-strips/child-snack_pfile01.pddl",
             "elevators-opt08-strips/domain.pddl",
             "elevators-opt08-strips/p01.pddl",
+            "elevators-opt08-strips/p06.pddl",
+            "airport/p20-domain.pddl",
+            "airport/p20-airport3-p7.pddl",
         ],
     )
 
-    __PlanningProblems = {
+    __PlanningProblems: typing.ClassVar = {
         "sokoban-sat08": [
             "sokoban-sat08-strips/domain.pddl",
             "sokoban-sat08-strips/p01.pddl",
         ],
-        "data-network-opt18": [
+        "data-network-opt18-p05": [
             "data-network-opt18-strips/domain.pddl",
             "data-network-opt18-strips/p05.pddl",
+        ],
+        "data-network-opt18-p17": [
+            "data-network-opt18-strips/domain.pddl",
+            "data-network-opt18-strips/p17.pddl",
         ],
         "childsnack-opt14-p01": [
             "childsnack-opt14-strips/domain.pddl",
@@ -298,13 +307,21 @@ class FastDownward(VProject, ReleaseProviderHook):
             "elevators-opt08-strips/domain.pddl",
             "elevators-opt08-strips/p01.pddl",
         ],
+        "elevators-opt08-p06": [
+            "elevators-opt08-strips/domain.pddl",
+            "elevators-opt08-strips/p06.pddl",
+        ],
+        "airport-p20": [
+            "airport/p20-domain.pddl",
+            "airport/p20-airport3-p7.pddl",
+        ],
     }
 
     NAME = 'FastDownward'
     GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.PLANNING
 
-    SOURCE = [
+    SOURCE: typing.ClassVar = [
         PaperConfigSpecificGit(
             project_name="FastDownward",
             remote="https://github.com/aibasel/downward.git",
@@ -318,7 +335,7 @@ class FastDownward(VProject, ReleaseProviderHook):
         __PlanningFilesSource,
     ]
 
-    WORKLOADS = {
+    WORKLOADS: typing.ClassVar = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
@@ -336,8 +353,22 @@ class FastDownward(VProject, ReleaseProviderHook):
                 / "sokoban-sat08.sas",
                 label="sokoban-sat08",
             ),
-        ],
-        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
+                "planning-benchmarks/elevators-opt08-strips-domain.pddl",
+                "planning-benchmarks/elevators-opt08-strips-p01.pddl",
+                "--search",
+                _FDConfigParams(),
+                label="elevators-opt08-p01-py",
+            ),
+            VCommand(
+                SourceRoot("FastDownward") / RSBinary("downward"),
+                "--search",
+                _FDConfigParams(),
+                label="data-network-opt18-p05",
+                redirect_stdin=SourceRoot("planning-benchmarks")
+                / "data-network-opt18-p05.sas",
+            ),
             VCommand(
                 SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
                 "planning-benchmarks/data-network-opt18-strips-domain.pddl",
@@ -346,15 +377,44 @@ class FastDownward(VProject, ReleaseProviderHook):
                 _FDConfigParams(),
                 label="data-network-opt18-py",
             ),
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
-                SourceRoot("FastDownward") / RSBinary("downward"),
+                SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
+                "planning-benchmarks/elevators-opt08-strips-domain.pddl",
+                "planning-benchmarks/elevators-opt08-strips-p06.pddl",
                 "--search",
                 _FDConfigParams(),
-                label="data-network-opt18",
-                redirect_stdin=SourceRoot("planning-benchmarks")
-                / "data-network-opt18.sas",
+                label="elevators-opt08-p06-py",
+            ),
+            VCommand(
+                SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
+                "planning-benchmarks/data-network-opt18-strips-domain.pddl",
+                "planning-benchmarks/data-network-opt18-strips-p17.pddl",
+                "--search",
+                _FDConfigParams(),
+                label="data-network-opt18-p17-py",
+            ),
+            VCommand(
+                SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
+                "planning-benchmarks/airport-p20-domain.pddl",
+                "planning-benchmarks/airport-p20-airport3-p7.pddl",
+                "--search",
+                _FDConfigParams(),
+                label="airport-p20-py",
             ),
         ],
+        WorkloadSet(WorkloadCategory.LARGE):
+            [
+                VCommand(
+                    SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
+                    "planning-benchmarks/childsnack-opt14-strips-domain.pddl",
+                    "planning-benchmarks/childsnack-opt14-strips-child-snack_pfile01.pddl",
+                    "--search",
+                    _FDConfigParams(),
+                    label="childsnack-opt14-p01-py",
+                ),
+            ],
     }
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
@@ -370,13 +430,13 @@ class FastDownward(VProject, ReleaseProviderHook):
         )
 
         binary_map.specify_binary(
-            'fast-downward.py',
-            BinaryType.EXECUTABLE,
-            override_binary_name="FDDriverPy",
+            'builds/release/bin/downward', BinaryType.EXECUTABLE
         )
 
         binary_map.specify_binary(
-            'builds/release/bin/downward', BinaryType.EXECUTABLE
+            'fast-downward.py',
+            BinaryType.EXECUTABLE,
+            override_binary_name="FDDriverPy",
         )
 
         return binary_map[revision]

@@ -6,6 +6,7 @@ from typing import Iterable
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
+from benchbuild.source.http import HTTPUnzip
 from benchbuild.utils.cmd import autoreconf, make, ninja
 from benchbuild.utils.revision_ranges import (
     block_revisions,
@@ -16,7 +17,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import RSBinary, WorkloadCategory, ConfigParams, SILESIA_FILES, LUKAS_DICOM_FILES
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
@@ -46,7 +47,7 @@ class Xz(VProject):
     GROUP = 'c_projects'
     DOMAIN = ProjectDomains.COMPRESSION
 
-    SOURCE = [
+    SOURCE: tp.ClassVar = [
         block_revisions([
             GoodBadSubgraph(["cf49f42a6bd40143f54a6b10d6e605599e958c0b"],
                             ["4c7ad179c78f97f68ad548cb40a9dfa6871655ae"],
@@ -82,7 +83,25 @@ class Xz(VProject):
                 "countries-land-1km.geo.json", "countries-land-250m.geo.json",
                 "countries-land-10m.geo.json"
             ]
-        )
+        ),
+        HTTPUnzip(
+            local="silesia.zip",
+            remote={
+                "1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"
+            },
+        ),
+        HTTPUnzip(
+            local="lukas_2d_16_dicom.zip",
+            remote={
+                "1.0": "http://www.data-compression.info/files/corpora/lukas_2d_16_dicom.zip"
+            },
+        ),
+        HTTPUnzip(
+            local="enwik8.zip",
+            remote={
+                "1.0": "https://mattmahoney.net/dc/enwik8.zip"
+            },
+        ),
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
@@ -90,7 +109,7 @@ class Xz(VProject):
         'autotools-dev', 'libtool', 'pkg-config'
     )
 
-    WORKLOADS = {
+    WORKLOADS: tp.ClassVar = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("xz") / RSBinary("xz"),
@@ -115,6 +134,30 @@ class Xz(VProject):
                 label="countries-land-250m",
                 creates=["geo-maps/countries-land-250m.geo.json.xz"],
                 requires_all_args={"--compress"},
+            ),
+            VCommand(
+                SourceRoot("xz") / RSBinary("xz"),
+                "-f",
+                "-k",
+                ConfigParams(),
+                *[f"silesia.zip/{file}" for file in SILESIA_FILES],
+                label="silesia",
+            ),
+            VCommand(
+                SourceRoot("xz") / RSBinary("xz"),
+                "-f",
+                "-k",
+                ConfigParams(),
+                *[f"lukas_2d_16_dicom.zip/lukas_2d_16_{file}" for file in LUKAS_DICOM_FILES],
+                label="lukas-2d-16-dicom",
+            ),
+            VCommand(
+                SourceRoot("xz") / RSBinary("xz"),
+                "-f",
+                "-k",
+                ConfigParams(),
+                "enwik8.zip/enwik8",
+                label="enwik8",
             )
         ],
         WorkloadSet(WorkloadCategory.LARGE): [

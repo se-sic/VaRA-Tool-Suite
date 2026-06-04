@@ -1,5 +1,5 @@
 """Project file for libvpx."""
-
+import typing
 import typing as tp
 from pathlib import Path
 
@@ -44,7 +44,7 @@ class Libvpx(VProject):
     GROUP = 'c_projects'
     DOMAIN = ProjectDomains.CODEC
 
-    SOURCE = [
+    SOURCE: typing.ClassVar = [
         PaperConfigSpecificGit(
             project_name="libvpx",
             remote="https://github.com/webmproject/libvpx.git",
@@ -80,7 +80,7 @@ class Libvpx(VProject):
         'apt', 'install', '-y', 'yasm'
     )
 
-    WORKLOADS = {
+    WORKLOADS: typing.ClassVar = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("libvpx") / RSBinary("vpxenc"),

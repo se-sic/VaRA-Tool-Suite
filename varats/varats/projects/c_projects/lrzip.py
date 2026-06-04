@@ -6,6 +6,7 @@ from pathlib import Path
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
+from benchbuild.source.http import HTTPUnzip
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local, ProcessExecutionError
@@ -26,6 +27,7 @@ from varats.project.project_util import (
     verify_binaries,
     RevisionBinaryMap,
 )
+from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
@@ -36,7 +38,7 @@ from varats.utils.testsuite_utils import TestResult, compression_end_to_end
 class Lrzip(VProject):
     """Compression and decompression tool lrzip (fetched by Git)"""
 
-    __SOURCE_FILES = [
+    __SOURCE_FILES: tp.ClassVar = [
         "countries-land-1m.geo.json", "countries-land-10m.geo.json",
         "countries-land-100m.geo.json", "countries-land-10km.geo.json",
         "countries-land-1km.geo.json", "countries-land-250m.geo.json",
@@ -50,15 +52,16 @@ class Lrzip(VProject):
     GROUP = 'c_projects'
     DOMAIN = ProjectDomains.COMPRESSION
 
-    SOURCE = [
+    SOURCE: tp.ClassVar = [
         PaperConfigSpecificGit(
             project_name="lrzip",
-            remote="https://github.com/ckolivas/lrzip.git",
+            remote="https://github.com/ckolivas/lrzip",
             local="lrzip",
             refspec="origin/HEAD",
             limit=None,
             shallow=False
         ),
+        FeatureSource(),
         PatchVariationSource(),
         # TODO: auto unzipper for BB?
         HTTPMultiple(
@@ -70,14 +73,32 @@ class Lrzip(VProject):
             },
             files=__SOURCE_FILES
         ),
+        HTTPUnzip(
+            local="silesia.zip",
+            remote={
+                "1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"
+            },
+        ),
+        HTTPUnzip(
+            local="lukas_2d_16_dicom.zip",
+            remote={
+                "1.0": "http://www.data-compression.info/files/corpora/lukas_2d_16_dicom.zip"
+            },
+        ),
+        HTTPUnzip(
+            local="enwik8.zip",
+            remote={
+                "1.0": "https://mattmahoney.net/dc/enwik8.zip"
+            },
+        ),
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
         'apt', 'install', '-y', 'tar', 'libz-dev', 'autoconf', 'libbz2-dev',
-        'liblzo2-dev', 'liblz4-dev', 'coreutils', 'libtool'
+        'liblzo2-dev', 'liblz4-dev', 'coreutils', 'libtool', 'unzip', 'zip', 'clang'
     )
 
-    WORKLOADS = {
+    WORKLOADS: tp.ClassVar = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("lrzip") / RSBinary("lrzip"),
@@ -105,6 +126,41 @@ class Lrzip(VProject):
                 label="countries-land-10m",
                 creates=["countries-land-10m.geo.json.lrz"]
             ),
+            VCommand(
+                SourceRoot("lrzip") / RSBinary("lrzip"),
+                ConfigParams(),
+                "-f",
+                "geo-maps/countries-land-250m.geo.json",
+                label="countries-land-250m",
+                creates=["countries-land-250m.geo.json.lrz"]
+            ),
+            VCommand(
+                SourceRoot("lrzip") / RSBinary("lrzip"),
+                ConfigParams(),
+                "-f",
+                "-r",
+                "-O",
+                ".",
+                "silesia.zip/",
+                label="silesia",
+            ),
+            VCommand(
+                SourceRoot("lrzip") / RSBinary("lrzip"),
+                ConfigParams(),
+                "-f",
+                "-r",
+                "-O",
+                ".",
+                "lukas_2d_16_dicom.zip/",
+                label="lukas-2d-16-dicom",
+            ),
+            VCommand(
+                SourceRoot("lrzip") / RSBinary("lrzip"),
+                ConfigParams(),
+                "-f",
+                "enwik8.zip/enwik8",
+                label="enwik8",
+            )
         ],
         WorkloadSet(WorkloadCategory.LARGE): [
             VCommand(
