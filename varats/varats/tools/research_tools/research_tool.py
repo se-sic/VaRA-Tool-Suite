@@ -25,9 +25,9 @@ from varats.utils.git_commands import (
     download_repo,
     add_remote,
     show_status,
+    get_current_branch,
 )
 from varats.utils.git_util import (
-    get_current_branch,
     has_branch,
     has_remote_branch,
     branch_has_upstream,

@@ -4,25 +4,22 @@ from pathlib import Path
 
 from benchbuild.utils.cmd import git
 
-from varats.utils.git_util import (
-    get_current_branch,
-    CommitHash,
-    RepositoryHandle,
-)
+if tp.TYPE_CHECKING:
+    from varats.utils.git_util import CommitHash, RepositoryHandle
 
 
-def add_remote(repo: RepositoryHandle, remote: str, url: str) -> None:
+def add_remote(repo: 'RepositoryHandle', remote: str, url: str) -> None:
     """Adds new remote to the repository."""
     repo("remote", "add", remote, url)
 
 
-def show_status(repo: RepositoryHandle) -> None:
+def show_status(repo: 'RepositoryHandle') -> None:
     """Show git status."""
     repo("status")
 
 
 def get_branches(
-    repo: RepositoryHandle,
+    repo: 'RepositoryHandle',
     extra_args: tp.Optional[tp.List[str]] = None
 ) -> str:
     """Show git branches."""
@@ -33,8 +30,20 @@ def get_branches(
     return tp.cast(str, repo(*args))
 
 
+def get_current_branch(repo: 'RepositoryHandle') -> str:
+    """
+    Get the current branch of a repository, e.g., HEAD.
+
+    Args:
+        repo: git repository handle
+
+    Returns: branch name
+    """
+    return tp.cast(str, repo("rev-parse", "--abbrev-ref", "HEAD").strip())
+
+
 def get_tags(
-    repo: RepositoryHandle,
+    repo: 'RepositoryHandle',
     extra_args: tp.Optional[tp.List[str]] = None
 ) -> tp.List[str]:
     """Get the list of available git tags."""
@@ -54,13 +63,15 @@ def get_tags(
     return git_tag_list
 
 
-def init_all_submodules(repo: RepositoryHandle) -> None:
+def init_all_submodules(repo: 'RepositoryHandle') -> None:
     """Inits all submodules."""
     repo("submodule", "init")
 
 
 def update_all_submodules(
-    repo: RepositoryHandle, recursive: bool = True, init: bool = False
+    repo: 'RepositoryHandle',
+    recursive: bool = True,
+    init: bool = False
 ) -> None:
     """Updates all submodules."""
     git_params = ["submodule", "update"]
@@ -72,7 +83,7 @@ def update_all_submodules(
 
 
 def fetch_remote(
-    repo: RepositoryHandle,
+    repo: 'RepositoryHandle',
     remote: tp.Optional[str] = None,
     extra_args: tp.Optional[tp.List[str]] = None
 ) -> None:
@@ -85,13 +96,13 @@ def fetch_remote(
     repo(*args)
 
 
-def pull_current_branch(repo: RepositoryHandle) -> None:
+def pull_current_branch(repo: 'RepositoryHandle') -> None:
     """Pull in changes in a certain branch."""
     repo("pull")
 
 
 def push_current_branch(
-    repo: RepositoryHandle,
+    repo: 'RepositoryHandle',
     upstream: tp.Optional[str] = None,
     branch_name: tp.Optional[str] = None
 ) -> None:
@@ -109,20 +120,20 @@ def push_current_branch(
     repo(*cmd_args)
 
 
-def fetch_repository(repo: RepositoryHandle) -> None:
+def fetch_repository(repo: 'RepositoryHandle') -> None:
     """Pull in changes in a certain branch."""
     repo("fetch")
 
 
 def checkout_branch_or_commit(
-    repo: RepositoryHandle, target: tp.Union[str, CommitHash]
+    repo: 'RepositoryHandle', target: tp.Union[str, 'CommitHash']
 ) -> None:
     """Checks out a branch or commit in the repository."""
     repo("checkout", str(target))
 
 
 def checkout_new_branch(
-    repo: RepositoryHandle,
+    repo: 'RepositoryHandle',
     branch: str,
     remote_branch: tp.Optional[str] = None
 ) -> None:
@@ -157,11 +168,11 @@ def download_repo(
         post_out(line)
 
 
-def apply_patch(repo: RepositoryHandle, patch_file: Path) -> None:
+def apply_patch(repo: 'RepositoryHandle', patch_file: Path) -> None:
     """Applies a given patch file to the specified git repository."""
     repo("apply", str(patch_file))
 
 
-def revert_patch(repo: RepositoryHandle, patch_file: Path) -> None:
+def revert_patch(repo: 'RepositoryHandle', patch_file: Path) -> None:
     """Reverts a given patch file on the specified git repository."""
     repo("apply", "-R", str(patch_file))

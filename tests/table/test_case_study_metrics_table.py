@@ -6,7 +6,6 @@ from varats.paper.paper_config import load_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.table.tables import TableFormat, TableConfig
 from varats.tables.case_study_metrics_table import CaseStudyMetricsTable
-from varats.utils.git_util import FullCommitHash
 from varats.utils.settings import vara_cfg
 
 

@@ -1,32 +1,27 @@
 """Module for test utility functions."""
+
 import contextlib
 import os
 import shutil
-import sys
 import tempfile
 import typing as tp
 from functools import wraps
 from pathlib import Path
 from threading import Lock
+from typing import Protocol
 
-import benchbuild.source.base as base
 import benchbuild.utils.settings as bb_settings
 import plumbum as pb
 from benchbuild import Project
-from benchbuild.source import Git, FetchableSource, Variant
+from benchbuild.source import FetchableSource, Git, Variant, base
 from benchbuild.utils.cmd import git
 
-import varats.utils.settings as settings
 from varats.base.configuration import ConfigurationImpl, ConfigurationOptionImpl
 from varats.project.project_util import is_git_source
 from varats.tools.bb_config import create_new_bb_config
+from varats.utils import settings
 
-if sys.version_info <= (3, 8):
-    from typing_extensions import Protocol
-else:
-    from typing import Protocol
-
-TEST_INPUTS_DIR = Path(os.path.dirname(__file__)) / 'TEST_INPUTS'
+TEST_INPUTS_DIR = Path(__file__).parent / 'TEST_INPUTS'
 
 TestFunctionTy = tp.Callable[..., tp.Any]
 
@@ -90,8 +85,13 @@ class RepoFixture(UnitTestFixture):
             settings.bb_cfg()["tmp_dir"] = bb_tmp
             base.CFG["tmp_dir"] = bb_tmp
             git(
-                "clone", "--dissociate", "--recurse-submodules", "--reference",
-                self.__local, self.__remote, f"{bb_tmp}/{self.__repo_name}"
+                "clone",
+                "--dissociate",
+                "--recurse-submodules",
+                "--reference",
+                self.__local,
+                self.__remote,
+                f"{bb_tmp}/{self.__repo_name}",
             )
 
     def cleanup(self) -> None:
@@ -99,8 +99,9 @@ class RepoFixture(UnitTestFixture):
         base.CFG["tmp_dir"] = bb_tmp
 
 
-class UnitTestFixtures():
+class UnitTestFixtures:
     """Collection/factory for test fixtures."""
+
     PAPER_CONFIGS = FileFixture(
         TEST_INPUTS_DIR / "paper_configs", Path("paper_configs")
     )
@@ -117,7 +118,7 @@ class UnitTestFixtures():
             local="vara_test_repos",
             refspec="origin/HEAD",
             shallow=False,
-            limit=None
+            limit=None,
         )
     )
 
@@ -127,7 +128,7 @@ class UnitTestFixtures():
         return FileFixture(src, dst)
 
     @staticmethod
-    def create_project_repo_fixture(project: tp.Type[Project]) -> RepoFixture:
+    def create_project_repo_fixture(project: type[Project]) -> RepoFixture:
         """Creates a repo fixture for the main source of a project."""
         source = project.SOURCE[0]
         if not is_git_source(source):
@@ -138,7 +139,7 @@ class UnitTestFixtures():
         return RepoFixture(source)
 
 
-class TestEnvironment():
+class TestEnvironment:
     """
     Test environment implementation.
 
@@ -157,7 +158,7 @@ class TestEnvironment():
 
         self.__tmp_dir = tempfile.TemporaryDirectory()
         self.__tmp_path = Path(self.__tmp_dir.name)
-        self.__cwd = os.getcwd()
+        self.__cwd = Path.cwd()
         self.__test_inputs = required_test_inputs
 
         # pylint: disable=protected-access
@@ -218,7 +219,7 @@ class TestEnvironment():
 
 
 def run_in_test_environment(
-    *required_test_inputs: UnitTestFixture
+    *required_test_inputs: UnitTestFixture,
 ) -> TestFunctionTy:
     """
     Run a test in an isolated test environment.
@@ -242,7 +243,7 @@ def run_in_test_environment(
 
 
 def create_test_environment(
-    *required_test_inputs: UnitTestFixture
+    *required_test_inputs: UnitTestFixture,
 ) -> TestEnvironment:
     """
     Context manager that creates an isolated test environment.
@@ -264,10 +265,10 @@ class DummyGit(Git):
     def fetch(self) -> pb.LocalPath:
         return pb.LocalPath("/dev/null")
 
-    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
+    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:  # noqa: ARG002
         return pb.LocalPath("/dev/null")
 
-    def versions(self) -> tp.List[base.Variant]:
+    def versions(self) -> list[base.Variant]:
         return []
 
 
@@ -290,11 +291,10 @@ class ConfigurationHelper:
 class BBTestSource(FetchableSource):
     """Source test fixture class."""
 
-    test_versions: tp.List[str]
+    test_versions: list[str]
 
     def __init__(
-        self, test_versions: tp.List[str], local: str,
-        remote: tp.Union[str, tp.Dict[str, str]]
+        self, test_versions: list[str], local: str, remote: str | dict[str, str]
     ):
         super().__init__(local, remote)
         self.test_versions = test_versions
@@ -304,15 +304,14 @@ class BBTestSource(FetchableSource):
         return "test_source"
 
     @property
-    def remote(self) -> tp.Union[str, tp.Dict[str, str]]:
+    def remote(self) -> str | dict[str, str]:
         return "test_remote"
 
     @property
     def default(self) -> Variant:
         return Variant(owner=self, version=self.test_versions[0])
 
-    # pylint: disable=unused-argument,no-self-use
-    def version(self, target_dir: str, version: str) -> pb.LocalPath:
+    def version(self, target_dir: str, version: str) -> pb.LocalPath:  # noqa: ARG002
         return pb.local.path('.') / f'varats-test-{version}'
 
     def versions(self) -> tp.Iterable[Variant]:
