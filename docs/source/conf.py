@@ -6,6 +6,13 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import sys
+try:
+    import cmd
+    print("!!! SHADOW CMD FOUND AT:", cmd.__file__, file=sys.stderr)
+except Exception as e:
+    print("!!! CMD IMPORT ERROR:", e, file=sys.stderr)
+
 # -- Project information -----------------------------------------------------
 import importlib.metadata as metadata
 import logging
