@@ -1,11 +1,12 @@
 """Driver module for `vara-feature`"""
+
 import logging
 import typing as tp
 from functools import partial
 from pathlib import Path
 
 import click
-from pygit2 import Walker, Commit, Repository
+from pygit2 import Commit, Repository, Walker
 from pygit2.enums import SortMode
 
 from varats.project.project_util import get_local_project_repo
@@ -13,13 +14,13 @@ from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import initialize_cli_tool
 from varats.ts_utils.click_param_types import create_project_choice
 from varats.ts_utils.feature_util import (
-    Location,
-    __get_and_check_location,
     FeatureAnnotation,
-    __get_location_content,
+    Location,
     __find_potential_new_locations,
-    update_feature_model,
+    __get_and_check_location,
+    __get_location_content,
     load_initial_annotations,
+    update_feature_model,
 )
 from varats.utils.git_util import CommitHash
 
@@ -29,10 +30,10 @@ LOG = logging.getLogger(__name__)
 def __prompt_location(
     feature_name: str,
     commit: Commit,
-    old_location: tp.Optional[Location] = None,
-    prompt: tp.Optional[str] = None,
-    default: tp.Optional[str] = None
-) -> tp.Tuple[Location, str]:
+    old_location: Location | None = None,
+    prompt: str | None = None,
+    default: str | None = None,
+) -> tuple[Location, str]:
     commit_hash = CommitHash.from_pygit_commit(commit)
     if prompt is None:
         prompt = (
@@ -45,8 +46,8 @@ def __prompt_location(
     )
 
     return tp.cast(
-        tp.Tuple[Location, str],
-        click.prompt(prompt, default=default, value_proc=parse_location)
+        "tuple[Location, str]",
+        click.prompt(prompt, default=default, value_proc=parse_location),
     )
 
 
@@ -68,11 +69,13 @@ def main() -> None:
     "-o",
     type=click.File("w"),
     default=click.open_file('-', mode="w"),
-    required=False
+    required=False,
 )
 def __annotate(
-    project: str, revision: tp.Optional[str], infile: tp.Optional[tp.TextIO],
-    outfile: tp.TextIO
+    project: str,
+    revision: str | None,
+    infile: tp.TextIO | None,
+    outfile: tp.TextIO,
 ) -> None:
     initialize_cli_tool()
     repo = get_local_project_repo(project).pygit_repo
@@ -95,9 +98,8 @@ def __annotate(
 
     if infile is not None:
         LOG.debug(f"Reading existing annotations from {infile.name}")
-        tracked_features, last_annotations, last_annotation_targets =\
-            load_initial_annotations(
-            infile, first_commit
+        tracked_features, last_annotations, last_annotation_targets = (
+            load_initial_annotations(infile, first_commit)
         )
         LOG.debug(
             f"Loaded {len(tracked_features)} tracked features from "
@@ -133,23 +135,31 @@ def __annotate(
         click.echo()
 
     tracked_features = track_annotations(
-        last_annotation_targets, last_annotations, repo, tracked_features,
-        walker
+        last_annotation_targets,
+        last_annotations,
+        repo,
+        tracked_features,
+        walker,
     )
     write_annotations(outfile, tracked_features)
 
 
 def track_annotations(
     last_annotation_targets: dict[str, dict[int, str]],
-    last_annotations: dict[str, dict[int, FeatureAnnotation]], repo: Repository,
-    tracked_features: dict[str, dict[int,
-                                     list[FeatureAnnotation]]], walker: Walker
+    last_annotations: dict[str, dict[int, FeatureAnnotation]],
+    repo: Repository,
+    tracked_features: dict[str, dict[int, list[FeatureAnnotation]]],
+    walker: Walker,
 ) -> dict[str, dict[int, list[FeatureAnnotation]]]:
-    """Track the given annotations through the given walker and write the
-    results to the given output file."""
+    """
+    Track the given annotations through the given walker and write the
+    results to the given output file.
+    """
     for commit in walker:
         commit_hash = CommitHash.from_pygit_commit(commit)
-        LOG.debug(f"Current revision: {commit_hash.hash}",)
+        LOG.debug(
+            f"Current revision: {commit_hash.hash}",
+        )
         for feature, annotations in last_annotations.items():
             for annotation_id, annotation in annotations.items():
                 old_target = last_annotation_targets[feature][annotation_id]
@@ -165,8 +175,10 @@ def track_annotations(
                     # set removed field for annotation and store it
                     tracked_features[feature][annotation_id].append(
                         FeatureAnnotation(
-                            annotation.feature_name, annotation.location,
-                            annotation.introduced, commit_hash
+                            annotation.feature_name,
+                            annotation.location,
+                            annotation.introduced,
+                            commit_hash,
                         )
                     )
 
@@ -180,11 +192,12 @@ def track_annotations(
                         repo, commit, annotation.location, old_target
                     )
                     # Determine potential new location
-                    best_candidate: tp.Optional[tp.Tuple[Location, str]] = None
+                    best_candidate: tuple[Location, str] | None = None
                     if potential_new_locations:
                         potential_new_locations.sort(
-                            key=lambda x: x[0].start_line - annotation.location.
-                            start_line
+                            key=lambda x: (
+                                x[0].start_line - annotation.location.start_line
+                            )
                         )
                         best_candidate = potential_new_locations[0]
                     new_location, new_target = __prompt_location(
@@ -193,11 +206,13 @@ def track_annotations(
                         annotation.location,
                         "New location: ",
                         default=f"{best_candidate[0]}:{best_candidate[1]}"
-                        if best_candidate else None
+                        if best_candidate
+                        else None,
                     )
 
-                    last_annotations[feature][annotation_id] = \
+                    last_annotations[feature][annotation_id] = (
                         FeatureAnnotation(feature, new_location, commit_hash)
+                    )
                     last_annotation_targets[feature][annotation_id] = new_target
 
                     if new_target != old_target:
@@ -216,7 +231,7 @@ def track_annotations(
 
 def write_annotations(
     outfile: tp.TextIO,
-    tracked_features: dict[str, dict[int, list[FeatureAnnotation]]]
+    tracked_features: dict[str, dict[int, list[FeatureAnnotation]]],
 ) -> None:
     """Write the given annotations to the given output file."""
     if not Path(str(outfile.name)).exists():

@@ -1,4 +1,5 @@
 """Utilities for handling feature annotations in source code files."""
+
 import logging
 import re
 import textwrap
@@ -9,7 +10,7 @@ from xml.etree import ElementTree
 
 import click
 import pygit2
-from pygit2 import Commit, Blob, Patch
+from pygit2 import Blob, Commit, Patch
 
 from varats.utils.git_util import FullCommitHash
 
@@ -26,8 +27,12 @@ class Location:
     )
 
     def __init__(
-        self, file: str, start_line: int, start_col: int, end_line: int,
-        end_col: tp.Optional[int]
+        self,
+        file: str,
+        start_line: int,
+        start_col: int,
+        end_line: int,
+        end_col: int | None,
     ) -> None:
         self.file = file
         self.start_line = start_line
@@ -42,9 +47,11 @@ class Location:
     ) -> "Location":
         """Move the location the start of the location to a line."""
         return Location(
-            old_location.file, new_start_line, old_location.start_col,
+            old_location.file,
+            new_start_line,
+            old_location.start_col,
             old_location.end_line + (new_start_line - old_location.start_line),
-            old_location.end_col
+            old_location.end_col,
         )
 
     @staticmethod
@@ -56,8 +63,7 @@ class Location:
 
     @staticmethod
     def parse_string(
-        raw_location: str,
-        old_location: tp.Optional["Location"] = None
+        raw_location: str, old_location: tp.Optional["Location"] = None
     ) -> "Location":
         """Create a location from a string."""
         if old_location and raw_location.isnumeric():
@@ -73,11 +79,13 @@ class Location:
             )
 
         return Location(
-            match.group("file"), int(match.group("start_line")),
+            match.group("file"),
+            int(match.group("start_line")),
             int(match.group("start_col")),
             int(match.group("end_line"))
-            if match.group("end_line") else int(match.group("start_line")),
-            int(match.group("end_col")) if match.group("end_col") else None
+            if match.group("end_line")
+            else int(match.group("start_line")),
+            int(match.group("end_col")) if match.group("end_col") else None,
         )
 
     def to_xml(self, parent: ElementTree.Element) -> None:
@@ -119,7 +127,7 @@ class FeatureAnnotation:
         feature_name: str,
         location: Location,
         introduced: FullCommitHash,
-        removed: tp.Optional[FullCommitHash] = None
+        removed: FullCommitHash | None = None,
     ) -> None:
         self.feature_name = feature_name
         self.location = location
@@ -156,8 +164,8 @@ class FeatureAnnotation:
 def __get_and_check_location(
     raw_location: str,
     commit: Commit,
-    old_location: tp.Optional["Location"] = None
-) -> tp.Tuple[Location, str]:
+    old_location: tp.Optional["Location"] = None,
+) -> tuple[Location, str]:
     location = Location.parse_string(raw_location, old_location)
     LOG.debug(location)
     if location.file in commit.tree:
@@ -174,10 +182,10 @@ def __get_and_check_location(
     return location, location_content
 
 
-def __get_location_content(commit: Commit,
-                           location: Location) -> tp.Optional[str]:
-    lines: tp.List[bytes] = tp.cast(Blob, commit.tree[location.file
-                                                     ]).data.splitlines()
+def __get_location_content(commit: Commit, location: Location) -> str | None:
+    lines: list[bytes] = tp.cast(
+        "Blob", commit.tree[location.file]
+    ).data.splitlines()
     if len(lines) < location.start_line:
         LOG.debug(
             "Location start_line is larger than number of lines in file,"
@@ -188,12 +196,15 @@ def __get_location_content(commit: Commit,
     if location.start_line != location.end_line:
         content = reduce(
             lambda x, y: x + "\n" + y.decode("utf-8"),
-            lines[location.start_line:location.end_line - 1],
-            lines[location.start_line - 1].decode("utf-8")[location.start_col -
-                                                           1:]
+            lines[location.start_line : location.end_line - 1],
+            lines[location.start_line - 1].decode("utf-8")[
+                location.start_col - 1 :
+            ],
         )
-        content += "\n" + lines[location.end_line -
-                                1].decode("utf-8")[:location.end_col]
+        content += (
+            "\n"
+            + lines[location.end_line - 1].decode("utf-8")[: location.end_col]
+        )
         LOG.debug(
             "Location spans multiple lines, returning content from "
             f"{location.start_line} to {location.end_line}."
@@ -201,10 +212,7 @@ def __get_location_content(commit: Commit,
         return content
     # Handling of single line locations
     line: str = lines[location.start_line - 1].decode("utf-8")
-    LOG.debug(
-        "Location spans a single line, returning content from "
-        f"{line}"
-    )
+    LOG.debug(f"Location spans a single line, returning content from {line}")
     if not location.end_col:
         LOG.debug("No end_col specified, assuming single word selection.")
         # If no end_col is specified, we assume just one word is selected
@@ -213,7 +221,7 @@ def __get_location_content(commit: Commit,
                 "Location start_col is larger than line length, returning None."
             )
             return None
-        word = line[location.start_col - 1:]
+        word = line[location.start_col - 1 :]
         location.end_col = len(word.split()[0]) + location.start_col - 2
         LOG.debug(f"End column set to {location.end_col}.")
     if len(line) <= location.end_col:
@@ -223,33 +231,38 @@ def __get_location_content(commit: Commit,
         )
         return None
 
-    return line[(location.start_col - 1):location.end_col]
+    return line[(location.start_col - 1) : location.end_col]
 
 
 def __process_patch(
     location: Location, commit: Commit, old_target: str, patch: Patch
-) -> tp.List[tp.Tuple[Location, str]]:
+) -> list[tuple[Location, str]]:
     """Process a patch and return potential new locations for a feature."""
-    potential_new_locations: tp.List[tp.Tuple[Location, str]] = []
+    potential_new_locations: list[tuple[Location, str]] = []
     offset_counter = 0
     for hunk in patch.hunks:
         for line in hunk.lines:
             if line.new_lineno >= 0:  # Added or modified line
                 if line.old_lineno < 0:  # Added line
-                    #if we are before the location, increase offset
+                    # if we are before the location, increase offset
                     if line.old_lineno < location.end_line:
                         offset_counter += 1
 
                 if location.end_line == location.start_line:
-                    content = line.content[location.start_col -
-                                           1:location.end_col]
+                    content = line.content[
+                        location.start_col - 1 : location.end_col
+                    ]
                 else:
-                    content = line.content[location.start_col - 1:]
+                    content = line.content[location.start_col - 1 :]
                 if old_target == content:
-                    potential_new_locations.append((
-                        Location.change_start_line(location,
-                                                   line.new_lineno), content
-                    ))
+                    potential_new_locations.append(
+                        (
+                            Location.change_start_line(
+                                location, line.new_lineno
+                            ),
+                            content,
+                        )
+                    )
 
             else:
                 # Deleted line if we are before the location, decrease offset
@@ -270,19 +283,19 @@ def __process_patch(
 
 
 def __find_potential_new_locations(
-    repo: pygit2.Repository, commit: Commit, current_location: Location,
-    old_target: str
-) -> tp.List[tp.Tuple[Location, str]]:
+    repo: pygit2.Repository,
+    commit: Commit,
+    current_location: Location,
+    old_target: str,
+) -> list[tuple[Location, str]]:
     """Find potential new locations for a feature annotation."""
-    potential_new_locations: tp.List[tp.Tuple[Location, str]] = []
+    potential_new_locations: list[tuple[Location, str]] = []
     for parent in commit.parents:
         diff = repo.diff(parent.tree, commit.tree)
         for patch in diff:
             if patch.delta.old_file.path == current_location.file:
                 potential_new_locations.extend(
-                    __process_patch(
-                        current_location, commit, old_target, patch
-                    )
+                    __process_patch(current_location, commit, old_target, patch)
                 )
     return potential_new_locations
 
@@ -314,15 +327,18 @@ def update_feature_model(
 def load_initial_annotations(
     file: tp.TextIO,
     revision: pygit2.Commit,
-) -> tuple[dict[str, dict[int, list[FeatureAnnotation]]], dict[str, dict[
-    int, FeatureAnnotation]], dict[str, dict[int, str]]]:
+) -> tuple[
+    dict[str, dict[int, list[FeatureAnnotation]]],
+    dict[str, dict[int, FeatureAnnotation]],
+    dict[str, dict[int, str]],
+]:
     """Load initial annotations from a file."""
-    current_feature: tp.Optional[str] = None
+    current_feature: str | None = None
     tracked_features: dict[str, dict[int, list[FeatureAnnotation]]] = {}
     last_annotations: dict[str, dict[int, FeatureAnnotation]] = {}
     last_annotation_targets: dict[str, dict[int, str]] = {}
     commit_hash = FullCommitHash.from_pygit_commit(revision)
-    for line in file.readlines():
+    for line in file:
         LOG.debug(f"Processing line: {line.strip()}")
         line = line.strip()
         if line == "":

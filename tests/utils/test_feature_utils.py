@@ -1,5 +1,4 @@
 import unittest
-from functools import partial
 
 from pygit2 import Walker
 from pygit2.enums import SortMode
@@ -9,7 +8,6 @@ from varats.ts_utils.feature_util import Location
 
 
 class TestFeatureUtils(unittest.TestCase):
-
     @classmethod
     def get_pygit_commit(cls, project: str, revision=None):
         """Mock method to return a commit object."""
