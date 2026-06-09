@@ -21,7 +21,9 @@ import benchbuild.utils
 
 __version__ = metadata.version('varats')
 
-sys.path.insert(0, os.path.abspath('../../'))
+sys.path.append(os.path.abspath('../../varats-core'))
+sys.path.append(os.path.abspath('../../varats'))
+sys.path.append(os.path.abspath('../../tests'))
 
 # pylint: skip-file
 project = 'VaRA'
