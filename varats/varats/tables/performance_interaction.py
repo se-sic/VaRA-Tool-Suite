@@ -1,4 +1,5 @@
 """Performance interaction eval."""
+
 import ast
 import logging
 import typing as tp
@@ -7,10 +8,11 @@ from itertools import pairwise
 
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 from varats.base.configuration import (
-    PlainCommandlineConfiguration,
     Configuration,
+    PlainCommandlineConfiguration,
 )
 from varats.data.databases.performance_evolution_database import (
     PerformanceEvolutionDatabase,
@@ -25,9 +27,9 @@ from varats.experiments.vara.performance_interaction import (
     PerformanceInteractionExperimentSynthetic,
 )
 from varats.jupyterhelper.file import (
-    load_performance_interaction_report,
-    load_mpr_wl_time_report_aggregate,
     load_mpr_performance_interaction_report,
+    load_mpr_wl_time_report_aggregate,
+    load_performance_interaction_report,
 )
 from varats.mapping.commit_map import get_commit_map
 from varats.mapping.configuration_map import ConfigurationMap
@@ -37,8 +39,8 @@ from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.report.gnu_time_report import MPRWLTimeReportAggregate
 from varats.report.report import FileStatusExtension
 from varats.revision.revisions import (
-    get_processed_revisions_files,
     get_files_with_status_by_config,
+    get_processed_revisions_files,
 )
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -54,34 +56,39 @@ if tp.TYPE_CHECKING:
 
 LOG = logging.Logger(__name__)
 
-Revision = tp.Union[ShortCommitHash, str]
+Revision = ShortCommitHash | str
 
 
 class FeatureLike(tp.Protocol):
+    """Protocol used for selecting configurations."""
 
     def should_include_config(
         self, config: Configuration, relevant_features: tp.Iterable[str]
     ) -> bool:
+        """Check if a config should be selected based on relevant features."""
         ...
 
 
 class Feature:
+    """Representation of a configurable feature."""
 
     def __init__(
         self,
         name: str,
-        values: tp.Union[str, tp.List[str]],
+        values: str | list[str],
     ):
+        """Creates a feature."""
         self.name = name
 
-        self.values: tp.List[str] = []
+        self.values: list[str] = []
 
         if isinstance(values, list):
             self.values = values
         else:
             self.values.append(values)
 
-    def config_value(self, config: Configuration) -> tp.Optional[str]:
+    def config_value(self, config: Configuration) -> str | None:
+        """Get the value of this feature as set in the given configuration."""
         for v in self.values:
             if config.get_config_value(v):
                 return v
@@ -101,7 +108,7 @@ F9 = Feature("FR(F9)", "f9")
 F10 = Feature("FR(F10)", "f10")
 
 # default values for features
-CONFIG_DATA: tp.Dict[str, tp.List[Feature]] = {
+CONFIG_DATA: dict[str, list[Feature]] = {
     "coreutils_basenc": [
         Feature("base2lsbf", "base2lsbf"),
         Feature("base2msbf", "base2msbf"),
@@ -252,7 +259,7 @@ CONFIG_DATA: tp.Dict[str, tp.List[Feature]] = {
         Feature("files_with_match", "l"),
         Feature("files_without_match", "L"),
         Feature("context_5", "C5"),
-        Feature("context_10", "C10")
+        Feature("context_10", "C10"),
     ],
     "picosat": [
         Feature("Plain", "plain"),
@@ -266,68 +273,111 @@ CONFIG_DATA: tp.Dict[str, tp.List[Feature]] = {
 
 class EvalData(tp.TypedDict):
     """Dict representing data for a confusion matrix."""
-    baseline_positives: tp.List[Revision]
-    baseline_negatives: tp.List[Revision]
-    rq1_predicted_positives: tp.List[Revision]
-    rq1_predicted_negatives: tp.List[Revision]
-    rq2_predicted_positives: tp.List[Revision]
-    rq2_predicted_negatives: tp.List[Revision]
+
+    baseline_positives: list[Revision]
+    baseline_negatives: list[Revision]
+    rq1_predicted_positives: list[Revision]
+    rq1_predicted_negatives: list[Revision]
+    rq2_predicted_positives: list[Revision]
+    rq2_predicted_negatives: list[Revision]
 
 
 def get_performance_data(
     performance_data: pd.DataFrame, revision: Revision, config_id: int
-) -> tp.List[float]:
+) -> list[float]:
+    """Extract performance data for revision and config from table."""
     try:
         vals_raw = performance_data.loc[config_id, revision]
     except KeyError:
         return []
 
-    if vals_raw is np.nan:
+    if np.isnan(vals_raw):
         return []
 
     if isinstance(vals_raw, list):
         return vals_raw
 
-    return tp.cast(tp.List[float], ast.literal_eval(vals_raw))
+    return tp.cast("list[float]", ast.literal_eval(vals_raw))
 
 
 def get_regressing_configs(
-    performance_data: pd.DataFrame, old_rev: Revision, new_rev: Revision,
-    configs: ConfigurationMap, threshold: float, sigma: float, min_diff: float,
-    ignore_old_zero: bool
+    performance_data: pd.DataFrame,
+    old_rev: Revision,
+    new_rev: Revision,
+    configs: ConfigurationMap,
+    threshold: float,
+    p: float,
+    ignore_old_zero: bool,
 ) -> ConfigurationMap:
-    """Calculates the regressing configurations between two revisions."""
+    """
+    Calculates the set of regressing configurations between two revisions.
+
+    Args:
+        performance_data: table with performance data
+        old_rev: old revision
+        new_rev: new revision
+        configs: configuration map of the system
+        threshold: percentage change that is considered a regression
+        p: p-value at which we consider a regression
+        ignore_old_zero: ignore regressions with old time of 0s
+
+    Returns:
+        the regressing configurations
+    """
     regressing_configs: ConfigurationMap = ConfigurationMap()
     for cid, config in configs.id_config_tuples():
         old_vals = get_performance_data(performance_data, old_rev, cid)
         new_vals = get_performance_data(performance_data, new_rev, cid)
 
-        if is_regression(
-            old_vals, new_vals, threshold, sigma, min_diff, ignore_old_zero
-        ):
+        if is_regression(old_vals, new_vals, threshold, p, ignore_old_zero):
             regressing_configs.add_configuration(config, config_id=cid)
 
     return regressing_configs
 
 
 def get_num_regressions(
-    performance_data: pd.DataFrame, old_rev: Revision, new_rev: Revision,
-    configs: ConfigurationMap, threshold: float, sigma: float, min_diff: float,
-    ignore_old_zero: bool
+    performance_data: pd.DataFrame,
+    old_rev: Revision,
+    new_rev: Revision,
+    configs: ConfigurationMap,
+    threshold: float,
+    p: float,
+    ignore_old_zero: bool,
 ) -> int:
-    """Calculates the number of regressing configurations between two
-    revisions."""
+    """
+    Calculates the number of regressing configurations between two revisions.
+
+    Args:
+        performance_data: table with performance data
+        old_rev: old revision
+        new_rev: new revision
+        configs: configuration map of the system
+        threshold: percentage change that is considered a regression
+        p: p-value at which we consider a regression
+        ignore_old_zero: ignore regressions with old time of 0s
+
+    Returns:
+        the number of regressing configurations
+    """
     return len(
         get_regressing_configs(
-            performance_data, old_rev, new_rev, configs, threshold, sigma,
-            min_diff, ignore_old_zero
+            performance_data,
+            old_rev,
+            new_rev,
+            configs,
+            threshold,
+            p,
+            ignore_old_zero,
         ).ids()
     )
 
 
 def is_regression(
-    old_vals: list[float], new_vals: list[float], threshold: float,
-    sigma: float, min_diff: float, ignore_old_zero: bool
+    old_vals: list[float],
+    new_vals: list[float],
+    threshold: float,
+    p: float,
+    ignore_old_zero: bool,
 ) -> bool:
     """
     Calculates if there is a regression between two revisions.
@@ -341,54 +391,49 @@ def is_regression(
         old_vals: old performance data
         new_vals: new performance data
         threshold: percentage change that is considered a regression
-        sigma: factor that controls the minimum difference to the standard
-               deviation of the measurements
-        min_diff: minimum absolute difference to be considered a regression
+        p: p-value at which we consider a regression
         ignore_old_zero: if True, ignore configurations where the old revision
                          has an average 0s execution time; this can happen if
                          new configurations are introduced in the new revision
 
     Returns:
+        whether the given data show a regression
     """
     if not old_vals or not new_vals:
         return False
 
-    std_old = np.std(old_vals)
-    std_new = np.std(new_vals)
-    std = max(std_old, std_new)
+    if ignore_old_zero and np.average(old_vals) == 0:
+        return False
 
     old_avg = np.average(old_vals)
     new_avg = np.average(new_vals)
     diff = abs(old_avg - new_avg)
+    res = stats.ttest_ind(old_vals, new_vals, equal_var=False)
+    confidence_interval = res.confidence_interval(0.95)
+    print(
+        f"p={res.pvalue:.3f}, ci=[{confidence_interval.low:.3f}],"
+        f"{confidence_interval.high:.3f}, d={diff:.3f}]"
+    )
 
-    if ignore_old_zero and old_avg == 0:
-        return False
-
-    if diff >= max(threshold * old_avg, sigma * std, min_diff):
-        return True
-
-    return False
+    return (res.pvalue <= p) and (diff >= threshold * old_avg)
 
 
 def get_relevant_configs(
-    project_name: str, configs: ConfigurationMap, relevant_features: tp.Set[str]
+    project_name: str, configs: ConfigurationMap, relevant_features: set[str]
 ) -> ConfigurationMap:
     """
-    Computes relevant configurations according to a performance interaction
-    report.
+    Computes relevant configs according to a performance interaction report.
 
     We include configurations such that they cover all possible interactions
     between relevant features.
     """
     relevant_configs: ConfigurationMap = ConfigurationMap()
-    seen_tuples: tp.Set[tp.Tuple[tp.Optional[str], ...]] = set()
+    seen_tuples: set[tuple[str | None, ...]] = set()
     features = list(
-        filter(
-            lambda f: f.name in relevant_features, CONFIG_DATA[project_name]
-        )
+        filter(lambda f: f.name in relevant_features, CONFIG_DATA[project_name])
     )
 
-    def get_relevant_tuple(c: Configuration) -> tp.Tuple[tp.Optional[str], ...]:
+    def get_relevant_tuple(c: Configuration) -> tuple[str | None, ...]:
         return tuple(f.config_value(c) for f in features)
 
     # collect all configs with unseen combinations of relevant features
@@ -403,15 +448,27 @@ def get_relevant_configs(
 
 
 def calculate_eval_data(
-    project_name: str, performance_data: pd.DataFrame, old_rev: Revision,
-    new_rev: Revision, configs: ConfigurationMap,
-    report: tp.Optional[PerformanceInteractionReport], threshold: float,
-    sigma: float, min_diff: float, ignore_old_zero: bool, eval_data: EvalData
+    project_name: str,
+    performance_data: pd.DataFrame,
+    old_rev: Revision,
+    new_rev: Revision,
+    configs: ConfigurationMap,
+    report: PerformanceInteractionReport | None,
+    threshold: float,
+    sigma: float,
+    ignore_old_zero: bool,
+    eval_data: EvalData,
 ) -> None:
+    """Calculates raw data for RQs 1 & 2 for a subject system."""
     # RQ1
     regressing_configs = get_regressing_configs(
-        performance_data, old_rev, new_rev, configs, threshold, sigma, min_diff,
-        ignore_old_zero
+        performance_data,
+        old_rev,
+        new_rev,
+        configs,
+        threshold,
+        sigma,
+        ignore_old_zero,
     )
 
     is_reg = len(regressing_configs.ids()) > 0
@@ -422,7 +479,7 @@ def calculate_eval_data(
         eval_data["baseline_negatives"].append(new_rev)
 
     # performance interaction classification
-    perf_inters: 'tp.Optional[tp.Iterable[PerfInteraction]]' = None
+    perf_inters: tp.Iterable[PerfInteraction] | None = None
     if report:
         perf_inters = report.performance_interactions
 
@@ -433,7 +490,7 @@ def calculate_eval_data(
 
     # RQ2
     if perf_inters:
-        relevant_features: tp.Set[str] = set()
+        relevant_features: set[str] = set()
 
         for inter in perf_inters:
             relevant_features.update(inter.involved_features)
@@ -442,10 +499,18 @@ def calculate_eval_data(
             project_name, configs, relevant_features
         )
 
-        is_reg2 = get_num_regressions(
-            performance_data, old_rev, new_rev, relevant_configs, threshold,
-            sigma, min_diff, ignore_old_zero
-        ) > 0
+        is_reg2 = (
+            get_num_regressions(
+                performance_data,
+                old_rev,
+                new_rev,
+                relevant_configs,
+                threshold,
+                sigma,
+                ignore_old_zero,
+            )
+            > 0
+        )
 
         if is_reg2:
             eval_data["rq2_predicted_positives"].append(new_rev)
@@ -453,26 +518,38 @@ def calculate_eval_data(
             eval_data["rq2_predicted_negatives"].append(new_rev)
 
 
-def calculate_case_study_data(
-    project_name: str, performance_data: pd.DataFrame,
-    revision_pairs: tp.Iterable[tp.Tuple[Revision,
-                                         Revision]], configs: ConfigurationMap,
-    perf_inter_reports: tp.Dict[Revision, PerformanceInteractionReport],
-    threshold: float, sigma: float, min_diff: float, ignore_old_zero: bool
+def calculate_data_for_project(
+    project_name: str,
+    performance_data: pd.DataFrame,
+    revision_pairs: tp.Iterable[tuple[Revision, Revision]],
+    configs: ConfigurationMap,
+    perf_inter_reports: dict[Revision, PerformanceInteractionReport],
+    threshold: float,
+    sigma: float,
+    ignore_old_zero: bool,
 ) -> pd.DataFrame:
-    eval_data: EvalData = tp.cast(EvalData, defaultdict(list))
+    """Builds table data for RQs 1 & 2 for a subject system."""
+    eval_data: EvalData = tp.cast("EvalData", defaultdict(list))
 
     for old_rev, new_rev in revision_pairs:
         if (
-            old_rev not in performance_data.columns or
-            new_rev not in performance_data.columns
+            old_rev not in performance_data.columns
+            or new_rev not in performance_data.columns
         ):
             continue
 
-        report = perf_inter_reports.get(new_rev, None)
+        report = perf_inter_reports.get(new_rev)
         calculate_eval_data(
-            project_name, performance_data, old_rev, new_rev, configs, report,
-            threshold, sigma, min_diff, ignore_old_zero, eval_data
+            project_name,
+            performance_data,
+            old_rev,
+            new_rev,
+            configs,
+            report,
+            threshold,
+            sigma,
+            ignore_old_zero,
+            eval_data,
         )
 
     confusion_matrix = ConfusionMatrix(
@@ -484,19 +561,23 @@ def calculate_case_study_data(
 
     rq2_confusion_matrix = ConfusionMatrix(
         list(
-            set(eval_data["baseline_positives"]
-               ).intersection(set(eval_data["rq1_predicted_positives"]))
+            set(eval_data["baseline_positives"]).intersection(
+                set(eval_data["rq1_predicted_positives"])
+            )
         ),
         list(
-            set(eval_data["baseline_negatives"]
-               ).intersection(set(eval_data["rq1_predicted_positives"]))
+            set(eval_data["baseline_negatives"]).intersection(
+                set(eval_data["rq1_predicted_positives"])
+            )
         ),
         eval_data["rq2_predicted_positives"],
         eval_data["rq2_predicted_negatives"],
     )
-    assert rq2_confusion_matrix.FP == 0, f"{project_name}: encountered FP in RQ2. This should not be possible!"
+    assert rq2_confusion_matrix.FP == 0, (
+        f"{project_name}: encountered FP in RQ2. This should not be possible!"
+    )
 
-    cs_data: tp.Dict[tp.Any, tp.Any] = {
+    cs_data: dict[tp.Any, tp.Any] = {
         ("Project", ""): [project_name],
         # RQ1
         ("RQ1", "Scenarios"): [confusion_matrix.P + confusion_matrix.N],
@@ -509,15 +590,15 @@ def calculate_case_study_data(
         ("RQ2", "Scenarios"): [rq2_confusion_matrix.P + rq2_confusion_matrix.N],
         ("RQ2", "P"): [rq2_confusion_matrix.P],
         ("RQ2", "PP"): [rq2_confusion_matrix.PP],
-        ("RQ2", "Recall"): [rq2_confusion_matrix.recall()]
+        ("RQ2", "Recall"): [rq2_confusion_matrix.recall()],
     }
 
-    cs_df = pd.DataFrame.from_dict(cs_data)
-    cs_df.set_index("Project", inplace=True)
-    return cs_df
+    return pd.DataFrame.from_dict(cs_data).set_index("Project")
 
 
 class SavingsData(tp.TypedDict):
+    """Data for RQ3."""
+
     project_name: str
     revision: Revision
     regression: bool
@@ -534,14 +615,20 @@ class SavingsData(tp.TypedDict):
 
 
 def calculate_saved_costs(
-    project_name: str, old_rev: Revision, new_rev: Revision,
-    configs: ConfigurationMap, perf_inter_report: PerformanceInteractionReport,
-    performance_data: pd.DataFrame, threshold: float, sigma: float,
-    min_diff: float, ignore_old_zero: bool
+    project_name: str,
+    old_rev: Revision,
+    new_rev: Revision,
+    configs: ConfigurationMap,
+    perf_inter_report: PerformanceInteractionReport,
+    performance_data: pd.DataFrame,
+    threshold: float,
+    sigma: float,
+    ignore_old_zero: bool,
 ) -> SavingsData:
+    """Calculate how much cost can be saved using interaction data."""
     # RQ3
-    features: tp.Set[str] = set(f.name for f in CONFIG_DATA[project_name])
-    relevant_features: tp.Set[str] = set()
+    features: set[str] = {f.name for f in CONFIG_DATA[project_name]}
+    relevant_features: set[str] = set()
     predicted_regression = False
 
     for inter in perf_inter_report.performance_interactions:
@@ -555,8 +642,13 @@ def calculate_saved_costs(
     )
 
     regressing_configs = get_regressing_configs(
-        performance_data, old_rev, new_rev, configs, threshold, sigma, min_diff,
-        ignore_old_zero
+        performance_data,
+        old_rev,
+        new_rev,
+        configs,
+        threshold,
+        sigma,
+        ignore_old_zero,
     )
 
     num_configs = len(configs.ids())
@@ -590,7 +682,7 @@ def calculate_saved_costs(
         "features": len(features),
         "relevant_features": len(relevant_features),
         "total_time": t_baseline,
-        "relevant_time": t_rq3
+        "relevant_time": t_rq3,
     }
 
 
@@ -598,13 +690,13 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
     """Table for performance regression classification analysis."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        """Create the table content."""
         threshold = self.table_kwargs["threshold"]  # % diff
         sigma = self.table_kwargs["sigma"]  # times std
-        min_diff = self.table_kwargs["min_diff"]
 
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
-        data: tp.List[pd.DataFrame] = []
+        data: list[pd.DataFrame] = []
         for case_study in case_studies:
             project_name = case_study.project_name
             commit_map = get_commit_map(project_name)
@@ -614,35 +706,39 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
                 get_paper_config(), case_study, PlainCommandlineConfiguration
             )
 
-            performance_data = \
+            performance_data = (
                 PerformanceEvolutionDatabase.get_data_for_project(
-                    project_name, ["revision", "config_id", "wall_clock_time"],
+                    project_name,
+                    ["revision", "config_id", "wall_clock_time"],
                     commit_map,
                     case_study,
-                    cached_only=False
-                ).pivot(
-                    index="config_id", columns="revision",
-                    values="wall_clock_time"
+                    cached_only=False,
+                ).pivot_table(
+                    index="config_id",
+                    columns="revision",
+                    values="wall_clock_time",
                 )[[revision.to_short_commit_hash() for revision in revisions]]
+            )
 
             perf_inter_report_files = get_processed_revisions_files(
                 project_name,
                 PerformanceInteractionExperiment,
-                file_name_filter=get_case_study_file_name_filter(case_study)
+                file_name_filter=get_case_study_file_name_filter(case_study),
             )
-            perf_inter_reports: tp.Dict[
-                Revision, PerformanceInteractionReport] = {
-                    report_file.report_filename.commit_hash:
-                        load_performance_interaction_report(report_file)
-                    for report_file in perf_inter_report_files
-                }
+            # fmt: off
+            perf_inter_reports: dict[Revision, PerformanceInteractionReport] = {
+                report_file.report_filename.commit_hash:
+                    load_performance_interaction_report(report_file)
+                for report_file in perf_inter_report_files
+            }
+            # fmt: on
 
-            revision_pairs = pairwise([
-                rev.to_short_commit_hash() for rev in revisions
-            ])
+            revision_pairs = pairwise(
+                [rev.to_short_commit_hash() for rev in revisions]
+            )
 
             data.append(
-                calculate_case_study_data(
+                calculate_data_for_project(
                     project_name,
                     performance_data,
                     revision_pairs,
@@ -650,15 +746,14 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
                     perf_inter_reports,
                     threshold,
                     sigma,
-                    min_diff,
-                    ignore_old_zero=True
+                    ignore_old_zero=True,
                 )
             )
 
         df = pd.concat(data).sort_index()
 
         style = df.style
-        kwargs: tp.Dict[str, tp.Any] = {}
+        kwargs: dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["hrules"] = True
             kwargs["column_format"] = "l|rrrrrr|rrrr"
@@ -677,7 +772,7 @@ OPTIONAL_THRESHOLD: CLIOptionTy = make_cli_option(
     required=False,
     metavar="THRESHOLD",
     help="Only consider regressions where the performance difference is greater"
-    "than the given threshold."
+    "than the given threshold.",
 )
 
 OPTIONAL_SIGMA: CLIOptionTy = make_cli_option(
@@ -687,28 +782,24 @@ OPTIONAL_SIGMA: CLIOptionTy = make_cli_option(
     required=False,
     metavar="SIGMA",
     help="Only consider regressions that are at least SIGMA times greater than "
-    "the standard deviation of the measurements."
-)
-
-OPTIONAL_MIN_DIFF: CLIOptionTy = make_cli_option(
-    "--min-diff",
-    type=float,
-    default=0,
-    required=False,
-    metavar="MIN_DIFF",
-    help="Only consider regressions that are at least MIN_DIFF large."
+    "the standard deviation of the measurements.",
 )
 
 
 class PerformanceRegressionClassification(
     TableGenerator,
     generator_name="perf-reg",
-    options=[OPTIONAL_THRESHOLD, OPTIONAL_SIGMA, OPTIONAL_MIN_DIFF],
+    options=[OPTIONAL_THRESHOLD, OPTIONAL_SIGMA],
 ):
-    """Generates a table that does a precision/recall analysis for performance
-    regression detection for multiple thresholds."""
+    """
+    Precision/recall analysis for performance regression analysis.
 
-    def generate(self) -> tp.List[Table]:
+    Generates a table that does a precision/recall analysis for performance
+    regression detection for multiple thresholds.
+    """
+
+    def generate(self) -> list[Table]:
+        """Generates the table."""
         return [
             PerformanceRegressionClassificationTable(
                 self.table_config, **self.table_kwargs
@@ -717,13 +808,13 @@ class PerformanceRegressionClassification(
 
 
 class PerformanceInteractionSavingsTable(Table, table_name="perf_inter_cost"):
-    """Table showing potential cost savings from performance interaction
-    analysis."""
+    """Table of potential cost savings from performance interaction analysis."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        """Create the table content."""
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
-        data: tp.List[tp.Dict[str, tp.Any]] = []
+        data: list[dict[str, tp.Any]] = []
 
         for case_study in case_studies:
             project_name = case_study.project_name
@@ -739,37 +830,41 @@ class PerformanceInteractionSavingsTable(Table, table_name="perf_inter_cost"):
                 for option in config.options()
             }
 
-            performance_data = \
+            performance_data = (
                 PerformanceEvolutionDatabase.get_data_for_project(
-                    project_name, ["revision", "config_id", "wall_clock_time"],
+                    project_name,
+                    ["revision", "config_id", "wall_clock_time"],
                     commit_map,
                     case_study,
-                    cached_only=False
-                ).pivot(
-                    index="config_id", columns="revision",
-                    values="wall_clock_time"
+                    cached_only=False,
+                ).pivot_table(
+                    index="config_id",
+                    columns="revision",
+                    values="wall_clock_time",
                 )[[revision.to_short_commit_hash() for revision in revisions]]
+            )
 
             perf_inter_report_files = get_processed_revisions_files(
                 project_name,
                 PerformanceInteractionExperiment,
-                file_name_filter=get_case_study_file_name_filter(case_study)
+                file_name_filter=get_case_study_file_name_filter(case_study),
             )
-            perf_inter_reports: tp.Dict[
-                Revision, PerformanceInteractionReport] = {
-                    report_file.report_filename.commit_hash:
-                        load_performance_interaction_report(report_file)
-                    for report_file in perf_inter_report_files
-                }
+            # fmt: off
+            perf_inter_reports: dict[Revision, PerformanceInteractionReport] = {
+                report_file.report_filename.commit_hash:
+                    load_performance_interaction_report(report_file)
+                for report_file in perf_inter_report_files
+            }
+            # fmt: on
 
-            revision_pairs = pairwise([
-                rev.to_short_commit_hash() for rev in revisions
-            ])
+            revision_pairs = pairwise(
+                [rev.to_short_commit_hash() for rev in revisions]
+            )
 
             cs_data = []
 
             for old_rev, new_rev in revision_pairs:
-                perf_inter_report = perf_inter_reports.get(new_rev, None)
+                perf_inter_report = perf_inter_reports.get(new_rev)
 
                 if perf_inter_report:
                     savings = calculate_saved_costs(
@@ -781,8 +876,7 @@ class PerformanceInteractionSavingsTable(Table, table_name="perf_inter_cost"):
                         performance_data,
                         threshold=0.1,
                         sigma=3,
-                        min_diff=0,
-                        ignore_old_zero=True
+                        ignore_old_zero=True,
                     )
                 else:
                     savings = {
@@ -798,7 +892,7 @@ class PerformanceInteractionSavingsTable(Table, table_name="perf_inter_cost"):
                         "features": len(features),
                         "relevant_features": len(features),
                         "total_time": np.nan,
-                        "relevant_time": np.nan
+                        "relevant_time": np.nan,
                     }
 
                 cs_data.append(savings)
@@ -808,22 +902,29 @@ class PerformanceInteractionSavingsTable(Table, table_name="perf_inter_cost"):
             project_df.to_csv(f"tables/{project_name}_cost.txt", sep=" ")
             # table contains per-project summary
             predicted_df = project_df[project_df["predicted_regression"]]
-            data.append({
-                "Project": f"{project_name}",
-                "$|F|$":
-                    predicted_df["features"].median(),  # should be constant
-                "$|\hat{F}|$": predicted_df["relevant_features"].mean(),
-                "$|C|$": predicted_df["configs"].median(),  # should be constant
-                "$|\hat{C}|$": predicted_df["relevant_configs"].mean(),
-                "$T_{C} ($s$)$": predicted_df["total_time"].mean(),
-                "$T_{\hat{C}} ($s$)$": predicted_df["relevant_time"].mean(),
-            })
+            data.append(
+                {
+                    "Project": f"{project_name}",
+                    "$|F|$": predicted_df[
+                        "features"
+                    ].median(),  # should be constant
+                    "$|\\hat{F}|$": predicted_df["relevant_features"].mean(),
+                    "$|C|$": predicted_df[
+                        "configs"
+                    ].median(),  # should be constant
+                    "$|\\hat{C}|$": predicted_df["relevant_configs"].mean(),
+                    "$T_{C} ($s$)$": predicted_df["total_time"].mean(),
+                    "$T_{\\hat{C}} ($s$)$": predicted_df[
+                        "relevant_time"
+                    ].mean(),
+                }
+            )
 
         df = pd.DataFrame.from_records(data)
-        df.set_index("Project", inplace=True)
+        df = df.set_index("Project")
 
         style = df.style
-        kwargs: tp.Dict[str, tp.Any] = {}
+        kwargs: dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["hrules"] = True
             kwargs["column_format"] = "lrrrrrr"
@@ -838,10 +939,10 @@ class PerformanceInteractionSavingsTable(Table, table_name="perf_inter_cost"):
 class PerformanceInteractionSavings(
     TableGenerator, generator_name="perf-inter-cost", options=[]
 ):
-    """Generates a table showing potential cost savings from performance
-    interaction analysis."""
+    """Table of potential cost savings from performance interaction analysis."""
 
-    def generate(self) -> tp.List[Table]:
+    def generate(self) -> list[Table]:
+        """Generates the table."""
         return [
             PerformanceInteractionSavingsTable(
                 self.table_config, **self.table_kwargs
@@ -850,18 +951,20 @@ class PerformanceInteractionSavings(
 
 
 def load_synth_baseline_data(
-    case_study: CaseStudy, config_ids: tp.List[int]
+    case_study: CaseStudy, config_ids: list[int]
 ) -> pd.DataFrame:
+    """Loads baseline data for synthetic subject systems."""
     project_name = case_study.project_name
 
-    data: tp.List[tp.Dict[str, tp.Any]] = []
+    data: list[dict[str, tp.Any]] = []
     time_report_dict = get_files_with_status_by_config(
-        project_name, [FileStatusExtension.SUCCESS],
+        project_name,
+        [FileStatusExtension.SUCCESS],
         PerfSamplingSynth,
         MPRWLTimeReportAggregate,
         file_name_filter=get_case_study_file_name_filter(case_study),
         only_newest=True,
-        config_ids=config_ids
+        config_ids=config_ids,
     )
 
     for config_id in config_ids:
@@ -869,7 +972,8 @@ def load_synth_baseline_data(
 
         if not time_report_files:
             LOG.warning(
-                f"No baseline report found for {project_name}:{config_id}, skipping."
+                f"No baseline report found for {project_name}:{config_id}, "
+                f"skipping."
             )
             continue
 
@@ -880,53 +984,58 @@ def load_synth_baseline_data(
         assert baseline_report is not None
         assert len(baseline_report.workload_names()) == 1
         workload = next(iter(baseline_report.workload_names()))
-        data.append({
-            "revision":
-                "base",
-            "config_id":
-                config_id,
-            "wall_clock_time":
-                baseline_report.measurements_wall_clock_time(workload)
-        })
+        data.append(
+            {
+                "revision": "base",
+                "config_id": config_id,
+                "wall_clock_time": baseline_report.measurements_wall_clock_time(
+                    workload
+                ),
+            }
+        )
 
         for patch_name in time_report.get_patch_names():
             patched_report = time_report.get_report_for_patch(patch_name)
             assert patched_report is not None
             assert len(patched_report.workload_names()) == 1
             workload = next(iter(patched_report.workload_names()))
-            data.append({
-                "revision":
-                    patch_name,
-                "config_id":
-                    config_id,
-                "wall_clock_time":
-                    patched_report.measurements_wall_clock_time(workload)
-            })
+            # fmt: off
+            data.append(
+                {
+                    "revision": patch_name,
+                    "config_id": config_id,
+                    "wall_clock_time":
+                        patched_report.measurements_wall_clock_time(workload),
+                }
+            )
+            # fmt: on
 
     return pd.DataFrame.from_records(data)
 
 
 def load_synth_perf_inter_reports(
-    case_study: CaseStudy
-) -> tp.Dict[Revision, PerformanceInteractionReport]:
+    case_study: CaseStudy,
+) -> dict[Revision, PerformanceInteractionReport]:
+    """Loads synthetic performance interaction reports."""
     project_name = case_study.project_name
 
     report_files = get_processed_revisions_files(
         project_name,
         PerformanceInteractionExperimentSynthetic,
         file_name_filter=get_case_study_file_name_filter(case_study),
-        only_newest=True
+        only_newest=True,
     )
 
     if not report_files:
         LOG.warning(
-            f"No performance interaction report found for {project_name}, skipping."
+            f"No performance interaction report found "
+            f"for {project_name}, skipping."
         )
         return {}
 
     assert len(report_files) == 1
     report = load_mpr_performance_interaction_report(report_files[0])
-    report_dict: tp.Dict[Revision, PerformanceInteractionReport] = {}
+    report_dict: dict[Revision, PerformanceInteractionReport] = {}
 
     for patch_name in report.get_patch_names():
         patch_report = report.get_report_for_patch(patch_name)
@@ -939,17 +1048,16 @@ def load_synth_perf_inter_reports(
 class PerformanceRegressionClassificationTableSynth(
     Table, table_name="perf_reg_synth"
 ):
-    """Table for performance regression classification analysis for synthetic
-    case studies."""
+    """Regression classification table for synthetic subject systems."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        """Create the table content."""
         threshold = self.table_kwargs["threshold"]  # % diff
         sigma = self.table_kwargs["sigma"]  # times std
-        min_diff = self.table_kwargs["min_diff"]
 
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
-        data: tp.List[pd.DataFrame] = []
+        data: list[pd.DataFrame] = []
         for case_study in case_studies:
             project_name = case_study.project_name
 
@@ -966,14 +1074,14 @@ class PerformanceRegressionClassificationTableSynth(
 
             revisions = performance_data["revision"].unique().tolist()
             revisions.remove("base")
-            performance_data = performance_data.pivot(
+            performance_data = performance_data.pivot_table(
                 index="config_id", columns="revision", values="wall_clock_time"
             )
             perf_inter_reports = load_synth_perf_inter_reports(case_study)
             revision_pairs = [("base", patch_name) for patch_name in revisions]
 
             data.append(
-                calculate_case_study_data(
+                calculate_data_for_project(
                     project_name,
                     performance_data,
                     revision_pairs,
@@ -981,15 +1089,14 @@ class PerformanceRegressionClassificationTableSynth(
                     perf_inter_reports,
                     threshold,
                     sigma,
-                    min_diff,
-                    ignore_old_zero=False
+                    ignore_old_zero=False,
                 )
             )
 
         df = pd.concat(data).sort_index()
 
         style = df.style
-        kwargs: tp.Dict[str, tp.Any] = {}
+        kwargs: dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["hrules"] = True
             kwargs["column_format"] = "l|rrrrrr|rrrr"
@@ -1004,12 +1111,18 @@ class PerformanceRegressionClassificationTableSynth(
 class PerformanceRegressionClassificationSynth(
     TableGenerator,
     generator_name="perf-reg-synth",
-    options=[OPTIONAL_THRESHOLD, OPTIONAL_SIGMA, OPTIONAL_MIN_DIFF]
+    options=[OPTIONAL_THRESHOLD, OPTIONAL_SIGMA],
 ):
-    """Generates a table that does a precision/recall analysis for performance
-    regression detection for multiple thresholds."""
+    """
+    Precision/recall analysis for performance regression analysis.
 
-    def generate(self) -> tp.List[Table]:
+    Generates a table that does a precision/recall analysis for performance
+    regression detection for multiple thresholds.
+    This version is for data from patch-based synthetic subject systems.
+    """
+
+    def generate(self) -> list[Table]:
+        """Generates the table."""
         return [
             PerformanceRegressionClassificationTableSynth(
                 self.table_config, **self.table_kwargs
@@ -1020,13 +1133,13 @@ class PerformanceRegressionClassificationSynth(
 class PerformanceInteractionSavingsTableSynth(
     Table, table_name="perf_inter_cost_synth"
 ):
-    """Table showing potential cost savings from performance interaction
-    analysis."""
+    """Table of potential cost savings from performance interaction analysis."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        """Create the table content."""
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
-        data: tp.List[tp.Dict[str, tp.Any]] = []
+        data: list[dict[str, tp.Any]] = []
 
         for case_study in case_studies:
             project_name = case_study.project_name
@@ -1048,10 +1161,12 @@ class PerformanceInteractionSavingsTableSynth(
                 continue
 
             revisions = performance_data["revision"].unique().tolist()
-            revision_pairs = [("base", patch_name)
-                              for patch_name in sorted(revisions)
-                              if patch_name != "base"]
-            performance_data = performance_data.pivot(
+            revision_pairs = [
+                ("base", patch_name)
+                for patch_name in sorted(revisions)
+                if patch_name != "base"
+            ]
+            performance_data = performance_data.pivot_table(
                 index="config_id", columns="revision", values="wall_clock_time"
             )
             perf_inter_reports = load_synth_perf_inter_reports(case_study)
@@ -1071,8 +1186,7 @@ class PerformanceInteractionSavingsTableSynth(
                         performance_data,
                         threshold=0.1,
                         sigma=3,
-                        min_diff=0,
-                        ignore_old_zero=False
+                        ignore_old_zero=False,
                     )
                 else:
                     savings = {
@@ -1088,7 +1202,7 @@ class PerformanceInteractionSavingsTableSynth(
                         "features": len(features),
                         "relevant_features": len(features),
                         "total_time": np.nan,
-                        "relevant_time": np.nan
+                        "relevant_time": np.nan,
                     }
 
                 cs_data.append(savings)
@@ -1098,22 +1212,29 @@ class PerformanceInteractionSavingsTableSynth(
             project_df.to_csv(f"tables/{project_name}_cost.txt", sep=" ")
             # table contains per-project summary
             predicted_df = project_df[project_df["predicted_regression"]]
-            data.append({
-                "Project": f"{project_name}",
-                "$|F|$":
-                    predicted_df["features"].median(),  # should be constant
-                "$|\hat{F}|$": predicted_df["relevant_features"].mean(),
-                "$|C|$": predicted_df["configs"].median(),  # should be constant
-                "$|\hat{C}|$": predicted_df["relevant_configs"].mean(),
-                "$T_{C} ($s$)$": predicted_df["total_time"].mean(),
-                "$T_{\hat{C}} ($s$)$": predicted_df["relevant_time"].mean(),
-            })
+            data.append(
+                {
+                    "Project": f"{project_name}",
+                    "$|F|$": predicted_df[
+                        "features"
+                    ].median(),  # should be constant
+                    "$|\\hat{F}|$": predicted_df["relevant_features"].mean(),
+                    "$|C|$": predicted_df[
+                        "configs"
+                    ].median(),  # should be constant
+                    "$|\\hat{C}|$": predicted_df["relevant_configs"].mean(),
+                    "$T_{C} ($s$)$": predicted_df["total_time"].mean(),
+                    "$T_{\\hat{C}} ($s$)$": predicted_df[
+                        "relevant_time"
+                    ].mean(),
+                }
+            )
 
         df = pd.DataFrame.from_records(data)
-        df.set_index("Project", inplace=True)
+        df = df.set_index("Project")
 
         style = df.style
-        kwargs: tp.Dict[str, tp.Any] = {}
+        kwargs: dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["hrules"] = True
             kwargs["column_format"] = "lrrrrrr"
@@ -1128,10 +1249,10 @@ class PerformanceInteractionSavingsTableSynth(
 class PerformanceInteractionSavingsSynth(
     TableGenerator, generator_name="perf-inter-cost-synth", options=[]
 ):
-    """Generates a table showing potential cost savings from performance
-    interaction analysis."""
+    """Table of potential cost savings from performance interaction analysis."""
 
-    def generate(self) -> tp.List[Table]:
+    def generate(self) -> list[Table]:
+        """Generates the table."""
         return [
             PerformanceInteractionSavingsTableSynth(
                 self.table_config, **self.table_kwargs
