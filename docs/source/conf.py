@@ -7,6 +7,9 @@
 # -- Path setup --------------------------------------------------------------
 
 import sys
+# Something overrides the built-in cmd module, in the readthedocs build
+# environment causing the build to fail. Importing cmd here resolves that.
+import cmd
 from pathlib import Path
 
 sys.path.insert(0, str(Path('../../').resolve()))
