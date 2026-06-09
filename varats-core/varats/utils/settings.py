@@ -261,6 +261,7 @@ def add_vara_experiment_options(
                 os.path.join(str(vara_cfg()["benchbuild_root"]), "BC_files")
         }
     }
+    benchbuild_config["varats"].init_from_env()
 
 
 def __is_benchbuild_process() -> bool:
@@ -283,9 +284,6 @@ def bb_cfg() -> s.Configuration:
             bb_cfg_path = Path(bb_root) / ".benchbuild.yml"
             if bb_cfg_path.exists():
                 BB_CFG.load(local.path(bb_cfg_path))
-
-        # Environment should always override config files
-        BB_CFG.init_from_env()
 
         _BB_CFG = BB_CFG
         create_missing_bb_folders()
