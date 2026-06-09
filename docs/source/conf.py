@@ -70,6 +70,7 @@ html_theme = 'haiku'
 
 pygments_style = 'sphinx'
 
+autodoc_mock_imports = ["cmd"]
 autodoc_member_order = "bysource"
 add_function_parentheses = True
 add_module_names = True
