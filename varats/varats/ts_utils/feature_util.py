@@ -22,8 +22,9 @@ class Location:
 
     LOCATION_FORMAT = re.compile(
         r"(?P<file>[\w./]+)\s"
-        r"(?P<start_line>\d+):(?P<start_col>\d+)\s?"
-        r"((?P<end_line>\d+):(?P<end_col>\d+))?"
+        r"(?P<start_line>\d+):(?P<start_col>\d+)"
+        r"(\s(?P<end_line>\d+):(?P<end_col>\d+))?"
+        r"(\s(?P<member_offset>[\w:]+))?"
     )
 
     def __init__(
@@ -33,12 +34,15 @@ class Location:
         start_col: int,
         end_line: int,
         end_col: int | None,
+        member_offset: str | None = None,
     ) -> None:
+        """Creates a feature location."""
         self.file = file
         self.start_line = start_line
         self.start_col = start_col
         self.end_line = end_line
         self.end_col = end_col
+        self.member_offset = member_offset
 
     @staticmethod
     def change_start_line(
@@ -52,6 +56,7 @@ class Location:
             old_location.start_col,
             old_location.end_line + (new_start_line - old_location.start_line),
             old_location.end_col,
+            old_location.member_offset,
         )
 
     @staticmethod
@@ -75,17 +80,19 @@ class Location:
             raise click.UsageError(
                 f"Could not parse location: {raw_location}.\n"
                 f"Location format is "
-                f"'<file> <start_line>:<start_col> <end_line>:<end_col>'"
+                f"'<file> <start_line>:<start_col> <end_line>:<end_col> "
+                f"<member_offset>'"
             )
 
         return Location(
-            match.group("file"),
-            int(match.group("start_line")),
-            int(match.group("start_col")),
-            int(match.group("end_line"))
-            if match.group("end_line")
-            else int(match.group("start_line")),
-            int(match.group("end_col")) if match.group("end_col") else None,
+            match["file"],
+            int(match["start_line"]),
+            int(match["start_col"]),
+            int(match["end_line"])
+            if match["end_line"]
+            else int(match["start_line"]),
+            int(match["end_col"]) if match["end_col"] else None,
+            match["member_offset"],
         )
 
     def to_xml(self, parent: ElementTree.Element) -> None:
@@ -97,6 +104,10 @@ class Location:
         end = ElementTree.SubElement(parent, "end")
         ElementTree.SubElement(end, "line").text = str(self.end_line)
         ElementTree.SubElement(end, "column").text = str(self.end_col)
+        if self.member_offset:
+            ElementTree.SubElement(
+                parent, "memberOffset"
+            ).text = self.member_offset
 
     def to_xml_direct(self) -> str:
         """Convert the location to SPLConqueror feature model format."""
@@ -109,13 +120,21 @@ class Location:
             f"<end><line>{self.end_line}</line>"
             f"<column>{self.end_col}</column></end>\n"
         )
+        if self.member_offset:
+            xml += f"<memberOffset>{self.member_offset}</memberOffset>\n"
         return xml
 
     def __str__(self) -> str:
+        """String representation of the location."""
+        member_offset_str = ""
+        if self.member_offset:
+            member_offset_str = " " + self.member_offset
+
         return (
             f"{self.file} "
             f"{self.start_line}:{self.start_col} "
             f"{self.end_line}:{self.end_col}"
+            f"{member_offset_str}"
         )
 
 
@@ -129,6 +148,7 @@ class FeatureAnnotation:
         introduced: FullCommitHash,
         removed: FullCommitHash | None = None,
     ) -> None:
+        """Creates a feature annotation."""
         self.feature_name = feature_name
         self.location = location
         self.introduced = introduced
@@ -243,10 +263,9 @@ def __process_patch(
     for hunk in patch.hunks:
         for line in hunk.lines:
             if line.new_lineno >= 0:  # Added or modified line
-                if line.old_lineno < 0:  # Added line
-                    # if we are before the location, increase offset
-                    if line.old_lineno < location.end_line:
-                        offset_counter += 1
+                if line.old_lineno < 0 and line.old_lineno < location.end_line:
+                    # Added line if we are before the location, increase offset
+                    offset_counter += 1
 
                 if location.end_line == location.start_line:
                     content = line.content[
@@ -338,9 +357,8 @@ def load_initial_annotations(
     last_annotations: dict[str, dict[int, FeatureAnnotation]] = {}
     last_annotation_targets: dict[str, dict[int, str]] = {}
     commit_hash = FullCommitHash.from_pygit_commit(revision)
-    for line in file:
-        LOG.debug(f"Processing line: {line.strip()}")
-        line = line.strip()
+    for raw_line in file:
+        line = raw_line.strip()
         if line == "":
             continue
         if line.endswith(":"):
