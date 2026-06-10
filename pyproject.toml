@@ -282,7 +282,7 @@ source = [
   "varats/varats/",
   "varats-core/varats/"
 ]
-source_pkgs = ["varats", "varats-core"]
+source_pkgs = ["varats"]
 parallel = true
 
 [tool.coverage.report]
