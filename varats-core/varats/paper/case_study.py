@@ -1,5 +1,9 @@
-"""A case study is used to pin down the exact set of revisions that should be
-analysed for a project."""
+"""
+Implementation of case studies for VaRA-TS.
+
+A case study is used to pin down the exact set of revisions that should be
+analysed for a project.
+"""
 
 import typing as tp
 from pathlib import Path
@@ -9,8 +13,8 @@ import benchbuild as bb
 from varats.base.configuration import Configuration
 from varats.base.sampling_method import (
     NormalSamplingMethod,
-    SamplingMethodBase,
     SamplingMethod,
+    SamplingMethodBase,
 )
 from varats.base.version_header import VersionHeader
 from varats.mapping.configuration_map import (
@@ -19,27 +23,32 @@ from varats.mapping.configuration_map import (
 )
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.release.release_provider import ReleaseType
-from varats.utils.git_util import ShortCommitHash, FullCommitHash, CommitHash
+from varats.utils.git_util import CommitHash, FullCommitHash, ShortCommitHash
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
-CSEntryMapTypes = tp.Union[str, int, tp.List[int]]
+CSEntryMapTypes = str | int | list[int]
 
 
-class CSEntry():
-    """Combining a commit hash with a unique and ordered id, starting with 0 for
-    the first commit in the repository."""
+class CSEntry:
+    """
+    Entry for a case study.
+
+    Combining a commit hash with a unique and ordered id, starting with 0 for
+    the first commit in the repository.
+    """
 
     def __init__(
         self,
         commit_hash: FullCommitHash,
         commit_id: int,
-        config_ids: tp.Optional[tp.List[int]] = None
+        config_ids: list[int] | None = None,
     ) -> None:
+        """Initialize a new case study entry."""
         self.__commit_hash = commit_hash
         self.__commit_id = commit_id
 
         if config_ids:
-            self.__config_ids: tp.List[int] = config_ids
+            self.__config_ids: list[int] = config_ids
         else:
             # By default we add a list with the DummyConfig ID if no
             # configurations were provided.
@@ -56,26 +65,28 @@ class CSEntry():
         return self.__commit_id
 
     @property
-    def config_ids(self) -> tp.List[int]:
+    def config_ids(self) -> list[int]:
         """The order ID of the configuration."""
         return self.__config_ids
 
-    def get_dict(self) -> tp.Dict[str, CSEntryMapTypes]:
+    def get_dict(self) -> dict[str, CSEntryMapTypes]:
         """Get a dict representation of this commit and id."""
-        return dict(
-            commit_hash=self.commit_hash.hash,
-            commit_id=self.commit_id,
-            config_ids=self.config_ids
-        )
+        return {
+            "commit_hash": self.commit_hash.hash,
+            "commit_id": self.commit_id,
+            "config_ids": self.config_ids,
+        }
 
     def __str__(self) -> str:
+        """String representation of the commit and id."""
         return f"({self.commit_id}: #{self.commit_hash.hash})"
 
     def __repr__(self) -> str:
-        return f"({self.commit_id}: #{self.commit_hash.hash})"
+        """String representation of the commit and id."""
+        return str(self)
 
 
-class CSStage():
+class CSStage:
     """
     A stage in a case-study, i.e., a collection of revisions.
 
@@ -84,24 +95,26 @@ class CSStage():
 
     def __init__(
         self,
-        name: tp.Optional[str] = None,
-        sampling_method: tp.Optional[SamplingMethod] = None,
-        release_type: tp.Optional[ReleaseType] = None,
-        revisions: tp.Optional[tp.List[CSEntry]] = None
+        name: str | None = None,
+        sampling_method: SamplingMethod | None = None,
+        release_type: ReleaseType | None = None,
+        revisions: list[CSEntry] | None = None,
     ) -> None:
-        self.__name: tp.Optional[str] = name
-        self.__sampling_method: tp.Optional[SamplingMethod] = sampling_method
-        self.__release_type: tp.Optional[ReleaseType] = release_type
-        self.__revisions: tp.List[CSEntry
-                                 ] = revisions if revisions is not None else []
+        """Initialize a new stage."""
+        self.__name: str | None = name
+        self.__sampling_method: SamplingMethod | None = sampling_method
+        self.__release_type: ReleaseType | None = release_type
+        self.__revisions: list[CSEntry] = (
+            revisions if revisions is not None else []
+        )
 
     @property
-    def revisions(self) -> tp.List[FullCommitHash]:
+    def revisions(self) -> list[FullCommitHash]:
         """Project revisions that are part of this case study."""
         return [x.commit_hash for x in self.__revisions]
 
     @property
-    def name(self) -> tp.Optional[str]:
+    def name(self) -> str | None:
         """Name of the stage."""
         return self.__name
 
@@ -111,7 +124,7 @@ class CSStage():
         self.__name = name
 
     @property
-    def sampling_method(self) -> tp.Optional[SamplingMethod]:
+    def sampling_method(self) -> SamplingMethod | None:
         """The sampling method used for this stage."""
         return self.__sampling_method
 
@@ -121,7 +134,7 @@ class CSStage():
         self.__sampling_method = sampling_method
 
     @property
-    def release_type(self) -> tp.Optional[ReleaseType]:
+    def release_type(self) -> ReleaseType | None:
         """The sampling method used for this stage."""
         return self.__release_type
 
@@ -151,7 +164,7 @@ class CSStage():
         self,
         revision: FullCommitHash,
         commit_id: int,
-        config_ids: tp.Optional[tp.List[int]] = None
+        config_ids: list[int] | None = None,
     ) -> None:
         """
         Add a new revision to this stage.
@@ -164,7 +177,7 @@ class CSStage():
         if not self.has_revision(revision):
             self.__revisions.append(CSEntry(revision, commit_id, config_ids))
 
-    def get_config_ids_for_revision(self, revision: CommitHash) -> tp.List[int]:
+    def get_config_ids_for_revision(self, revision: CommitHash) -> list[int]:
         """
         Returns a list of all configuration IDs specified for this revision.
 
@@ -173,26 +186,23 @@ class CSStage():
 
         Returns: list of config IDs
         """
-
-        return list({
-            config_id for entry in self.__revisions
-            if entry.commit_hash.startswith(revision)
-            for config_id in entry.config_ids
-            if config_id != ConfigurationMap.DUMMY_CONFIG_ID
-        })
+        return list(
+            {
+                config_id
+                for entry in self.__revisions
+                if entry.commit_hash.startswith(revision)
+                for config_id in entry.config_ids
+                if config_id != ConfigurationMap.DUMMY_CONFIG_ID
+            }
+        )
 
     def sort(self, reverse: bool = True) -> None:
         """Sort the revisions of the case study by commit ID inplace."""
         self.__revisions.sort(key=lambda x: x.commit_id, reverse=reverse)
 
-    def get_dict(
-        self
-    ) -> tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, CSEntryMapTypes]]]]:
+    def get_dict(self) -> dict[str, str | list[dict[str, CSEntryMapTypes]]]:
         """Get a dict representation of this stage."""
-        stage_dict: tp.Dict[str,
-                            tp.Union[str,
-                                     tp.List[tp.Dict[str,
-                                                     CSEntryMapTypes]]]] = {}
+        stage_dict: dict[str, str | list[dict[str, CSEntryMapTypes]]] = {}
         if self.name is not None:
             stage_dict['name'] = self.name
         if self.sampling_method is not None:
@@ -204,11 +214,11 @@ class CSStage():
         return stage_dict
 
 
-class CaseStudy():
+class CaseStudy:
     """
-    A case study persists a set of revisions of a project to allow easy
-    reevaluation.
+    A case study persists a set of revisions of a project.
 
+    This allows for easy re-evaluation.
     Stored values:
      - name of the related benchbuild.project
      - a set of revisions
@@ -218,8 +228,9 @@ class CaseStudy():
         self,
         project_name: str,
         version: int,
-        stages: tp.Optional[tp.List[CSStage]] = None
+        stages: list[CSStage] | None = None,
     ) -> None:
+        """Initialize a new case study."""
         self.__project_name = project_name
         self.__version = version
         self.__stages = stages if stages is not None else []
@@ -234,7 +245,7 @@ class CaseStudy():
         return self.__project_name
 
     @property
-    def project_cls(self) -> tp.Type[bb.Project]:
+    def project_cls(self) -> type[bb.Project]:
         """
         Look up the BenchBuild project for this case study.
 
@@ -253,16 +264,16 @@ class CaseStudy():
         return self.__version
 
     @property
-    def revisions(self) -> tp.List[FullCommitHash]:
+    def revisions(self) -> list[FullCommitHash]:
         """Project revisions that are part of this case study."""
         return list(
-            dict.fromkeys([
-                x for stage in self.__stages for x in stage.revisions
-            ])
+            dict.fromkeys(
+                [x for stage in self.__stages for x in stage.revisions]
+            )
         )
 
     @property
-    def stages(self) -> tp.List[CSStage]:
+    def stages(self) -> list[CSStage]:
         """Get a list with all stages."""
         # Return new list to forbid modification of the case-study
         return list(self.__stages)
@@ -272,9 +283,11 @@ class CaseStudy():
         """Get nummer of stages."""
         return len(self.__stages)
 
-    def get_stage_by_name(self, stage_name: str) -> tp.Optional[CSStage]:
+    def get_stage_by_name(self, stage_name: str) -> CSStage | None:
         """
-        Get a stage by its name. Since multiple stages can have the same name,
+        Get a stage by its name.
+
+        Since multiple stages can have the same name,
         the first matching stage is returned.
 
         Args:
@@ -289,9 +302,11 @@ class CaseStudy():
 
         return None
 
-    def get_stage_index_by_name(self, stage_name: str) -> tp.Optional[int]:
+    def get_stage_index_by_name(self, stage_name: str) -> int | None:
         """
-        Get a stage's index by its name. Since multiple stages can have the same
+        Get a stage's index by its name.
+
+        Since multiple stages can have the same
         name, the first matching stage is returned.
 
         Args:
@@ -314,11 +329,7 @@ class CaseStudy():
             ``True``, if the revision was found in one of the stages,
             ``False`` otherwise
         """
-        for stage in self.__stages:
-            if stage.has_revision(revision):
-                return True
-
-        return False
+        return any(stage.has_revision(revision) for stage in self.__stages)
 
     def has_revision_in_stage(
         self, revision: ShortCommitHash, num_stage: int
@@ -345,7 +356,7 @@ class CaseStudy():
         """
         return bool(self.get_config_ids_for_revision(revision))
 
-    def get_config_ids_for_revision(self, revision: CommitHash) -> tp.List[int]:
+    def get_config_ids_for_revision(self, revision: CommitHash) -> list[int]:
         """
         Returns a list of all configuration IDs specified for this revision.
 
@@ -354,7 +365,7 @@ class CaseStudy():
 
         Returns: list of config IDs
         """
-        config_ids: tp.List[int] = []
+        config_ids: list[int] = []
         for stage in self.__stages:
             config_ids += stage.get_config_ids_for_revision(revision)
 
@@ -365,7 +376,7 @@ class CaseStudy():
 
     def get_config_ids_for_revision_in_stage(
         self, revision: CommitHash, num_stage: int
-    ) -> tp.List[int]:
+    ) -> list[int]:
         """
         Returns a list of all configuration IDs specified for this revision.
 
@@ -389,7 +400,9 @@ class CaseStudy():
 
     def shift_stage(self, from_index: int, offset: int) -> None:
         """
-        Shift a stage in the case-studies' stage list by an offset. Beware that
+        Shift a stage in the case-studies' stage list by an offset.
+
+        Beware that
         shifts to the left (offset<0) will destroy stages.
 
         Args:
@@ -413,7 +426,9 @@ class CaseStudy():
 
     def insert_empty_stage(self, pos: int) -> CSStage:
         """
-        Insert a new stage at the given index, shifting the list elements to the
+        Insert a new stage at the given index.
+
+        Shifts the list elements to the
         right. The newly created stage is returned.
 
         Args:
@@ -428,7 +443,7 @@ class CaseStudy():
         revision: FullCommitHash,
         commit_id: int,
         stage_num: int = 0,
-        sort_revs: bool = True
+        sort_revs: bool = True,
     ) -> None:
         """
         Add a revision to this case study.
@@ -452,9 +467,9 @@ class CaseStudy():
 
     def include_revisions(
         self,
-        revisions: tp.List[tp.Tuple[FullCommitHash, int]],
+        revisions: list[tuple[FullCommitHash, int]],
         stage_num: int = 0,
-        sort_revs: bool = True
+        sort_revs: bool = True,
     ) -> None:
         """
         Add multiple revisions to this case study.
@@ -487,8 +502,7 @@ class CaseStudy():
 
     def get_revision_filter(self) -> tp.Callable[[CommitHash], bool]:
         """
-        Generate a case study specific revision filter that only allows revision
-        that are part of the case study.
+        Generate a case study specific revision filter.
 
         Returns:
             a callable filter function
@@ -500,15 +514,16 @@ class CaseStudy():
         return revision_filter
 
     def get_dict(
-        self
-    ) -> tp.Dict[str, tp.Union[str, int, tp.List[tp.Dict[str, tp.Union[
-        str, tp.List[tp.Dict[str, CSEntryMapTypes]]]]]]]:
+        self,
+    ) -> dict[
+        str, str | int | list[dict[str, str | list[dict[str, CSEntryMapTypes]]]]
+    ]:
         """Get a dict representation of this case study."""
-        return dict(
-            project_name=self.project_name,
-            version=self.version,
-            stages=[stage.get_dict() for stage in self.stages]
-        )
+        return {
+            "project_name": self.project_name,
+            "version": self.version,
+            "stages": [stage.get_dict() for stage in self.stages],
+        }
 
 
 def load_case_study_from_file(file_path: Path) -> CaseStudy:
@@ -524,36 +539,52 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
     version_header.raise_if_version_is_less_than(1)
 
     raw_case_study = next(documents)
-    stages: tp.List[CSStage] = []
+    stages: list[CSStage] = []
     for raw_stage in raw_case_study['stages']:
-        hash_id_tuples: tp.List[CSEntry] = []
+        hash_id_tuples: list[CSEntry] = []
         for raw_hash_id_tuple in raw_stage['revisions']:
-            if 'config_ids' in raw_hash_id_tuple:
-                config_ids = [int(x) for x in raw_hash_id_tuple['config_ids']]
+            if raw_config_ids := raw_hash_id_tuple.get('config_ids', None):
+                if raw_config_ids == "all":
+                    config_ids = load_configuration_map_from_case_study_file(
+                        file_path
+                    ).ids()
+                else:
+                    config_ids = []
+                    for x in raw_hash_id_tuple['config_ids']:
+                        if isinstance(x, str):
+                            parts = x.split("..")
+                            begin = int(parts[0])
+                            end = int(parts[1])
+                            config_ids.extend(range(begin, end + 1))
+                        else:
+                            config_ids.append(int(x))
             else:
                 config_ids = []
 
             hash_id_tuples.append(
                 CSEntry(
                     FullCommitHash(raw_hash_id_tuple['commit_hash']),
-                    raw_hash_id_tuple['commit_id'], config_ids
+                    raw_hash_id_tuple['commit_id'],
+                    config_ids,
                 )
             )
 
         sampling_method_name = raw_stage.get('sampling_method') or None
 
         if sampling_method_name:
-            sampling_method: tp.Optional[SamplingMethod] = SamplingMethodBase[
-                SamplingMethod].get_sampling_method_type(sampling_method_name)()
+            sampling_method: SamplingMethod | None = SamplingMethodBase[
+                SamplingMethod
+            ].get_sampling_method_type(sampling_method_name)()
         else:
             sampling_method = None
 
         release_type = raw_stage.get('release_type') or None
         stages.append(
             CSStage(
-                raw_stage.get('name') or None, sampling_method,
+                raw_stage.get('name') or None,
+                sampling_method,
                 ReleaseType[release_type] if release_type is not None else None,
-                hash_id_tuples
+                hash_id_tuples,
             )
         )
 
@@ -563,7 +594,7 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
 
 
 def load_configuration_map_from_case_study_file(
-    file_path: Path, concrete_config_type: tp.Type[Configuration]
+    file_path: Path, concrete_config_type: type[Configuration] | None = None
 ) -> ConfigurationMap:
     """
     Load a configuration map from a case-study file.
@@ -584,8 +615,12 @@ def load_configuration_map_from_case_study_file(
     try:
         while True:
             document = next(documents)
+            raw_config_type = document.get("config_type", None)
 
-            if document["config_type"] == concrete_config_type.__name__:
+            if raw_config_type is not None and (
+                concrete_config_type is None
+                or raw_config_type == concrete_config_type.__name__
+            ):
                 break
 
         return create_configuration_map_from_yaml_doc(
@@ -615,5 +650,5 @@ def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
     """Store case study to file."""
     store_as_yaml(
         file_path,
-        [VersionHeader.from_version_number('CaseStudy', 1), case_study]
+        [VersionHeader.from_version_number('CaseStudy', 1), case_study],
     )
