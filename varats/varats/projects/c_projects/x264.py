@@ -1,4 +1,5 @@
 """Project file for x264."""
+
 import typing
 
 import benchbuild as bb
@@ -10,9 +11,10 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import ImageBase, get_base_image
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import RSBinary, ConfigParams, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
+from varats.project.sources import FeatureSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
@@ -53,6 +55,7 @@ class X264(VProject):
                 shallow=False,
             )
         ),
+        FeatureSource(),
         PatchVariationSource(),
         HTTP(
             local="aspen-1080p.y4m",
@@ -67,7 +70,7 @@ class X264(VProject):
             },
         ),
         HTTP(
-            local="nocturne_1080p.y4m",
+            local="nocturne-1080p.y4m",
             remote={
                 "1.0": "https://storage.googleapis.com/downloads.webmproject.org/"
                 "AV2Sequences/420_8bit_1080p/"
@@ -82,6 +85,7 @@ class X264(VProject):
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("x264") / RSBinary("x264"),
+                ConfigParams(),
                 "aspen-1080p.y4m",
                 "-o",
                 "/dev/null",
@@ -89,6 +93,7 @@ class X264(VProject):
             ),
             VCommand(
                 SourceRoot("x264") / RSBinary("x264"),
+                ConfigParams(),
                 "nocturne-1080p.y4m",
                 "-o",
                 "/dev/null",
@@ -98,6 +103,7 @@ class X264(VProject):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("x264") / RSBinary("x264"),
+                ConfigParams(),
                 "old-town-2160p.y4m",
                 "-o",
                 "/dev/null",

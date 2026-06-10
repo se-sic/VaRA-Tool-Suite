@@ -478,16 +478,24 @@ _PROJECT_WORKLOADS = {
         "poisson-non-separated",
     ],
     # FD
-    "FastDownward": ["elevators-opt08-p06",
-                     "data-network-opt18-p17",
-                     "childsnack-opt14-p01-py"],
+    "FastDownward": [
+        "elevators-opt08-p06-py",
+        "data-network-opt18-p17-py",
+        "airport-p20-py",
+        #"childsnack-opt14-p01-py",
+    ],
     # Video Encoding
     "libvpx": ["aspen-1080p", "old-town-2160p", "nocturne-1080p"],
     "x264": ["aspen-1080p", "old-town-2160p", "nocturne-1080p"],
     # ZMQ
     "libzmq": ["bench-inproc-lat", "bench-inproc-thr", "bench-radix-tree"],
     # Compression
-    "brotli": ["geo-maps-countries-land-250m", "silesia", "lukas_2d_16_dicom", "enwik8"],
+    "brotli": [
+        "geo-maps-countries-land-250m",
+        "silesia",
+        "lukas_2d_16_dicom",
+        "enwik8",
+    ],
     "xz": ["countries-land-250m", "silesia", "lukas_2d_16_dicom", "enwik8"],
     "7zip": ["countries-250m-geo", "silesia", "lukas_2d_16_dicom", "enwik8"],
     "bzip2": ["med-geo-compress", "silesia", "lukas_2d_16_dicom", "enwik8"],

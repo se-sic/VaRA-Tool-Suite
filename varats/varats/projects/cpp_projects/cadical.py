@@ -3,20 +3,20 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.command import WorkloadSet, SourceRoot
+from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPUntar
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import WorkloadCategory, RSBinary
+from varats.containers.containers import ImageBase, get_base_image
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
+    BinaryType,
     RevisionBinaryMap,
     get_local_project_repo,
-    BinaryType,
 )
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
@@ -39,26 +39,24 @@ class Cadical(VProject):
             local="cadical",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
+            shallow=False,
         ),
         PatchVariationSource(),
         HTTPUntar(
             local="traffic_kkb_unknown.cnf",
             remote={
-                "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
-            }
+                "1.0": "https://github.com/se-sic/picoSAT-mirror/releases/"
+                "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
+            },
         ),
         HTTPUntar(
             local="childsnack_p11.cnf",
             remote={
-                "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/"
-                    "UNSAT_H_instances_childsnack_p11.hddl_1.cnf.tar.gz"
-            }
-        )
+                "1.0": "https://github.com/se-sic/picoSAT-mirror/releases/"
+                "download/picoSAT-965/"
+                "UNSAT_H_instances_childsnack_p11.hddl_1.cnf.tar.gz"
+            },
+        ),
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
@@ -75,13 +73,13 @@ class Cadical(VProject):
             VCommand(
                 SourceRoot("cadical") / RSBinary("cadical"),
                 "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf",
-                label="traffic-kkb-unknown"
+                label="traffic-kkb-unknown",
             ),
             VCommand(
                 SourceRoot("cadical") / RSBinary("cadical"),
                 "childsnack_p11.cnf/UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
-                label="childsnack-p11"
-            )
+                label="childsnack-p11",
+            ),
         ]
     }
 
@@ -90,14 +88,12 @@ class Cadical(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List['ProjectBinaryWrapper']:
+        revision: ShortCommitHash,
+    ) -> list['ProjectBinaryWrapper']:
         binary_map = RevisionBinaryMap(get_local_project_repo(Cadical.NAME))
 
         binary_map.specify_binary(
-            "build/cadical",
-            BinaryType.EXECUTABLE,
-            valid_exit_codes=[0, 10, 20]
+            "build/cadical", BinaryType.EXECUTABLE, valid_exit_codes=[0, 10, 20]
         )
 
         return binary_map[revision]
@@ -110,8 +106,10 @@ class Cadical(VProject):
 
         make = local["make"]
 
-        with local.cwd(src_dir
-                      ), local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
+        with (
+            local.cwd(src_dir),
+            local.env(CC=str(c_compiler), CXX=str(cxx_compiler)),
+        ):
             configure = local["./configure"]
             bb.watch(configure)()
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
@@ -148,10 +146,10 @@ class Cadical(VProject):
 
     def run_testsuite(
         self,
-        test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        test_report_path: Path | None = None,
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+    ) -> dict[str, TestResult] | None:
         """
         Run the test suite for this project.
 
@@ -169,7 +167,7 @@ class Cadical(VProject):
             "usage": self._run_usage_tests,
             "cnf": self._run_cnf_tests,
             "traces": self._run_traces_tests,
-            "mbt": self._run_mbt_tests
+            "mbt": self._run_mbt_tests,
         }
 
         if not tests_to_run:
@@ -188,10 +186,11 @@ class Cadical(VProject):
         return test_results
 
     def _run_suite(
-        self, suite_name: str, extract_name: tp.Callable[[str],
-                                                         tp.Optional[str]],
-        extract_result: tp.Callable[[str], tp.Optional[TestResult]]
-    ) -> tp.Dict[str, TestResult]:
+        self,
+        suite_name: str,
+        extract_name: tp.Callable[[str], str | None],
+        extract_result: tp.Callable[[str], TestResult | None],
+    ) -> dict[str, TestResult]:
         test_results = {}
 
         test_dir = Path(self.source_of_primary) / "test"
@@ -231,83 +230,79 @@ class Cadical(VProject):
 
         return test_results
 
-    def _run_api_tests(self) -> tp.Dict[str, TestResult]:
+    def _run_api_tests(self) -> dict[str, TestResult]:
 
-        def extract_name(line: str) -> tp.Optional[str]:
+        def extract_name(line: str) -> str | None:
             if "running API test" in line:
                 return line.split("'")[1]
             return None
 
-        def extract_result(line: str) -> tp.Optional[TestResult]:
+        def extract_result(line: str) -> TestResult | None:
             if line.startswith("# 0 ... "):
                 if "ok" in line:
                     return TestResult.PASSED
-                elif "failed" in line:
+                if "failed" in line:
                     return TestResult.FAILED
-                else:
-                    return TestResult.UNKNOWN
+                return TestResult.UNKNOWN
             return None
 
         return self._run_suite("api", extract_name, extract_result)
 
-    def _run_usage_tests(self) -> tp.Dict[str, TestResult]:
+    def _run_usage_tests(self) -> dict[str, TestResult]:
 
-        def extract_name(line: str) -> tp.Optional[str]:
+        def extract_name(line: str) -> str | None:
             if "running usage test" in line:
                 return line.split("'")[1]
             return None
 
-        def extract_result(line: str) -> tp.Optional[TestResult]:
+        def extract_result(line: str) -> TestResult | None:
             if "expected exit code" in line:
                 if "ok" in line:
                     return TestResult.PASSED
-                elif "FAILED" in line:
+                if "FAILED" in line:
                     return TestResult.FAILED
-                else:
-                    return TestResult.UNKNOWN
+                return TestResult.UNKNOWN
             return None
 
         return self._run_suite("usage", extract_name, extract_result)
 
-    def _run_cnf_tests(self) -> tp.Dict[str, TestResult]:
+    def _run_cnf_tests(self) -> dict[str, TestResult]:
 
-        def extract_name(line: str) -> tp.Optional[str]:
+        def extract_name(line: str) -> str | None:
             if "running CNF test" in line:
                 return line.split("'")[1]
             return None
 
-        def extract_result(line: str) -> tp.Optional[TestResult]:
+        def extract_result(line: str) -> TestResult | None:
             if line.startswith("#"):
                 if "ok" in line:
                     return TestResult.PASSED
-                elif "FAILED" in line:
+                if "FAILED" in line:
                     return TestResult.FAILED
-                else:
-                    return TestResult.UNKNOWN
+                return TestResult.UNKNOWN
             return None
 
         return self._run_suite("cnf", extract_name, extract_result)
 
-    def _run_traces_tests(self) -> tp.Dict[str, TestResult]:
+    def _run_traces_tests(self) -> dict[str, TestResult]:
 
-        def extract_name(line: str) -> tp.Optional[str]:
+        def extract_name(line: str) -> str | None:
             if "trace/run.sh" in line and "'" in line:
                 return line.split("'")[1]
             return None
 
-        def extract_result(line: str) -> tp.Optional[TestResult]:
+        def extract_result(line: str) -> TestResult | None:
             if line.startswith("# ... "):
                 if "ok" in line:
                     return TestResult.PASSED
-                elif "failed" in line:
+                if "failed" in line:
                     return TestResult.FAILED
-                else:
-                    return TestResult.UNKNOWN
+                return TestResult.UNKNOWN
             return None
 
         return self._run_suite("trace", extract_name, extract_result)
 
-    def _run_mbt_tests(self) -> tp.Dict[str, TestResult]:
+    def _run_mbt_tests(self) -> dict[str, TestResult]:
         test_dir = Path(self.source_of_primary) / "test"
 
         with local.cwd(test_dir):
@@ -336,5 +331,4 @@ class Cadical(VProject):
         Returns:
              A list of tests available for this project.
         """
-
         return list(self.run_testsuite().keys())

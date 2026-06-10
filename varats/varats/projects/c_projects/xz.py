@@ -1,7 +1,8 @@
 """Project file for xz."""
+
 import typing as tp
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
@@ -9,24 +10,30 @@ from benchbuild.source import HTTPMultiple
 from benchbuild.source.http import HTTPUnzip
 from benchbuild.utils.cmd import autoreconf, make, ninja
 from benchbuild.utils.revision_ranges import (
-    block_revisions,
     GoodBadSubgraph,
     RevisionRange,
+    block_revisions,
 )
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import RSBinary, WorkloadCategory, ConfigParams, SILESIA_FILES, LUKAS_DICOM_FILES
+from varats.containers.containers import ImageBase, get_base_image
+from varats.experiment.workload_util import (
+    LUKAS_DICOM_FILES,
+    SILESIA_FILES,
+    ConfigParams,
+    RSBinary,
+    WorkloadCategory,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    ProjectBinaryWrapper,
-    get_local_project_repo,
     BinaryType,
-    verify_binaries,
+    ProjectBinaryWrapper,
     RevisionBinaryMap,
+    get_local_project_repo,
+    verify_binaries,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
@@ -34,9 +41,9 @@ from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
+    TestResult,
     ctest_get_test_names,
     ctest_run_testsuite,
-    TestResult,
 )
 
 
@@ -48,26 +55,32 @@ class Xz(VProject):
     DOMAIN = ProjectDomains.COMPRESSION
 
     SOURCE: tp.ClassVar = [
-        block_revisions([
-            GoodBadSubgraph(["cf49f42a6bd40143f54a6b10d6e605599e958c0b"],
-                            ["4c7ad179c78f97f68ad548cb40a9dfa6871655ae"],
-                            "missing file api/lzma/easy.h"),
-            GoodBadSubgraph(["335fe260a81f61ec99ff5940df733b4c50aedb7c"],
-                            ["24e0406c0fb7494d2037dec033686faf1bf67068"],
-                            "use of undeclared LZMA_THREADS_MAX"),
-            RevisionRange(
-                "5d018dc03549c1ee4958364712fb0c94e1bf2741",
-                "c324325f9f13cdeb92153c5d00962341ba070ca2",
-                "Initial git import without xz"
-            )
-        ])(
+        block_revisions(
+            [
+                GoodBadSubgraph(
+                    ["cf49f42a6bd40143f54a6b10d6e605599e958c0b"],
+                    ["4c7ad179c78f97f68ad548cb40a9dfa6871655ae"],
+                    "missing file api/lzma/easy.h",
+                ),
+                GoodBadSubgraph(
+                    ["335fe260a81f61ec99ff5940df733b4c50aedb7c"],
+                    ["24e0406c0fb7494d2037dec033686faf1bf67068"],
+                    "use of undeclared LZMA_THREADS_MAX",
+                ),
+                RevisionRange(
+                    "5d018dc03549c1ee4958364712fb0c94e1bf2741",
+                    "c324325f9f13cdeb92153c5d00962341ba070ca2",
+                    "Initial git import without xz",
+                ),
+            ]
+        )(
             PaperConfigSpecificGit(
                 project_name='xz',
                 remote="https://github.com/tukaani-project/xz",
                 local="xz",
                 refspec="origin/HEAD",
                 limit=None,
-                shallow=False
+                shallow=False,
             )
         ),
         FeatureSource(),
@@ -75,20 +88,18 @@ class Xz(VProject):
         HTTPMultiple(
             local="geo-maps",
             remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0"
+                "1.0": "https://github.com/simonepri/geo-maps/releases/"
+                "download/v0.6.0"
             },
             files=[
-                "countries-land-1km.geo.json", "countries-land-250m.geo.json",
-                "countries-land-10m.geo.json"
-            ]
+                "countries-land-1km.geo.json",
+                "countries-land-250m.geo.json",
+                "countries-land-10m.geo.json",
+            ],
         ),
         HTTPUnzip(
             local="silesia.zip",
-            remote={
-                "1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"
-            },
+            remote={"1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"},
         ),
         HTTPUnzip(
             local="lukas_2d_16_dicom.zip",
@@ -98,15 +109,20 @@ class Xz(VProject):
         ),
         HTTPUnzip(
             local="enwik8.zip",
-            remote={
-                "1.0": "https://mattmahoney.net/dc/enwik8.zip"
-            },
+            remote={"1.0": "https://mattmahoney.net/dc/enwik8.zip"},
         ),
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'autopoint', 'automake',
-        'autotools-dev', 'libtool', 'pkg-config'
+        'apt',
+        'install',
+        '-y',
+        'autoconf',
+        'autopoint',
+        'automake',
+        'autotools-dev',
+        'libtool',
+        'pkg-config',
     )
 
     WORKLOADS: tp.ClassVar = {
@@ -117,7 +133,7 @@ class Xz(VProject):
                 "-k",
                 "geo-maps/countries-land-1km.geo.json",
                 label="countries-land-1km",
-                creates=["geo-maps/countries-land-1km.geo.json.xz"]
+                creates=["geo-maps/countries-land-1km.geo.json.xz"],
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
@@ -148,7 +164,10 @@ class Xz(VProject):
                 "-f",
                 "-k",
                 ConfigParams(),
-                *[f"lukas_2d_16_dicom.zip/lukas_2d_16_{file}" for file in LUKAS_DICOM_FILES],
+                *[
+                    f"lukas_2d_16_dicom.zip/lukas_2d_16_{file}"
+                    for file in LUKAS_DICOM_FILES
+                ],
                 label="lukas-2d-16-dicom",
             ),
             VCommand(
@@ -158,7 +177,7 @@ class Xz(VProject):
                 ConfigParams(),
                 "enwik8.zip/enwik8",
                 label="enwik8",
-            )
+            ),
         ],
         WorkloadSet(WorkloadCategory.LARGE): [
             VCommand(
@@ -181,32 +200,34 @@ class Xz(VProject):
         super().__init__(revision)
         xz_repo = get_local_project_repo(self.NAME)
         self._CMAKE_VERSIONS = get_all_revisions_between(
-            xz_repo, "8d26b72915e0d373f898b55935505857c30dbdb3", "HEAD",
-            ShortCommitHash
+            xz_repo,
+            "8d26b72915e0d373f898b55935505857c30dbdb3",
+            "HEAD",
+            ShortCommitHash,
         )
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List[ProjectBinaryWrapper]:
+        revision: ShortCommitHash,
+    ) -> list[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_repo(Xz.NAME))
 
         binary_map.specify_binary(
             'src/xz/xz',
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("5d018dc035", "3f86532407")
+            only_valid_in=RevisionRange("5d018dc035", "3f86532407"),
         )
 
         binary_map.specify_binary(
             'src/xz/.libs/xz',
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("880c330938", "32412bd2a4")
+            only_valid_in=RevisionRange("880c330938", "32412bd2a4"),
         )
 
         binary_map.specify_binary(
             'build/xz',
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("8d26b72915", "HEAD")
+            only_valid_in=RevisionRange("8d26b72915", "HEAD"),
         )
 
         return binary_map[revision]
@@ -224,8 +245,10 @@ class Xz(VProject):
         # commit f9907503f882a745dce9d84c2968f6c175ba966a
         # (fda4724 is its parent)
         revisions_wo_dynamic_linking = get_all_revisions_between(
-            xz_repo, "5d018dc03549c1ee4958364712fb0c94e1bf2741",
-            "fda4724d8114fccfa31c1839c15479f350c2fb4c", ShortCommitHash
+            xz_repo,
+            "5d018dc03549c1ee4958364712fb0c94e1bf2741",
+            "fda4724d8114fccfa31c1839c15479f350c2fb4c",
+            ShortCommitHash,
         )
 
         self.cflags += ["-fPIC"]
@@ -270,7 +293,7 @@ class Xz(VProject):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
-    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
+    def get_cve_product_info(cls) -> list[tuple[str, str]]:
         return [("tukaani", "xz")]
 
     # TestSuite protocol
@@ -288,10 +311,9 @@ class Xz(VProject):
 
         build_dir = xz_version_source / "build"
         build_dir.mkdir(parents=True, exist_ok=True)
-        with local.cwd(build_dir):
-            with local.env(CC=str(clang)):
-                cmake = local["cmake"]
-                cmake("..", "-G", "Ninja")
+        with local.cwd(build_dir), local.env(CC=str(clang)):
+            cmake = local["cmake"]
+            cmake("..", "-G", "Ninja")
 
     def build_tests(self) -> None:
         build_dir = local.path(self.source_of_primary) / "build"
@@ -302,17 +324,17 @@ class Xz(VProject):
 
     def run_testsuite(
         self,
-        test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        test_report_path: Path | None = None,
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+    ) -> dict[str, TestResult] | None:
         build_dir = local.path(self.source_of_primary) / "build"
 
         return ctest_run_testsuite(
             Path(build_dir),
             test_report_path=test_report_path,
             tests_to_run=tests_to_run,
-            tests_to_exclude=tests_to_exclude
+            tests_to_exclude=tests_to_exclude,
         )
 
     def get_test_names(self) -> Iterable[str]:

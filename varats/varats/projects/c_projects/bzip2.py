@@ -1,4 +1,5 @@
 """Project file for xz."""
+
 import typing as tp
 from enum import Enum
 from pathlib import Path
@@ -9,39 +10,41 @@ from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
 from benchbuild.source.http import HTTPUnzip
 from benchbuild.utils.cmd import cmake, make, mkdir
-from benchbuild.utils.revision_ranges import RevisionRange, GoodBadSubgraph
+from benchbuild.utils.revision_ranges import GoodBadSubgraph, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import ImageBase, get_base_image
 from varats.experiment.workload_util import (
+    LUKAS_DICOM_FILES,
+    SILESIA_FILES,
+    ConfigParams,
     RSBinary,
     WorkloadCategory,
-    ConfigParams, SILESIA_FILES, LUKAS_DICOM_FILES,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    ProjectBinaryWrapper,
-    get_local_project_repo,
     BinaryType,
-    verify_binaries,
+    ProjectBinaryWrapper,
     RevisionBinaryMap,
+    get_local_project_repo,
+    verify_binaries,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
+    RepositoryHandle,
     ShortCommitHash,
     typed_revision_range,
-    RepositoryHandle,
 )
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     TestResult,
-    ctest_run_testsuite,
     ctest_get_test_names,
+    ctest_run_testsuite,
 )
 
 
@@ -59,40 +62,37 @@ class Bzip2(VProject):
             local="bzip2",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
+            shallow=False,
         ),
         FeatureSource(),
         PatchVariationSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0"
+                "1.0": "https://github.com/simonepri/geo-maps/releases/"
+                "download/v0.6.0"
             },
             files=[
-                "countries-land-1m.geo.json", "countries-land-10m.geo.json",
-                "countries-land-100m.geo.json"
-            ]
+                "countries-land-1m.geo.json",
+                "countries-land-10m.geo.json",
+                "countries-land-100m.geo.json",
+            ],
         ),
         HTTPMultiple(
             local="geo-maps-compr",
             remote={
-                "1.0":
-                    "https://github.com/se-sic/compression-data/"
-                    "raw/master/bzip2/geo-maps/"
+                "1.0": "https://github.com/se-sic/compression-data/"
+                "raw/master/bzip2/geo-maps/"
             },
             files=[
                 "countries-land-100m.geo.json.bz2",
                 "countries-land-10m.geo.json.bz2",
-                "countries-land-1m.geo.json.bz2"
-            ]
+                "countries-land-1m.geo.json.bz2",
+            ],
         ),
         HTTPUnzip(
             local="silesia.zip",
-            remote={
-                "1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"
-            },
+            remote={"1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"},
         ),
         HTTPUnzip(
             local="lukas_2d_16_dicom.zip",
@@ -102,29 +102,32 @@ class Bzip2(VProject):
         ),
         HTTPUnzip(
             local="enwik8.zip",
-            remote={
-                "1.0": "https://mattmahoney.net/dc/enwik8.zip"
-            },
+            remote={"1.0": "https://mattmahoney.net/dc/enwik8.zip"},
         ),
     ]
-    _AUTOTOOLS_VERSIONS = GoodBadSubgraph([
-        "8cfd87aed5ba8843af50569fb440489b1ca74259"
-    ], ["e264a7f7c44fae62f5be9840946f6bc0e8cd6512"],
-                                          "Uses autotools instead of cmake")
-    _MAKE_VERSIONS = GoodBadSubgraph([
-        "33d134030248633ffa7d60c0a35a783c46da034b"
-    ], ["8cfd87aed5ba8843af50569fb440489b1ca74259"], "Uses a basic Makefile")
+    _AUTOTOOLS_VERSIONS = GoodBadSubgraph(
+        ["8cfd87aed5ba8843af50569fb440489b1ca74259"],
+        ["e264a7f7c44fae62f5be9840946f6bc0e8cd6512"],
+        "Uses autotools instead of cmake",
+    )
+    _MAKE_VERSIONS = GoodBadSubgraph(
+        ["33d134030248633ffa7d60c0a35a783c46da034b"],
+        ["8cfd87aed5ba8843af50569fb440489b1ca74259"],
+        "Uses a basic Makefile",
+    )
 
     CONTAINER: tp.ClassVar = [
         (
-            RevisionRange("ad723d6558718e9bbaca930e7e715c9ee754e90e",
-                          "HEAD"), get_base_image(ImageBase.DEBIAN_10)
+            RevisionRange("ad723d6558718e9bbaca930e7e715c9ee754e90e", "HEAD"),
+            get_base_image(ImageBase.DEBIAN_10),
         ),
         (
             _AUTOTOOLS_VERSIONS,
-            get_base_image(ImageBase.DEBIAN_10
-                          ).run('apt', 'install', '-y', 'autoconf', 'automake')
-        ), (_MAKE_VERSIONS, get_base_image(ImageBase.DEBIAN_10))
+            get_base_image(ImageBase.DEBIAN_10).run(
+                'apt', 'install', '-y', 'autoconf', 'automake'
+            ),
+        ),
+        (_MAKE_VERSIONS, get_base_image(ImageBase.DEBIAN_10)),
     ]
 
     class Bzip2BuildMethod(Enum):
@@ -138,6 +141,7 @@ class Bzip2(VProject):
                 SourceRoot("bzip2") / RSBinary("bzip2"),
                 ConfigParams(),
                 "--keep",
+                "--force",
                 # bzip2 compresses very fast even on the best setting, so we
                 # need the three input files to get approximately 30 seconds
                 # total execution time
@@ -148,9 +152,9 @@ class Bzip2(VProject):
                 creates=[
                     "geo-maps/countries-land-1m.geo.json.bz2",
                     "geo-maps/countries-land-10m.geo.json.bz2",
-                    "geo-maps/countries-land-100m.geo.json.bz2"
+                    "geo-maps/countries-land-100m.geo.json.bz2",
                 ],
-                requires_all_args={"--compress"}
+                requires_all_args={"--compress"},
             ),
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
@@ -166,41 +170,47 @@ class Bzip2(VProject):
                 creates=[
                     "geo-maps-compr/countries-land-1m.geo.json",
                     "geo-maps-compr/countries-land-10m.geo.json",
-                    "geo-maps-compr/countries-land-100m.geo.json"
+                    "geo-maps-compr/countries-land-100m.geo.json",
                 ],
-                requires_all_args={"--decompress"}
+                requires_all_args={"--decompress"},
             ),
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
                 ConfigParams(),
                 "--keep",
+                "--force",
                 *[f"silesia.zip/{file}" for file in SILESIA_FILES],
                 label="silesia",
-                requires_all_args={"--compress"}
+                requires_all_args={"--compress"},
             ),
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
                 ConfigParams(),
                 "--keep",
-                *[f"lukas_2d_16_dicom.zip/lukas_2d_16_{file}" for file in LUKAS_DICOM_FILES],
+                "--force",
+                *[
+                    f"lukas_2d_16_dicom.zip/lukas_2d_16_{file}"
+                    for file in LUKAS_DICOM_FILES
+                ],
                 label="lukas-2d-16-dicom",
-                requires_all_args={"--compress"}
+                requires_all_args={"--compress"},
             ),
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
                 ConfigParams(),
                 "--keep",
+                "--force",
                 "enwik8.zip/enwik8",
                 label="enwik8",
-                requires_all_args={"--compress"}
-            )
+                requires_all_args={"--compress"},
+            ),
         ],
     }
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List[ProjectBinaryWrapper]:
+        revision: ShortCommitHash,
+    ) -> list[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_repo(Bzip2.NAME))
 
         binary_map.specify_binary(
@@ -208,22 +218,22 @@ class Bzip2(VProject):
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "e264a7f7c44fae62f5be9840946f6bc0e8cd6512", "HEAD"
-            )
+            ),
         )
         binary_map.specify_binary(
             'bzip2',
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "33d134030248633ffa7d60c0a35a783c46da034b",
-                "e264a7f7c44fae62f5be9840946f6bc0e8cd6512"
-            )
+                "e264a7f7c44fae62f5be9840946f6bc0e8cd6512",
+            ),
         )
         return binary_map[revision]
 
     def run_tests(self) -> None:
         pass
 
-    def __getbuilddir(self) -> tp.Tuple[Path, Bzip2BuildMethod]:
+    def __getbuilddir(self) -> tuple[Path, Bzip2BuildMethod]:
         """Get the build directory and build method."""
         bzip2_source = local.path(self.source_of_primary)
         bzip2_repo = RepositoryHandle(bzip2_source)
@@ -320,10 +330,10 @@ class Bzip2(VProject):
 
     def run_testsuite(
         self,
-        test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        test_report_path: Path | None = None,
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+    ) -> dict[str, TestResult] | None:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"
         return ctest_run_testsuite(

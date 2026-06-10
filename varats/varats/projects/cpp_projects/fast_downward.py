@@ -404,17 +404,16 @@ class FastDownward(VProject, ReleaseProviderHook):
                 label="airport-p20-py",
             ),
         ],
-        WorkloadSet(WorkloadCategory.LARGE):
-            [
-                VCommand(
-                    SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
-                    "planning-benchmarks/childsnack-opt14-strips-domain.pddl",
-                    "planning-benchmarks/childsnack-opt14-strips-child-snack_pfile01.pddl",
-                    "--search",
-                    _FDConfigParams(),
-                    label="childsnack-opt14-p01-py",
-                ),
-            ],
+        WorkloadSet(WorkloadCategory.LARGE): [
+            VCommand(
+                SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
+                "planning-benchmarks/childsnack-opt14-strips-domain.pddl",
+                "planning-benchmarks/childsnack-opt14-strips-child-snack_pfile01.pddl",
+                "--search",
+                _FDConfigParams(),
+                label="childsnack-opt14-p01-py",
+            ),
+        ],
     }
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(

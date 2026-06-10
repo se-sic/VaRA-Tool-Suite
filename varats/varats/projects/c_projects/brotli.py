@@ -1,4 +1,5 @@
 """Project file for brotli."""
+
 import typing as tp
 from enum import Enum
 from pathlib import Path
@@ -54,24 +55,26 @@ class Brotli(VProject):
     DOMAIN = ProjectDomains.COMPRESSION
 
     SOURCE: tp.ClassVar = [
-        block_revisions([
-            RevisionRange(
-                '8f30907d0f2ef354c2b31bdee340c2b11dda0fb0',
-                'e1739826c04a9944672b99b98249dda021bdeb36',
-                'Encoder and Decoder don\'t have a shared Makefile'
-            ),
-            SingleRevision(
-                "378485b097fd7b80a5e404a3cb912f7b18f78cdb",
-                "Missing required build files"
-            )
-        ])(
+        block_revisions(
+            [
+                RevisionRange(
+                    '8f30907d0f2ef354c2b31bdee340c2b11dda0fb0',
+                    'e1739826c04a9944672b99b98249dda021bdeb36',
+                    'Encoder and Decoder don\'t have a shared Makefile',
+                ),
+                SingleRevision(
+                    "378485b097fd7b80a5e404a3cb912f7b18f78cdb",
+                    "Missing required build files",
+                ),
+            ]
+        )(
             PaperConfigSpecificGit(
                 project_name="brotli",
                 remote="https://github.com/google/brotli.git",
                 local="brotli_git",
                 refspec="origin/HEAD",
                 limit=None,
-                shallow=False
+                shallow=False,
             )
         ),
         FeatureSource(),
@@ -79,22 +82,23 @@ class Brotli(VProject):
         HTTPMultiple(
             local="geo-maps",
             remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0"
+                "1.0": "https://github.com/simonepri/geo-maps/releases/"
+                "download/v0.6.0"
             },
             files=[
-                "countries-land-10km.geo.json", "countries-land-2km5.geo.json",
-                "countries-land-1km.geo.json", "countries-land-500m.geo.json",
-                "countries-land-250m.geo.json", "countries-land-100m.geo.json",
-                "countries-land-10m.geo.json", "countries-land-1m.geo.json"
-            ]
+                "countries-land-10km.geo.json",
+                "countries-land-2km5.geo.json",
+                "countries-land-1km.geo.json",
+                "countries-land-500m.geo.json",
+                "countries-land-250m.geo.json",
+                "countries-land-100m.geo.json",
+                "countries-land-10m.geo.json",
+                "countries-land-1m.geo.json",
+            ],
         ),
         HTTPUnzip(
             local="silesia.zip",
-            remote={
-                "1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"
-            },
+            remote={"1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"},
         ),
         HTTPUnzip(
             local="lukas_2d_16_dicom.zip",
@@ -104,9 +108,7 @@ class Brotli(VProject):
         ),
         HTTPUnzip(
             local="enwik8.zip",
-            remote={
-                "1.0": "https://mattmahoney.net/dc/enwik8.zip"
-            },
+            remote={"1.0": "https://mattmahoney.net/dc/enwik8.zip"},
         ),
     ]
 
@@ -117,14 +119,14 @@ class Brotli(VProject):
                 "-fkn",
                 ConfigParams(),
                 "geo-maps/countries-land-10km.geo.json",
-                label="geo-maps-countries-land-10km"
+                label="geo-maps-countries-land-10km",
             ),
             VCommand(
                 SourceRoot("brotli_git") / RSBinary("brotli"),
                 "-fkn",
                 ConfigParams(),
                 "geo-maps/countries-land-2km5.geo.json",
-                label="geo-maps-countries-land-2km5"
+                label="geo-maps-countries-land-2km5",
             ),
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
@@ -133,43 +135,46 @@ class Brotli(VProject):
                 "-fkn",
                 ConfigParams(),
                 "geo-maps/countries-land-1km.geo.json",
-                label="geo-maps-countries-land-1km"
+                label="geo-maps-countries-land-1km",
             ),
             VCommand(
                 SourceRoot("brotli_git") / RSBinary("brotli"),
                 "-fkn",
                 ConfigParams(),
                 "geo-maps/countries-land-500m.geo.json",
-                label="geo-maps-countries-land-500m"
+                label="geo-maps-countries-land-500m",
             ),
             VCommand(
                 SourceRoot("brotli_git") / RSBinary("brotli"),
                 "-fkn",
                 ConfigParams(),
                 "geo-maps/countries-land-250m.geo.json",
-                label="geo-maps-countries-land-250m"
+                label="geo-maps-countries-land-250m",
             ),
             VCommand(
                 SourceRoot("brotli_git") / RSBinary("brotli"),
                 "-fkn",
                 ConfigParams(),
                 *[f"silesia.zip/{f}" for f in SILESIA_FILES],
-                label="silesia"
+                label="silesia",
             ),
             VCommand(
                 SourceRoot("brotli_git") / RSBinary("brotli"),
                 "-fkn",
                 ConfigParams(),
-                *[f"lukas_2d_16_dicom.zip/lukas_2d_16_{f}" for f in LUKAS_DICOM_FILES],
-                label="lukas-2d-16-dicom"
+                *[
+                    f"lukas_2d_16_dicom.zip/lukas_2d_16_{f}"
+                    for f in LUKAS_DICOM_FILES
+                ],
+                label="lukas-2d-16-dicom",
             ),
             VCommand(
                 SourceRoot("brotli_git") / RSBinary("brotli"),
                 "-fkn",
                 ConfigParams(),
                 "enwik8.zip/enwik8",
-                label="enwik8"
-            )
+                label="enwik8",
+            ),
         ],
         WorkloadSet(WorkloadCategory.LARGE): [
             VCommand(
@@ -177,23 +182,23 @@ class Brotli(VProject):
                 "-fkn",
                 ConfigParams(),
                 "geo-maps/countries-land-100m.geo.json",
-                label="geo-maps-countries-land-100m"
+                label="geo-maps-countries-land-100m",
             ),
             VCommand(
                 SourceRoot("brotli_git") / RSBinary("brotli"),
                 "-fkn",
                 ConfigParams(),
                 "geo-maps/countries-land-10m.geo.json",
-                label="geo-maps-countries-land-10m"
+                label="geo-maps-countries-land-10m",
             ),
             VCommand(
                 SourceRoot("brotli_git") / RSBinary("brotli"),
                 "-fkn",
                 ConfigParams(),
                 "geo-maps/countries-land-1m.geo.json",
-                label="geo-maps-countries-land-1m"
-            )
-        ]
+                label="geo-maps-countries-land-1m",
+            ),
+        ],
     }
 
     class BrotliBuildMethod(Enum):
@@ -201,21 +206,26 @@ class Brotli(VProject):
         CONFIGURE = 1
         CMAKE = 2
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10
-                              ).run('apt', 'install', '-y', 'cmake')
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+        'apt', 'install', '-y', 'cmake'
+    )
 
-    def __get_build_dir(self) -> tp.Tuple[Path, BrotliBuildMethod]:
+    def __get_build_dir(self) -> tuple[Path, BrotliBuildMethod]:
         """Get the build directory and the build method."""
         brotli_version_source = local.path(self.source_of_primary)
         brotli_repo = get_local_project_repo(self.NAME)
         brotli_version = ShortCommitHash(self.version_of_primary)
         configure_revisions = get_all_revisions_between(
-            brotli_repo, "f9ab24a7aaee93d5932ba212e5e3d32e4306f748",
-            "5814438791fb2d4394b46e5682a96b68cd092803", ShortCommitHash
+            brotli_repo,
+            "f9ab24a7aaee93d5932ba212e5e3d32e4306f748",
+            "5814438791fb2d4394b46e5682a96b68cd092803",
+            ShortCommitHash,
         )
         simple_make_revisions = get_all_revisions_between(
-            brotli_repo, "e1739826c04a9944672b99b98249dda021bdeb36",
-            "378485b097fd7b80a5e404a3cb912f7b18f78cdb", ShortCommitHash
+            brotli_repo,
+            "e1739826c04a9944672b99b98249dda021bdeb36",
+            "378485b097fd7b80a5e404a3cb912f7b18f78cdb",
+            ShortCommitHash,
         )
         run_dir: Path
         build_method: Brotli.BrotliBuildMethod
@@ -235,8 +245,8 @@ class Brotli(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List[ProjectBinaryWrapper]:
+        revision: ShortCommitHash,
+    ) -> list[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_repo(Brotli.NAME))
 
         binary_map.specify_binary(
@@ -244,31 +254,31 @@ class Brotli(VProject):
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "03739d2b113afe60638069c4e1604dc2ac27380d", "HEAD"
-            )
+            ),
         )
         binary_map.specify_binary(
             "out/bro",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "5814438791fb2d4394b46e5682a96b68cd092803",
-                "03739d2b113afe60638069c4e1604dc2ac27380d"
-            )
+                "03739d2b113afe60638069c4e1604dc2ac27380d",
+            ),
         )
         binary_map.specify_binary(
             "bin/bro",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "f9ab24a7aaee93d5932ba212e5e3d32e4306f748",
-                "5814438791fb2d4394b46e5682a96b68cd092803"
-            )
+                "5814438791fb2d4394b46e5682a96b68cd092803",
+            ),
         )
         binary_map.specify_binary(
             "tools/bro",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "e1739826c04a9944672b99b98249dda021bdeb36",
-                "378485b097fd7b80a5e404a3cb912f7b18f78cdb"
-            )
+                "378485b097fd7b80a5e404a3cb912f7b18f78cdb",
+            ),
         )
         return binary_map[revision]
 
@@ -317,7 +327,6 @@ class Brotli(VProject):
         Note:
             Only supported for revisions using CMake.
         """
-
         build_dir, method = self.__get_build_dir()
         if method != Brotli.BrotliBuildMethod.CMAKE:
             raise NotImplementedError(
@@ -328,10 +337,10 @@ class Brotli(VProject):
 
     def run_testsuite(
         self,
-        test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        test_report_path: Path | None = None,
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+    ) -> dict[str, TestResult] | None:
         """
         Executes the test suite for brotli.
 
@@ -361,14 +370,13 @@ class Brotli(VProject):
 
         build_dir, method = self.__get_build_dir()
 
-        with local.cwd(build_dir):
-            with local.env(CC=str(c_compiler)):
-                if method == Brotli.BrotliBuildMethod.CONFIGURE:
-                    bb.watch(local["./configure"])()
-                if method == Brotli.BrotliBuildMethod.CMAKE:
-                    bb.watch(cmake)("-G", "Unix Makefiles", "..")
+        with local.cwd(build_dir), local.env(CC=str(c_compiler)):
+            if method == Brotli.BrotliBuildMethod.CONFIGURE:
+                bb.watch(local["./configure"])()
+            if method == Brotli.BrotliBuildMethod.CMAKE:
+                bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
-                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
         with local.cwd(brotli_version_source):
             verify_binaries(self)
@@ -381,5 +389,5 @@ class Brotli(VProject):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
-    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
+    def get_cve_product_info(cls) -> list[tuple[str, str]]:
         return [("google", "brotli")]

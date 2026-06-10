@@ -44,7 +44,7 @@ class CryptoMiniSAT(VProject):
             local="cryptominisat",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
+            shallow=False,
         ),
         PatchVariationSource(),
         # The specific combination of branches between cryptominisat, cadical and cadiback
@@ -67,20 +67,18 @@ class CryptoMiniSAT(VProject):
         HTTPUntar(
             local="traffic_kkb_unknown.cnf",
             remote={
-                "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
-            }
+                "1.0": "https://github.com/se-sic/picoSAT-mirror/releases/"
+                "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
+            },
         ),
         HTTPUntar(
             local="childsnack_p11.cnf",
             remote={
-                "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/"
-                    "UNSAT_H_instances_childsnack_p11.hddl_1.cnf.tar.gz"
-            }
-        )
+                "1.0": "https://github.com/se-sic/picoSAT-mirror/releases/"
+                "download/picoSAT-965/"
+                "UNSAT_H_instances_childsnack_p11.hddl_1.cnf.tar.gz"
+            },
+        ),
     ]
 
     WORKLOADS: typing.ClassVar = {
@@ -88,26 +86,53 @@ class CryptoMiniSAT(VProject):
             VCommand(
                 SourceRoot("cryptominisat") / RSBinary("cryptominisat5"),
                 "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf",
-                label="traffic-kkb-unknown"
+                label="traffic-kkb-unknown",
             ),
             VCommand(
                 SourceRoot("cryptominisat") / RSBinary("cryptominisat5"),
                 "childsnack_p11.cnf/childsnack_p11.cnf",
-                label="childsnack-p11"
-            )
+                label="childsnack-p11",
+            ),
         ]
     }
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12).run('apt', 'install', '-y', 'clang-19', 'libclang-19-dev', 'cmake', 'build-essential', 'help2man', 'libgmp-dev')\
-                                                        .run("update-alternatives", "--install", "/usr/bin/clang", "clang", "/usr/bin/clang-19", "100") \
-                                                        .run("update-alternatives", "--install", "/usr/bin/clang++", "clang++", "/usr/bin/clang++-19", "100") \
-                                                        .run("update-alternatives", "--set", "clang", "/usr/bin/clang-19") \
-                                                        .run("update-alternatives", "--set", "clang++", "/usr/bin/clang++-19")
+    CONTAINER = (
+        get_base_image(ImageBase.DEBIAN_12)
+        .run(
+            'apt',
+            'install',
+            '-y',
+            'clang-19',
+            'libclang-19-dev',
+            'cmake',
+            'build-essential',
+            'help2man',
+            'libgmp-dev',
+        )
+        .run(
+            "update-alternatives",
+            "--install",
+            "/usr/bin/clang",
+            "clang",
+            "/usr/bin/clang-19",
+            "100",
+        )
+        .run(
+            "update-alternatives",
+            "--install",
+            "/usr/bin/clang++",
+            "clang++",
+            "/usr/bin/clang++-19",
+            "100",
+        )
+        .run("update-alternatives", "--set", "clang", "/usr/bin/clang-19")
+        .run("update-alternatives", "--set", "clang++", "/usr/bin/clang++-19")
+    )
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List['ProjectBinaryWrapper']:
+        revision: ShortCommitHash,
+    ) -> list['ProjectBinaryWrapper']:
         binary_map = RevisionBinaryMap(
             get_local_project_repo(CryptoMiniSAT.NAME)
         )
@@ -115,7 +140,7 @@ class CryptoMiniSAT(VProject):
         binary_map.specify_binary(
             "build/cryptominisat5",
             BinaryType.EXECUTABLE,
-            valid_exit_codes=[0, 10, 20]
+            valid_exit_codes=[0, 10, 20],
         )
 
         return binary_map[revision]
@@ -141,7 +166,6 @@ class CryptoMiniSAT(VProject):
         cmake = local["cmake"]
         make = local["make"]
         with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-
             with local.cwd(cadical_src):
                 with local.env(CXXFLAGS="-fPIC"):
                     bb.watch(local["./configure"])()
@@ -166,8 +190,9 @@ class CryptoMiniSAT(VProject):
 
             with local.cwd(crypto_src / "build"):
                 with local.env(LD_LIBRARY_PATH=str(build_dir / "lib")):
-                    bb.watch(cmake
-                            )("-DENABLE_TESTING=ON", "-DIPASIR=ON", "-S", "..")
+                    bb.watch(cmake)(
+                        "-DENABLE_TESTING=ON", "-DIPASIR=ON", "-S", ".."
+                    )
                     bb.watch(cmake)(
                         "--build", ".", "-j", get_number_of_jobs(bb_cfg())
                     )
@@ -177,8 +202,9 @@ class CryptoMiniSAT(VProject):
         with local.env(LD_LIBRARY_PATH=str(build_dir / "lib")):
             with local.cwd(Path(self.source_of_primary) / "build"):
                 cmake = local["cmake"]
-                bb.watch(cmake
-                        )("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
+                bb.watch(cmake)(
+                    "--build", ".", "-j", get_number_of_jobs(bb_cfg())
+                )
 
     def run_tests(self) -> None:
         pass
@@ -208,10 +234,10 @@ class CryptoMiniSAT(VProject):
 
     def run_testsuite(
         self,
-        test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        test_report_path: Path | None = None,
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+    ) -> dict[str, TestResult] | None:
         """
         Run the test suite for this project.
 
@@ -228,7 +254,7 @@ class CryptoMiniSAT(VProject):
             build_dir=Path(self.source_of_primary) / "build",
             test_report_path=test_report_path,
             tests_to_run=tests_to_run,
-            tests_to_exclude=tests_to_exclude
+            tests_to_exclude=tests_to_exclude,
         )
 
     def get_test_names(self) -> tp.Iterable[str]:

@@ -1,4 +1,5 @@
 """Project file for 7zip."""
+
 import typing
 import typing as tp
 from pathlib import Path
@@ -8,22 +9,22 @@ from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
 from benchbuild.source.http import HTTPUnzip
 from benchbuild.utils.settings import get_number_of_jobs
-from plumbum import local, ProcessExecutionError
+from plumbum import ProcessExecutionError, local
 
 from varats.experiment.workload_util import (
+    ConfigParams,
     RSBinary,
     WorkloadCategory,
-    ConfigParams,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    ProjectBinaryWrapper,
-    get_local_project_repo,
     BinaryType,
-    verify_binaries,
+    ProjectBinaryWrapper,
     RevisionBinaryMap,
+    get_local_project_repo,
+    verify_binaries,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
@@ -37,13 +38,19 @@ class SevenZip(VProject):
     """Compression and decompression tool SevenZip (fetched by Git)"""
 
     __COUNTRIES_SOURCE_FILES: typing.ClassVar = [
-        "countries-land-1m.geo.json", "countries-land-10m.geo.json",
-        "countries-land-100m.geo.json", "countries-land-10km.geo.json",
-        "countries-land-1km.geo.json", "countries-land-250m.geo.json",
-        "countries-land-25m.geo.json", "countries-land-2km5.geo.json",
-        "countries-land-2m5.geo.json", "countries-land-500m.geo.json",
-        "countries-land-50m.geo.json", "countries-land-5km.geo.json",
-        "countries-land-5m.geo.json"
+        "countries-land-1m.geo.json",
+        "countries-land-10m.geo.json",
+        "countries-land-100m.geo.json",
+        "countries-land-10km.geo.json",
+        "countries-land-1km.geo.json",
+        "countries-land-250m.geo.json",
+        "countries-land-25m.geo.json",
+        "countries-land-2km5.geo.json",
+        "countries-land-2m5.geo.json",
+        "countries-land-500m.geo.json",
+        "countries-land-50m.geo.json",
+        "countries-land-5km.geo.json",
+        "countries-land-5m.geo.json",
     ]
 
     NAME = '7zip'
@@ -57,38 +64,32 @@ class SevenZip(VProject):
             local="7zip",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
+            shallow=False,
         ),
         FeatureSource(),
         PatchVariationSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0"
+                "1.0": "https://github.com/simonepri/geo-maps/releases/"
+                "download/v0.6.0"
             },
-            files=__COUNTRIES_SOURCE_FILES
+            files=__COUNTRIES_SOURCE_FILES,
         ),
         HTTPUnzip(
             local="silesia.zip",
-            remote = {
-                "1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"
-            },
+            remote={"1.0": "http://sun.aei.polsl.pl/~sdeor/corpus/silesia.zip"},
         ),
         HTTPUnzip(
             local="lukas_2d_16_dicom.zip",
-            remote = {
+            remote={
                 "1.0": "http://www.data-compression.info/files/corpora/lukas_2d_16_dicom.zip"
             },
         ),
         HTTPUnzip(
             local="enwik8.zip",
-            remote = {
-                "1.0": "https://mattmahoney.net/dc/enwik8.zip"
-            },
+            remote={"1.0": "https://mattmahoney.net/dc/enwik8.zip"},
         ),
-
         # TODO: Compressed Data for decompression workload ?
     ]
 
@@ -104,7 +105,7 @@ class SevenZip(VProject):
                 creates=[
                     "geo-maps/countries-land-100m.geo.json.7z",
                 ],
-                requires_all_args={"a"}
+                requires_all_args={"a"},
             ),
             # TODO: Decompression workload ?
         ],
@@ -119,7 +120,7 @@ class SevenZip(VProject):
                 creates=[
                     "geo-maps/countries-land-10m.geo.json.7z",
                 ],
-                requires_all_args={"a"}
+                requires_all_args={"a"},
             ),
             VCommand(
                 SourceRoot("7zip") / RSBinary("7zz"),
@@ -131,7 +132,7 @@ class SevenZip(VProject):
                 creates=[
                     "geo-maps/countries-land-250m.geo.json.7z",
                 ],
-                requires_all_args={"a"}
+                requires_all_args={"a"},
             ),
             VCommand(
                 SourceRoot("7zip") / RSBinary("7zz"),
@@ -143,7 +144,7 @@ class SevenZip(VProject):
                 creates=[
                     "silesia.7z",
                 ],
-                requires_all_args={"a"}
+                requires_all_args={"a"},
             ),
             VCommand(
                 SourceRoot("7zip") / RSBinary("7zz"),
@@ -155,9 +156,9 @@ class SevenZip(VProject):
                 creates=[
                     "lukas_2d_16_dicom.7z",
                 ],
-                requires_all_args={"a"}
+                requires_all_args={"a"},
             ),
-                VCommand(
+            VCommand(
                 SourceRoot("7zip") / RSBinary("7zz"),
                 ConfigParams(),
                 "enwik8.7z",
@@ -167,9 +168,9 @@ class SevenZip(VProject):
                 creates=[
                     "enwik8.7z",
                 ],
-                requires_all_args={"a"}
-            )
-            #TODO: Decompression workload ?
+                requires_all_args={"a"},
+            ),
+            # TODO: Decompression workload ?
         ],
         WorkloadSet(WorkloadCategory.LARGE): [
             VCommand(
@@ -182,7 +183,7 @@ class SevenZip(VProject):
                 creates=[
                     "geo-maps/countries-land-1m.geo.json.7z",
                 ],
-                requires_all_args={"a"}
+                requires_all_args={"a"},
             ),
             # TODO: Decompression workload ?
         ],
@@ -190,8 +191,8 @@ class SevenZip(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List[ProjectBinaryWrapper]:
+        revision: ShortCommitHash,
+    ) -> list[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_repo(SevenZip.NAME))
 
         binary_map.specify_binary(
@@ -234,11 +235,11 @@ class SevenZip(VProject):
 
     def run_testsuite(
         self,
-        test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
-        test_results: tp.Dict[str, TestResult] = {}
+        test_report_path: Path | None = None,
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+    ) -> dict[str, TestResult] | None:
+        test_results: dict[str, TestResult] = {}
 
         for test_name in self.get_test_names():
             if tests_to_run and test_name not in tests_to_run:
@@ -252,7 +253,7 @@ class SevenZip(VProject):
 
         return test_results
 
-    def get_test_names(self) -> tp.List[str]:
+    def get_test_names(self) -> list[str]:
         return self.__COUNTRIES_SOURCE_FILES
 
     def __end_to_end_test(self, file: Path) -> TestResult:
@@ -268,9 +269,9 @@ class SevenZip(VProject):
         compressed_file = file.with_suffix(file.suffix + ".7z")
 
         # Compress the file
-        compress_cmd = local[f"7zip/{binary.path}"]["a",
-                                                    str(compressed_file),
-                                                    str(file)]
+        compress_cmd = local[f"7zip/{binary.path}"][
+            "a", str(compressed_file), str(file)
+        ]
 
         try:
             compress_cmd()
@@ -291,9 +292,9 @@ class SevenZip(VProject):
         Path("decompressed").mkdir(parents=True, exist_ok=True)
         decompressed_file = Path("decompressed") / file
         decompressed_file.parent.mkdir(parents=True, exist_ok=True)
-        decompress_cmd = local[f"7zip/{binary.path}"]["x",
-                                                      str(compressed_file),
-                                                      "-o" + "decompressed"]
+        decompress_cmd = local[f"7zip/{binary.path}"][
+            "x", str(compressed_file), "-o" + "decompressed"
+        ]
 
         try:
             decompress_cmd()
