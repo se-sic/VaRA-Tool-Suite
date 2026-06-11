@@ -9,8 +9,6 @@ from junitparser import JUnitXml, junitparser
 from varats.data.cache_helper import cache_dataframe, load_cached_df_or_none
 from varats.data.databases.hidden_configurability_database import (
     aggregate_data,
-    EffectSize,
-    ACTIVE_HV_PROJECTS,
 )
 from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
@@ -18,9 +16,9 @@ from varats.data.reports.hidden_configurability_report import (
 from varats.data.reports.text_report import PlainTextReport
 from varats.experiments.vara.hidden_configurability_experiments import (
     _PROJECT_WORKLOADS,
-    TestPatchVariations,
-    MPTextReport,
     FilterHiddenConfigurabilityReport,
+    MPTextReport,
+    TestPatchVariations,
 )
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import get_local_project_repo
@@ -29,11 +27,11 @@ from varats.report.report import ReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
-from varats.table.tables import TableGenerator, TableFormat
+from varats.table.tables import TableFormat, TableGenerator
 from varats.ts_utils.cli_util import make_cli_option
 from varats.ts_utils.click_param_types import (
-    create_single_case_study_choice,
     create_multi_case_study_choice,
+    create_single_case_study_choice,
 )
 from varats.utils.git_util import calc_repo_loc
 from varats.utils.testsuite_utils import TestResult
@@ -201,7 +199,8 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
             "Domain": str,
             "LOC": int,
             "|CL|": int,
-            "|CO|": int
+            "|CO|": int,
+            "|S|": int,
         }
 
         return load_cached_df_or_none(self.__CACHE_ID, project_name, dtypes)
@@ -234,6 +233,19 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
 
                 project_repo = get_local_project_repo(cs.project_name)
                 locs = calc_repo_loc(project_repo, cs.revisions[0].hash)
+
+                num_configs = len(cs.get_config_ids_for_revision(cs.revisions[0]))
+                if num_configs == 0:
+                    # Just the default configuration
+                    num_configs = 1
+
+                num_workloads = len(_PROJECT_WORKLOADS[cs.project_name])
+
+                num_metrics = 2 # Currently two for all our projects.
+                # Proper solution would be to load the performance data and count the unique metrics
+                # but that is a bit too much overhead for now.
+
+
                 row = {
                     "Project":
                         cs.project_name,
@@ -241,13 +253,14 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
                         cs.project_cls.DOMAIN,
                     "LOC":
                         locs,
-                    "|CL|":
+                    "|L|":
                         report.get_num_configurability_points(),
-                    "|CO|":
+                    "|O|":
                         sum([
                             len(p) for _, p in
                             report.get_points_with_tag("conf_opp").items()
                         ]),
+                    "|S|": num_metrics * num_workloads * num_configs
                 }
                 cs_df = pd.DataFrame([row])
                 self._cache_overview_df(cs.project_name, cs_df)
@@ -269,7 +282,8 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
             kwargs["hrules"] = True
             kwargs[
                 "caption"
-            ] = "Overview of our subject systems grouped by domain. For each subject system, we show the total lines of code (LOC), the number of \\canlocs{} (|CL|), and the number of \\conopps{} (|CO|)."
+            ] = ("Overview of our subject systems grouped by domain. "
+                 "For each subject system, we show the total lines of code (LOC), the number of \\canlocs{} (|CL|), and the number of \\conopps{} (|CO|).")
             kwargs["label"] = "tab:subject_systems"
 
         return dataframe_to_table(
@@ -649,162 +663,3 @@ class ConfigAlternativesGenerator(
         ]
 
 
-class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
-
-    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        case_studies = get_loaded_paper_config().get_all_case_studies()
-
-        table_rows = []
-
-        for cs in case_studies:
-            if cs.project_name not in ACTIVE_HV_PROJECTS:
-                print(
-                    f"Skipping {cs.project_name} as it is not an active HV subject system"
-                )
-                continue
-            print(f"Processing {cs.project_name}...")
-            # Filter to single config ID for projects with multiple
-            __cs_configs = {
-                "libzmq": [13],
-                "FastDownward": [0],
-                "libvpx": [0],
-            }
-            if cs.project_name in __cs_configs:
-                config_id = __cs_configs[cs.project_name][0]
-            else:
-                config_id = None
-            try:
-                cs_data = aggregate_data(cs, [config_id])
-            except Exception as e:
-                print(f"Error processing {cs.project_name}: {e}")
-                continue
-
-            # For each row, we want to summarize the performance impact
-            # of all configuration opportunities
-
-            # Columns: Project Name, |A| (Number of alternatives), Metric, |S| (Number of significant performance impacts), |S+| (Number of significant positive impacts), |S-| (Number of significant negative impacts), Impact Range (min, max)
-
-            # For simplicity, we only consider one workload per project here
-            workload = _PROJECT_WORKLOADS[cs.project_name][0]
-
-            if cs_data.empty:
-                continue
-
-            if cs.project_name == "libzmq":
-                # Special case for libzmq as the workload names are a bit inconsistent
-                workload = "bench-inproc"
-
-            # Filter CS datat based on bianry-wl column
-            # No exact string match possible so we test if workload is a substring
-            cs_data = cs_data[
-                cs_data["binary-wl"].apply(lambda x: workload in x)]
-
-            # Filter out baseline rows
-            cs_data = cs_data[cs_data["config_opportunity"] != "__baseline__"]
-
-            metrics = cs_data["metric"].unique()
-
-            for metric in metrics:
-                metric_data = cs_data[cs_data["metric"] == metric]
-
-                new_row = {
-                    "Name": cs.project_name,
-                    "|A|": 0,
-                    "Metric": metric,
-                    "|S|": 0,
-                    "|S-|": 0,
-                    "|S+|": 0,
-                    "Range": (None, None),
-                }
-
-                for es in EffectSize:
-                    new_row[f"ES({es.name})"] = 0
-
-                for config_opportunity in metric_data["config_opportunity"
-                                                     ].unique():
-                    opportunity_data = metric_data[
-                        metric_data["config_opportunity"] == config_opportunity]
-
-                    # Filter all rows where the significance pvalue is < 0.05
-                    # Each row has a object where the pvalue is stored in a field named pvalue
-                    significant_impacts = opportunity_data[(
-                        opportunity_data["significance"].
-                        apply(lambda x: x.pvalue < 0.05)
-                    ) & (
-                        opportunity_data["effect_size"].
-                        apply(lambda x: abs(x) >= EffectSize.SMALL)
-                    )]
-
-                    new_row["|A|"] += len(
-                        opportunity_data["variation"].unique()
-                    )
-                    new_row["|S|"] += len(significant_impacts)
-                    if not significant_impacts.empty:
-                        means = significant_impacts["value_relative"].apply(
-                            np.mean
-                        )
-                        new_row["|S+|"] += int((means > 0).sum())
-                        new_row["|S-|"] += int((means < 0).sum())
-
-                        new_row["Range"] = (
-                            min(new_row["Range"][0], means.min())
-                            if new_row["Range"][0] is not None else means.min(),
-                            max(new_row["Range"][1], means.max())
-                            if new_row["Range"][1] is not None else means.max()
-                        )
-
-                        # Add overview of effect sizes
-                        # Effect size categories are in the "effect_size" column
-                        for effect_size in EffectSize:
-                            new_row[f"ES({effect_size.name})"] += int((
-                                significant_impacts["effect_size"] ==
-                                effect_size
-                            ).sum())
-
-                # Convert Impact Range to normal floats
-                new_row["Range"] = (
-                    float(new_row["Range"][0]) if new_row["Range"][0]
-                    is not None else "N/A", float(new_row["Range"][1])
-                    if new_row["Range"][1] is not None else "N/A"
-                )
-
-                table_rows.append(new_row)
-
-        df = pd.DataFrame(table_rows).set_index("Name")
-
-        # Convert Range column to percentages
-        def format_range(
-            range_tuple: tp.Tuple[tp.Union[float, str], tp.Union[float, str]]
-        ) -> str:
-            if range_tuple[0] == "N/A" or range_tuple[1] == "N/A":
-                return "N/A"
-            return f"({range_tuple[0]:.2%}, {range_tuple[1]:.2%})"
-
-        df.sort_index(inplace=True)
-        df["Range"] = df["Range"].apply(format_range)
-
-        # Convert effect sizes to relative numbers
-        for es in EffectSize:
-            df[f"ES({es.name})"] = df[f"ES({es.name})"] / df["|S|"]
-
-            df[f"ES({es.name})"] = df[f"ES({es.name})"].apply(
-                lambda x: f"{x:.2%}" if isinstance(x, float) else x
-            )
-
-        # Temp: Drop range
-        df.drop(columns=[f"ES({e.name})" for e in EffectSize], inplace=True)
-
-        #Convert ES columns to multi-index
-        #df.columns = pd.MultiIndex.from_tuples(
-        #    [("EffectSize", col.split("(")[1][:-1]) if "(" in col else ("", col) for col in df.columns]
-        #)
-
-        return dataframe_to_table(df, table_format, wrap_table=wrap_table)
-
-
-class HCPerfSummaryGenerator(
-    TableGenerator, generator_name="hc_perf_summary", options=[]
-):
-
-    def generate(self) -> tp.List[Table]:
-        return [HCPerfSummaryTable(self.table_config, **self.table_kwargs)]

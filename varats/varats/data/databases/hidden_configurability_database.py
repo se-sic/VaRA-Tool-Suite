@@ -6,11 +6,11 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy.stats import ttest_ind, mannwhitneyu
+from scipy.stats import mannwhitneyu, ttest_ind
 
 from varats.data.cache_helper import cache_dataframe, load_cached_df_or_none
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
-from varats.experiments.base.run_workloads import RunWorkloads
+from varats.experiments.base.run_workloads import RunPatchedWorkloads
 from varats.experiments.hidden_config.benchbase_experiments import (
     BenchbaseHiddenConfig,
     MPBenchbaseReport,
@@ -19,10 +19,10 @@ from varats.experiments.hidden_config.hidden_config_utils import (
     get_all_variations_as_dict,
 )
 from varats.experiments.vara.hidden_configurability_experiments import (
+    MPTextReport,
+    TestPatchVariations,
     TimePatchedWorkloads,
     variation_value_to_str,
-    TestPatchVariations,
-    MPTextReport,
 )
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -38,7 +38,7 @@ ACTIVE_HV_PROJECTS = [
     "brotli",
     "bzip2",
     "xz",
-    #"libzmq",
+    "libzmq",
     "FastDownward",
     #"libvpx",
     "mariadb",
@@ -95,8 +95,8 @@ def get_data_for_single_config(
             result_df = _get_data_single_config_default(cs, config_id)
 
         # Enrich data with testsuite information
-
-        _cache_df(result_df, cs.project_name, config_id)
+        if not result_df.empty:
+            _cache_df(result_df, cs.project_name, config_id)
 
     return result_df
 
@@ -122,6 +122,10 @@ def _add_testsuite_info(
         return df
 
     report: TestPatchVariations = MPTextReport(result_files[0].full_path())
+    ...
+    #TODO: Implement this function to add testsuite information to the DataFrame based on the report
+
+    return df
 
 
 def _get_data_single_config_libzmq(
@@ -130,8 +134,8 @@ def _get_data_single_config_libzmq(
     # Load all result files from RunAllWorkloads experiment
     result_files = get_processed_revisions_files(
         "libzmq",
-        RunWorkloads,
-        RunWorkloads.report_spec().main_report,
+        RunPatchedWorkloads,
+        RunPatchedWorkloads.report_spec().main_report,
         get_case_study_file_name_filter(cs),
         config_id=config_id,
         only_newest=False,
@@ -153,7 +157,7 @@ def _get_data_single_config_libzmq(
             if "inproc_lat" in base_report.filename.filename:
                 metric = "latency"
                 data_rows.append({
-                    "binary-wl": f"bench-inproc-lat",
+                    "binary-wl": "bench-inproc-lat",
                     "config_opportunity": "__baseline__",
                     "variation": None,
                     "metric": metric,
@@ -164,14 +168,14 @@ def _get_data_single_config_libzmq(
                 base_values[metric] = np.mean(base_report.latencies)
             elif "inproc_thr" in base_report.filename.filename:
                 data_rows.extend([{
-                    "binary-wl": f"bench-inproc-thr",
+                    "binary-wl": "bench-inproc-thr",
                     "config_opportunity": "__baseline__",
                     "variation": None,
                     "metric": "throughput_msg",
                     "value": base_report.throughputs_msg,
                     "config_id": config_id
                 }, {
-                    "binary-wl": f"bench-inproc-thr",
+                    "binary-wl": "bench-inproc-thr",
                     "config_opportunity": "__baseline__",
                     "variation": None,
                     "metric": "throughput_mb",
@@ -203,39 +207,38 @@ def _get_data_single_config_libzmq(
             if "inproc_lat" in patched_report.filename.filename:
                 metric = "latency"
                 data_rows.append({
-                    "binary-wl": f"bench-inproc-lat",
+                    "binary-wl": "bench-inproc-lat",
                     "config_opportunity": "hwm",
                     "variation": variation,
                     "metric": metric,
                     "value": patched_report.latencies,
-                    "value_relative": [(t / base_values[metric]) - 1
+                    "value_relative": [float((t / base_values[metric]) - 1)
                                        for t in patched_report.latencies],
                     "config_id": config_id,
                 })
             elif "inproc_thr" in patched_report.filename.filename:
                 data_rows.extend([{
-                    "binary-wl": f"bench-inproc-thr",
+                    "binary-wl": "bench-inproc-thr",
                     "config_opportunity": "hwm",
                     "variation": variation,
                     "metric": "throughput_msg",
                     "value": patched_report.throughputs_msg,
-                    "value_relative": [(t / base_values["throughput_msg"]) - 1
+                    "value_relative": [float((t / base_values["throughput_msg"]) - 1)
                                        for t in patched_report.throughputs_msg],
                     "config_id": config_id
                 }, {
-                    "binary-wl": f"bench-inproc-thr",
+                    "binary-wl": "bench-inproc-thr",
                     "config_opportunity": "hwm",
                     "variation": variation,
                     "metric": "throughput_mb",
                     "value": patched_report.throughputs_mb,
-                    "value_relative": [(t / base_values["throughput_mb"]) - 1
+                    "value_relative": [float((t / base_values["throughput_mb"]) - 1)
                                        for t in patched_report.throughputs_mb],
                     "config_id": config_id
                 }])
 
-        result = pd.DataFrame.from_records(data_rows)
+    return pd.DataFrame.from_records(data_rows)
 
-        return result
 
 
 def _get_data_single_config_default(
@@ -448,7 +451,7 @@ def _load_cached_df(
         return None
 
     # Convert columns "value" and "value_relative" back to lists
-    df["value"] = df["value"].apply(lambda x: ast.literal_eval(x))
+    df["value"] = df["value"].apply(ast.literal_eval)
     df["value_relative"] = df["value_relative"].apply(
         lambda x: ast.literal_eval(x) if pd.notna(x) else None
     )
@@ -461,11 +464,12 @@ def _cache_df(
     project_name: str,
     config_id: tp.Optional[int] = None
 ) -> None:
+    df_copy = df.copy()
     # Convert columns "value" and "value_relative" to string to store lists in csv
-    df["value"] = df["value"].apply(lambda x: str(x))
-    df["value_relative"] = df["value_relative"].apply(lambda x: str(x))
+    df_copy["value"] = df_copy["value"].apply(str)
+    df_copy["value_relative"] = df_copy["value_relative"].apply(str)
 
-    cache_dataframe(f"{CACHE_DATA_ID}-{config_id}", project_name, df)
+    cache_dataframe(f"{CACHE_DATA_ID}-{config_id}", project_name, df_copy)
 
 
 def aggregate_data(

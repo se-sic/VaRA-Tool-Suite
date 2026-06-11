@@ -508,10 +508,11 @@ _PROJECT_WORKLOADS = {
     "7zip": ["countries-250m-geo", "silesia", "lukas_2d_16_dicom", "enwik8"],
     "bzip2": ["med-geo-compress", "silesia", "lukas_2d_16_dicom", "enwik8"],
     "lrzip": ["countries-land-250m", "silesia", "lukas_2d_16_dicom", "enwik8"],
+
     # Databases
     "mariadb": ["tpcc", "tpch", "auctionmark"],
     "mysql": ["tpcc", "tpch", "auctionmark"],
-    "postgresql": ["tpcc", "tpch", "auctionmark"],
+    "postgres": ["tpcc", "tpch", "auctionmark"],
     # SAT Solvers
     "cadical": ["traffic-kkb-unknown"],
     "cryptominisat": ["traffic-kkb-unknown", "childsnack-p11"],
@@ -522,7 +523,7 @@ def variation_value_to_str(value: tp.Any) -> str:
     return str(value).replace('.', '')
 
 
-def _filter_workloads(
+def filter_workloads(
     project: VProject, binary: ProjectBinaryWrapper
 ) -> list[ProjectCommand]:
     if project.name not in _PROJECT_WORKLOADS:
@@ -549,7 +550,7 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
             zip_tmp_dir = tmp_dir / self._file_name
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                 for rep in range(0, self._reps):
-                    for prj_command in _filter_workloads(
+                    for prj_command in filter_workloads(
                         self.project, self._binary
                     ):
                         print(f"Running {prj_command.command.label}...")
@@ -579,7 +580,7 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
         )
 
 
-def _get_project_binaries(project):
+def get_project_binaries(project):
     if project.name == "FastDownward":
         return [
             binary for binary in project.binaries if binary.name == "FDDriverPy"
@@ -640,7 +641,7 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                         report_file_ending=".txt",
                         reps=NUM_REPETITIONS,
                     )
-                    for binary in _get_project_binaries(project)
+                    for binary in get_project_binaries(project)
                 ]
             )
         else:
@@ -687,7 +688,7 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                     else:
                         condition = ReCompile(project)
 
-                    for b in _get_project_binaries(project):
+                    for b in get_project_binaries(project):
                         zipped_steps.append(
                             IfThenElse(
                                 project,

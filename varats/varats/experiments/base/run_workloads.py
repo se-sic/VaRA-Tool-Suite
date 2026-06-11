@@ -7,28 +7,32 @@ from benchbuild.utils import actions
 from plumbum import local
 
 from varats.experiment.experiment_util import (
-    get_default_compile_error_wrapped,
-    get_config_patch_steps,
-    ZippedExperimentSteps,
-    create_new_success_result_filepath,
     OutputFolderStep,
+    ZippedExperimentSteps,
     ZippedReportFolder,
+    create_new_success_result_filepath,
+    get_config_patch_steps,
+    get_default_compile_error_wrapped,
 )
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
 from varats.experiment.workload_util import (
-    WorkloadSpecificReportAggregate,
-    workload_commands,
-    create_workload_specific_filename,
     WorkloadCategory,
+    WorkloadSpecificReportAggregate,
+    create_workload_specific_filename,
+    workload_commands,
 )
 from varats.experiments.hidden_config.hidden_config_utils import (
     get_variations_as_dict,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
-from varats.project.project_util import ProjectBinaryWrapper, BinaryType
+from varats.experiments.vara.hidden_configurability_experiments import (
+    filter_workloads,
+    get_project_binaries,
+)
+from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
-from varats.provider.patch.patch_provider import PatchProvider
+from varats.provider.patch.patch_provider import Patch, PatchProvider
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import BaseReport, ReportSpecification
 from varats.utils.config import get_current_config_id
@@ -43,12 +47,11 @@ class RunAllWorkloads(OutputFolderStep):
 
     def __init__(
         self, project: VProject, binary: ProjectBinaryWrapper,
-        experiment: FeatureExperiment, repetitions: int, file_name: str
+        repetitions: int, file_name: str
     ) -> None:
         super().__init__(project=project)
         self.__repetitions = repetitions
         self.__binary = binary
-        self.__experiment = experiment
         self.__file_name = file_name
 
     def __str__(self, indent: int = 0) -> str:
@@ -65,9 +68,7 @@ class RunAllWorkloads(OutputFolderStep):
             zip_tmp_dir = tmp_dir / self.__file_name
 
             with ZippedReportFolder(zip_tmp_dir) as binary_report_folder:
-                for prj_command in workload_commands(
-                    self.project, self.__binary, [WorkloadCategory.EXAMPLE]
-                ):
+                for prj_command in filter_workloads(self.project,self.__binary):
                     pb_cmd = prj_command.command.as_plumbum(
                         project=self.project
                     )
@@ -103,7 +104,7 @@ class MPRBinAggregate(
         super().__init__(path, MultiWLAggregate)
 
 
-class RunWorkloads(FeatureExperiment, shorthand="RWL"):
+class RunPatchedWorkloads(FeatureExperiment, shorthand="RPWL"):
     """
     Runs executable workloads of a project.
 
@@ -123,8 +124,8 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
         the reports for each workload.
     """
 
-    NAME = "RunWorkloads"
-    PATCH_TAG = "template"
+    NAME = "RunPatchedWorkloads"
+    PATCH_TAG = "hidden-config"
     NUM_REPETITIONS = 10
 
     REPORT_SPEC = ReportSpecification(MPRBinAggregate)
@@ -132,7 +133,6 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
     def actions_for_project(self, project):
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
-
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self)
 
@@ -160,6 +160,43 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
         patches = patch_provider.get_patches_for_revision(
             ShortCommitHash(project.version_of_primary)
         )[self.PATCH_TAG]
+
+        analysis_actions = get_config_patch_steps(project)
+        variations = get_variations_as_dict(project)
+
+        zipped_steps = []
+
+        if len(variations) == 0:
+            # Baseline step, test normal program behavior without any patch applied
+            analysis_actions.append(actions.Compile(project))
+
+            zipped_steps.extend(
+                [
+                    RunAllWorkloads(
+                        project,
+                        binary,
+                        file_name=MPRBinAggregate.create_baseline_report_name(
+                            binary.name
+                        )
+                                  + ".zip",
+                        repetitions=self.NUM_REPETITIONS,
+                    )
+                    for binary in get_project_binaries(project)
+                ]
+            )
+        else:
+            # Filter patches based on the variations specified in the configuration
+            patches_filtered: list[Patch] = [
+                patch for patch in patches if patch.shortname in variations
+            ]
+
+            if len(patches_filtered) == 0:
+                print(f"No patch found with shortname {[variations.keys()]}.")
+                print(
+                    f"Available patches: {[patch.shortname for patch in patches]}"
+                )
+
+            # TODO
 
         patch_steps = []
 

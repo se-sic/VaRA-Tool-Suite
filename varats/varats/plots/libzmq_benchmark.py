@@ -4,9 +4,9 @@ import pandas
 from matplotlib import pyplot as plt
 
 from varats.experiments.base.run_workloads import (
-    RunWorkloads,
     MPRBinAggregate,
     MultiWLAggregate,
+    RunPatchedWorkloads,
 )
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -65,7 +65,7 @@ class LibZQMBenchmarkPlot(Plot, plot_name="libzmq_benchmark"):
         # TODO: Consider multiple configurations?
 
         report_files = get_processed_revisions_files(
-            libzmq_cs.project_name, RunWorkloads, MPRBinAggregate,
+            libzmq_cs.project_name, RunPatchedWorkloads, MPRBinAggregate,
             get_case_study_file_name_filter(libzmq_cs)
         )
 
