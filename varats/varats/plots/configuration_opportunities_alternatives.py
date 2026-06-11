@@ -12,23 +12,22 @@ from matplotlib.figure import SubFigure
 from matplotlib.ticker import PercentFormatter
 
 from varats.data.databases.hidden_configurability_database import (
-    aggregate_data,
-    get_data_for_single_config,
-    get_configuration_points,
-    extract_config_point,
-    create_config_opportunities_value_map,
     EffectSize,
+    aggregate_data,
+    create_config_opportunities_value_map,
+    extract_config_point,
+    filter_for_significant_changes,
+    get_configuration_points,
+    get_data_for_single_config,
 )
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
 from varats.experiments.vara.hidden_configurability_experiments import (
     TimePatchedWorkloads,
 )
-from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
-from varats.report.gnu_time_report import TimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 from varats.ts_utils.cli_util import make_cli_option
 from varats.ts_utils.click_param_types import (
@@ -36,6 +35,10 @@ from varats.ts_utils.click_param_types import (
     create_single_case_study_choice,
 )
 from varats.utils.git_util import FullCommitHash
+
+if tp.TYPE_CHECKING:
+    from varats.paper.case_study import CaseStudy
+    from varats.report.gnu_time_report import TimeReportAggregate
 
 
 def _prepare_data(plot_kwargs, df: pd.DataFrame) -> pd.DataFrame:
@@ -1197,9 +1200,7 @@ class CurrentHCPlotsGenerator(
             df = aggregate_data(cs, config_ids)
 
             # Filter data for only significant results
-            df = df[
-                (df["significance"].apply(lambda x: x.pvalue < 0.05)) &
-                (df["effect_size"].apply(lambda x: abs(x) >= EffectSize.SMALL))]
+            df = filter_for_significant_changes(df)
 
             # Get all workloads for the case study
             workloads = df["binary-wl"].unique()

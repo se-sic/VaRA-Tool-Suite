@@ -72,6 +72,24 @@ def get_configuration_points(report_file: MPRTimeWLAggregate) -> tp.List[str]:
 
     return list(result)
 
+def filter_for_significant_changes(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Filter rows to relevant ones for evaluation.
+
+    The rows are relevant iff:
+    - The change is statistically significant (p-value < 0.05)
+    - The change has at least a small effect size (Cohen's d >= 0.2)
+    """
+    return df[(df["significance"].
+               apply(lambda x: x.pvalue < 0.05)
+           ) & (df["effect_size"].
+               apply(lambda x: abs(x)
+                     >= EffectSize.SMALL)
+           )]
+
+def filter_baseline_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """Filter rows to only include baseline rows."""
+    return df[df["config_opportunity"] != "__baseline__"]
 
 def get_data_for_single_config(
     cs: CaseStudy, config_id: tp.Optional[int] = None

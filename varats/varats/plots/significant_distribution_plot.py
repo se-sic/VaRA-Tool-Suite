@@ -6,8 +6,9 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 
 from varats.data.databases.hidden_configurability_database import (
-    aggregate_data,
     ACTIVE_HV_PROJECTS,
+    aggregate_data,
+    filter_baseline_rows,
 )
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
@@ -91,7 +92,7 @@ class SignificantAlternativesSharePlot(
                 print(f"Error processing {cs.project_name}: {e}")
                 continue
 
-            cs_df = cs_df[cs_df["config_opportunity"] != "__baseline__"]
+            cs_df = filter_baseline_rows(cs_df)
 
             # Filter based on selected workloads and metrics
             if self.plot_kwargs["workload"]:

@@ -6,7 +6,7 @@ import pandas as pd
 from varats.data.databases.hidden_configurability_database import (
     ACTIVE_HV_PROJECTS,
     EffectSize,
-    aggregate_data,
+    aggregate_data, filter_for_significant_changes,
 )
 from varats.experiments.vara.hidden_configurability_experiments import (
     _PROJECT_WORKLOADS,
@@ -37,14 +37,7 @@ def _extract_significance_data_for_subset(
     # Filter all rows where the significance pvalue is < 0.05
     # Each row has a object where the pvalue is stored in a
     # field named pvalue
-    significant_impacts = opportunity_data[(
-                                               opportunity_data["significance"].
-                                               apply(lambda x: x.pvalue < 0.05)
-                                           ) & (
-                                               opportunity_data["effect_size"].
-                                               apply(lambda x: abs(x)
-                                                     >= EffectSize.SMALL)
-                                           )]
+    significant_impacts = filter_for_significant_changes(opportunity_data)
 
     result["num_variations"] = len(
         opportunity_data["variation"].unique()
