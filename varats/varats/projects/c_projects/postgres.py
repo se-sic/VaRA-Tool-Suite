@@ -1,26 +1,27 @@
 """Project file for postgres."""
+
 import shutil
 import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.settings import get_number_of_jobs
-from plumbum import local, ProcessExecutionError
+from plumbum import ProcessExecutionError, local
 
-from varats.containers.containers import get_base_image, ImageBase
+from varats.containers.containers import ImageBase, get_base_image
 from varats.experiments.hidden_config.database_utils import (
-    SupportsBenchbase,
     BENCHBASE_WORKLOAD_CONFIG_DIR,
+    SupportsBenchbase,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    verify_binaries,
-    RevisionBinaryMap,
-    get_local_project_repo,
     BinaryType,
     ProjectBinaryWrapper,
+    RevisionBinaryMap,
+    get_local_project_repo,
+    verify_binaries,
 )
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
@@ -37,35 +38,46 @@ def _normalise_test_name(test_name: str) -> str:
 
 
 class PostgreSQL(VProject):
-    """PostgreSQL is a powerful, open source object-relational database
-    system."""
+    """
+    PostgreSQL is a powerful, open source object-relational database
+    system.
+    """
 
     NAME = "postgres"
     GROUP = "c_projects"
     DOMAIN = ProjectDomains.DATABASE
 
-    SOURCE = [
+    SOURCE: tp.ClassVar = [
         PaperConfigSpecificGit(
             project_name="postgres",
             remote="https://github.com/postgres/postgres.git",
             local="postgres",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
+            shallow=False,
         ),
-        PatchVariationSource()
+        PatchVariationSource(),
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
-        'apt', 'install', '-y', 'build-essential', 'clang', 'cmake',
-        'pkg-config', 'bison', "flex", 'libreadline-dev', 'zlib1g-dev',
-        'libicu-dev'
+        'apt',
+        'install',
+        '-y',
+        'build-essential',
+        'clang',
+        'cmake',
+        'pkg-config',
+        'bison',
+        "flex",
+        'libreadline-dev',
+        'zlib1g-dev',
+        'libicu-dev',
     )
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List['ProjectBinaryWrapper']:
+        revision: ShortCommitHash,
+    ) -> list['ProjectBinaryWrapper']:
         binary_map = RevisionBinaryMap(get_local_project_repo(PostgreSQL.NAME))
 
         binary_map.specify_binary("install/bin/postgres", BinaryType.EXECUTABLE)
@@ -147,15 +159,16 @@ class PostgreSQL(VProject):
 
         meson = local["meson"]
         with local.cwd(build_dir):
-            bb.watch(meson
-                    )("test", "-q", "--print-errorlogs", "--suite", "setup")
+            bb.watch(meson)(
+                "test", "-q", "--print-errorlogs", "--suite", "setup"
+            )
 
     def run_testsuite(
         self,
-        test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        test_report_path: Path | None = None,
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+    ) -> dict[str, TestResult] | None:
         """
         Run the test suite for this project.
 
@@ -183,9 +196,9 @@ class PostgreSQL(VProject):
             print(
                 "Including and excluding specific tests is currently not supported for PostgreSQL."
             )
-            #tests_to_run = [
+            # tests_to_run = [
             #    test for test in tests_to_run if test not in tests_to_exclude
-            #]
+            # ]
 
         with local.cwd(build_dir):
             try:
@@ -242,17 +255,22 @@ class PostgreSQL(VProject):
         return "postgres"
 
     def get_database_connection_string(self) -> str:
-        """Get the connection string for the database associated with this
-        project."""
+        """
+        Get the connection string for the database associated with this
+        project.
+        """
         return "jdbc:postgresql://localhost:5432/benchbase"
 
     def database_binary(
         self, revision: ShortCommitHash
     ) -> ProjectBinaryWrapper:
-        """Get the binary used to interact with the database associated with
-        this project."""
+        """
+        Get the binary used to interact with the database associated with
+        this project.
+        """
         return [
-            b for b in self.binaries_for_revision(revision)
+            b
+            for b in self.binaries_for_revision(revision)
             if b.name == "postgres"
         ][0]
 
@@ -278,8 +296,13 @@ class PostgreSQL(VProject):
         try:
             with local.env(PGPASSFILE=Path(".passwdfile").absolute()):
                 bb.watch(initdb)(
-                    "-D", "pgdata", "-U", "admin", "-A", "password",
-                    "--pwfile=.pgpass"
+                    "-D",
+                    "pgdata",
+                    "-U",
+                    "admin",
+                    "-A",
+                    "password",
+                    "--pwfile=.pgpass",
                 )
                 bb.watch(pg_ctl)("start", "-D", "pgdata", "-l", "pglog")
                 bb.watch(createdb)("-U", "admin", "benchbase")
@@ -303,11 +326,12 @@ class PostgreSQL(VProject):
         Path(".pgpass").unlink(missing_ok=True)
 
     def render_workload_config(
-        self, workload: str, configuration: tp.Dict[str, tp.Union[bool, str]]
+        self, workload: str, configuration: dict[str, bool | str]
     ) -> Path:
-        assert (isinstance(self, SupportsBenchbase))
+        assert isinstance(self, SupportsBenchbase)
 
         return Path(
-            BENCHBASE_WORKLOAD_CONFIG_DIR / "postgres" /
-            f"sample_{workload}_config.xml"
+            BENCHBASE_WORKLOAD_CONFIG_DIR
+            / "postgres"
+            / f"sample_{workload}_config.xml"
         )

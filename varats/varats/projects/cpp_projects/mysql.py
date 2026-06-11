@@ -8,10 +8,10 @@ from time import sleep
 import benchbuild as bb
 import jinja2
 from benchbuild.utils.settings import get_number_of_jobs
-from jinja2 import TemplateNotFound, TemplateError
+from jinja2 import TemplateError, TemplateNotFound
 from plumbum import local
 
-from varats.containers.containers import get_base_image, ImageBase
+from varats.containers.containers import ImageBase, get_base_image
 from varats.experiments.hidden_config.database_utils import (
     BENCHBASE_EXTRA_FILES_DIR,
     BENCHBASE_WORKLOAD_CONFIG_DIR,
@@ -20,10 +20,10 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    ProjectBinaryWrapper,
-    get_local_project_repo,
-    RevisionBinaryMap,
     BinaryType,
+    ProjectBinaryWrapper,
+    RevisionBinaryMap,
+    get_local_project_repo,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
@@ -35,36 +35,43 @@ from varats.utils.testsuite_utils import TestResult
 
 class MySQL(VProject):
     """MySQL project."""
+
     NAME = "mysql"
     GROUP = "cpp"
     DOMAIN = ProjectDomains.DATABASE
 
-    SOURCE = [
+    SOURCE: tp.ClassVar = [
         PaperConfigSpecificGit(
             project_name="mysql",
             remote="https://github.com/mysql/mysql-server",
             local="mysql",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
+            shallow=False,
         ),
-        PatchVariationSource()
+        PatchVariationSource(),
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
-        'apt', 'install', '-y', 'build-essential', 'clang', 'cmake',
-        'pkg-config', 'bison'
+        'apt',
+        'install',
+        '-y',
+        'build-essential',
+        'clang',
+        'cmake',
+        'pkg-config',
+        'bison',
     )
 
     def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__(*args, **kwargs)
-        self.__server_handle: tp.Optional[subprocess.Popen] = None
+        self.__server_handle: subprocess.Popen | None = None
         self.__log_handle = None
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List['ProjectBinaryWrapper']:
+        revision: ShortCommitHash,
+    ) -> list['ProjectBinaryWrapper']:
         binary_map = RevisionBinaryMap(get_local_project_repo(MySQL.NAME))
 
         binary_map.specify_binary("build/bin/mysqld", BinaryType.EXECUTABLE)
@@ -83,8 +90,9 @@ class MySQL(VProject):
 
         with local.cwd(build_dir):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                cmake = local["cmake"]["-DDOWNLOAD_BOOST=ON",
-                                       f"-DWITH_BOOST={build_dir}/boost"]
+                cmake = local["cmake"][
+                    "-DDOWNLOAD_BOOST=ON", f"-DWITH_BOOST={build_dir}/boost"
+                ]
                 make = local["make"]
                 bb.watch(cmake)(version_source)
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
@@ -104,8 +112,8 @@ class MySQL(VProject):
     ###############################
     # SupportsTestSuites Protocol #
     ###############################
-    #@property
-    #def id(self) -> str:
+    # @property
+    # def id(self) -> str:
     #    """We need to override the default id from benchbuild, as it contains
     #    the @ symbol which causes issues with the test suite of mysql."""
     #    version_str = str(self.revision)
@@ -132,10 +140,10 @@ class MySQL(VProject):
 
     def run_testsuite(
         self,
-        test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        test_report_path: Path | None = None,
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+    ) -> dict[str, TestResult] | None:
         """
         Run the test suite for this project.
 
@@ -159,14 +167,15 @@ class MySQL(VProject):
                 "--force",
                 "--max-test-fail=1000",  # We want to get as many results as possible, so we set a high limit for test failures
                 f"--parallel={get_number_of_jobs(bb_cfg())}",
-                f"--xml-report={test_report_path.absolute()}"]
+                f"--xml-report={test_report_path.absolute()}",
+            ]
 
             if tests_to_exclude:
                 # Build an exclusion regex pattern for the test binary
                 # Ensure exact matches
-                exclusion_pattern = "|".join([
-                    f"^{test}$" for test in tests_to_exclude
-                ])
+                exclusion_pattern = "|".join(
+                    [f"^{test}$" for test in tests_to_exclude]
+                )
 
                 test_command = test_command[f"--skip-test={exclusion_pattern}"]
 
@@ -233,15 +242,19 @@ class MySQL(VProject):
         return "mysql"
 
     def get_database_connection_string(self) -> str:
-        """Get the connection string for the database associated with this
-        project."""
+        """
+        Get the connection string for the database associated with this
+        project.
+        """
         return "jdbc:mysql://localhost:3306/benchbase?"
 
     def database_binary(
         self, revision: ShortCommitHash
     ) -> ProjectBinaryWrapper:
-        """Get the binary used to interact with the database associated with
-        this project."""
+        """
+        Get the binary used to interact with the database associated with
+        this project.
+        """
         for binary in self.binaries_for_revision(revision):
             if binary.name == "mysqld":
                 return binary
@@ -265,12 +278,15 @@ class MySQL(VProject):
         with local.cwd(build_dir):
             # First, initialize the database with the defaults file
             bb.watch(
-                mysqldbd[f"--defaults-file={defaults_file.absolute()}",
-                         "--initialize-insecure"]
+                mysqldbd[
+                    f"--defaults-file={defaults_file.absolute()}",
+                    "--initialize-insecure",
+                ]
             )()
 
             server_binary = mysqldbd[
-                f"--defaults-file={defaults_file.absolute()}"]
+                f"--defaults-file={defaults_file.absolute()}"
+            ]
 
             tmp_log_file = build_dir / "mysqld.log"
             self.__log_handle = tmp_log_file.open("w")
@@ -280,12 +296,14 @@ class MySQL(VProject):
             )
 
             client_binary = local[build_dir / "bin" / "mysql"][
-                f"--defaults-file={defaults_file.absolute()}", "-u", "root"]
+                f"--defaults-file={defaults_file.absolute()}", "-u", "root"
+            ]
             # Wait for the server to start up by trying to connect with the client binary
             sleep(5)
 
-            bb.watch(client_binary
-                    )("-e", "CREATE DATABASE IF NOT EXISTS benchbase;")
+            bb.watch(client_binary)(
+                "-e", "CREATE DATABASE IF NOT EXISTS benchbase;"
+            )
 
         # Create benchbase db
 
@@ -309,13 +327,13 @@ class MySQL(VProject):
         shutil.rmtree(data_dir, ignore_errors=True)
 
     def render_workload_config(
-        self, workload: str, configuration: tp.Dict[str, tp.Union[bool, str]]
+        self, workload: str, configuration: dict[str, bool | str]
     ) -> Path:
         """Render the workload configuration for BenchBase."""
-
         return Path(
-            BENCHBASE_WORKLOAD_CONFIG_DIR / "mysql" /
-            f"sample_{workload}_config.xml"
+            BENCHBASE_WORKLOAD_CONFIG_DIR
+            / "mysql"
+            / f"sample_{workload}_config.xml"
         )
 
     def __defaults_file_path(self) -> Path:
@@ -327,7 +345,9 @@ class MySQL(VProject):
         defaults_file_path.unlink(missing_ok=True)
 
         # Load the template defaults file and render with jinja2
-        template_defaults_file = BENCHBASE_EXTRA_FILES_DIR / "db_config_files" / "mysql.cnf"
+        template_defaults_file = (
+            BENCHBASE_EXTRA_FILES_DIR / "db_config_files" / "mysql.cnf"
+        )
         # Render the patch with the arguments
         loader = jinja2.FileSystemLoader(
             searchpath=template_defaults_file.parent
@@ -335,7 +355,7 @@ class MySQL(VProject):
         env = jinja2.Environment(
             loader=loader,
             keep_trailing_newline=True,
-            undefined=jinja2.StrictUndefined
+            undefined=jinja2.StrictUndefined,
         )
 
         try:

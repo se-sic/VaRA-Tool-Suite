@@ -481,12 +481,20 @@ _PROJECT_WORKLOADS = {
     "FastDownward": [
         "elevators-opt08-p06-py",
         "data-network-opt18-p17-py",
-        "airport-p20-py",
-        #"childsnack-opt14-p01-py",
+        # "airport-p20-py", Excluded for now, takes to long for one run (~20-25 Minutes in some configurations)
+        # "childsnack-opt14-p01-py",
     ],
     # Video Encoding
-    "libvpx": ["aspen-1080p", "old-town-2160p", "nocturne-1080p"],
-    "x264": ["aspen-1080p", "old-town-2160p", "nocturne-1080p"],
+    "libvpx": [
+        "aspen-1080p",
+        # "old-town-2160p", Excluded for now, takes to long for one run (~15 Minutes)
+        "nocturne-1080p",
+    ],
+    "x264": [
+        "aspen-1080p",
+        # "old-town-2160p", Excluded for now, takes to long for one run (~15 Minutes)
+        "nocturne-1080p",
+    ],
     # ZMQ
     "libzmq": ["bench-inproc-lat", "bench-inproc-thr", "bench-radix-tree"],
     # Compression
@@ -502,6 +510,7 @@ _PROJECT_WORKLOADS = {
     "lrzip": ["countries-land-250m", "silesia", "lukas_2d_16_dicom", "enwik8"],
     # Databases
     "mariadb": ["tpcc", "tpch", "auctionmark"],
+    "mysql": ["tpcc", "tpch", "auctionmark"],
     "postgresql": ["tpcc", "tpch", "auctionmark"],
     # SAT Solvers
     "cadical": ["traffic-kkb-unknown"],
