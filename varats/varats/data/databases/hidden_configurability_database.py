@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy.stats import mannwhitneyu, ttest_ind
+from scipy.stats import mannwhitneyu, ttest_ind, kruskal
 
 from varats.data.cache_helper import cache_dataframe, load_cached_df_or_none
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
@@ -92,8 +92,9 @@ def filter_baseline_rows(df: pd.DataFrame) -> pd.DataFrame:
     return df[df["config_opportunity"] != "__baseline__"]
 
 def get_data_for_single_config(
-    cs: CaseStudy, config_id: tp.Optional[int] = None
+    cs: CaseStudy, config_id: int | None = None
 ) -> pd.DataFrame:
+    """Get data for a single configuration ID."""
     result_df = _load_cached_df(cs.project_name, config_id)
 
     if result_df is None:
@@ -118,6 +119,79 @@ def get_data_for_single_config(
 
     return result_df
 
+def calculate_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate Kruskal-Wallis H-test based on the value_relative column.
+
+    Calculates for two dimensions:
+        1. Fixing a setting (Combination of binary-wl, metric, and config_id)
+          --> are there differences between the variations of this setting?
+        2. Fixing a configuration alternative (Combination of config_opportunity and variation)
+         --> are there differences between the different binary-wl, config_id
+            and metric combinations for this configuration alternative?
+    Receives as input the full dataframe including data for all projects.
+    Returns a summary dataframe with the columns:
+        - project: Project name
+        - num_settings: Number of settings with at least two variations that are significantly different from the baseline
+        - num_sig
+    """
+    result_df = df.copy()
+
+    # Filter out baseline rows
+    filtered_df = filter_baseline_rows(result_df)
+
+    # Select only significant changes
+    significant_df = filter_for_significant_changes(filtered_df)
+
+    # Group by binary-wl, metric, and config_id, then calculate the Kruskal-Wallis H-test
+    def kruskal_wallis(group):
+        if len(group) < 2:
+            return pd.Series({"kruskal_statistic": np.nan, "kruskal_pvalue": np.nan})
+
+        # Extract the value_relative lists for each variation
+        data = [row["value_relative"] for _, row in group.iterrows()]
+
+        # Perform the Kruskal-Wallis H-test
+        statistic, pvalue = kruskal(*data)
+
+        return pd.Series({"kruskal_statistic": statistic, "kruskal_pvalue": pvalue})
+
+    projects = df["project"].unique()
+
+    data_rows = []
+
+    for p in projects:
+        print(f"Calculating Kruskal-Wallis H-test for project {p}...")
+        project_df = significant_df[significant_df["project"] == p].fillna(-1)
+
+        if project_df.empty:
+            print(f"No significant changes found for project {p}, skipping Kruskal-Wallis H-test.")
+            continue
+
+        setting_summary = project_df.groupby(
+            ["binary-wl", "metric", "config_id"])
+
+        num_settings = setting_summary.ngroups
+
+        # For each setting, collect the value_relative lists for all variations and perform the Kruskal-Wallis H-test
+        setting_results = setting_summary.apply(kruskal_wallis)
+        num_sig_settings = setting_results[setting_results["kruskal_pvalue"] < 0.05].shape[0]
+
+        # Repeat for configuration alternatives
+        config_alt_summary = project_df.groupby(["config_opportunity", "variation"])
+        num_conf_alts = config_alt_summary.ngroups
+        config_alt_results = config_alt_summary.apply(kruskal_wallis)
+        num_sig_config_alts = config_alt_results[config_alt_results["kruskal_pvalue"] < 0.05].shape[0]
+
+        data_rows.append({
+            "project": p,
+            "num_settings": num_settings,
+            "num_sig_settings": num_sig_settings,
+            "num_config_alts": num_conf_alts,
+            "num_sig_config_alts": num_sig_config_alts
+        })
+
+    return pd.DataFrame.from_records(data_rows)
 
 def _add_testsuite_info(
     df: pd.DataFrame,
