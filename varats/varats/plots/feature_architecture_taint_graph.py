@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pygraphviz as pgv
 from pygraphviz import AGraph
-from rich import region
 
 from varats.data.reports.architecture_report import (
     FeatureArchitectureTaintReport,
@@ -14,7 +13,7 @@ from varats.experiments.vara.feature_architecture_taint_report_experiment import
     FeatureArchitectureTaintReportExperiment,
 )
 from varats.plot.plot import Plot
-from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plot.plots import PlotConfig, PlotGenerator
 from varats.revision.revisions import get_processed_revisions_files
 from varats.ts_utils.cli_util import make_cli_option
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
@@ -25,19 +24,19 @@ LOG = logging.getLogger(__name__)
 def create_feature_architecture_taint_graph(
     report: FeatureArchitectureTaintReport,
     with_root: bool = True,
-    detailed: bool = False
+    detailed: bool = False,
 ) -> AGraph:
     """Create a feature architecture taint graph for the given project."""
     graph = pgv.AGraph(directed=True, compound=True)
     graph.node_attr["shape"] = "box"
-    subgraphs: tp.Dict[str, AGraph] = {}
+    subgraphs: dict[str, AGraph] = {}
     i = 0
     LOG.setLevel(logging.INFO)
     LOG.info(
         f"Creating feature architecture taint graph for: {report.filename}"
     )
     feature_induced_edges = []
-    root_connections: tp.Dict[str, tp.Set[str]] = {}
+    root_connections: dict[str, set[str]] = {}
     for func_entry in report.function_entries.values():
         outer_module = func_entry.file_name
         if outer_module not in subgraphs:
@@ -57,49 +56,57 @@ def create_feature_architecture_taint_graph(
                     subgraphs[a_region].add_node(f"{a_region}:{feature}")
                     for f in region_entry.features:
                         if feature == "root":
-                            if outer_module not in root_connections.keys():
+                            if outer_module not in root_connections:
                                 root_connections[outer_module] = set()
                             root_connections[outer_module].add(a_region)
                         if f != "root" or feature != "root" or with_root:
                             if not fg.has_node(f"{outer_module}:{f}"):
                                 fg.add_node(f"{outer_module}:{f}")
                             if not detailed:
-                                feature_induced_edges.append((
-                                    f"{a_region}:{feature}",
-                                    f"{outer_module}:root"
-                                ))
+                                feature_induced_edges.append(
+                                    (
+                                        f"{a_region}:{feature}",
+                                        f"{outer_module}:root",
+                                    )
+                                )
                             else:
-                                feature_induced_edges.append((
-                                    f"{a_region}:{feature}",
-                                    f"{outer_module}:{f}"
-                                ))
+                                feature_induced_edges.append(
+                                    (
+                                        f"{a_region}:{feature}",
+                                        f"{outer_module}:{f}",
+                                    )
+                                )
     weighted_edges = Counter(feature_induced_edges)
     for (u, v), k in weighted_edges.items():
         if u == v:
             continue
         v_region = v.split(":")[0]
         u_region = u.split(":")[0]
-        if v_region not in root_connections.keys(
-        ) or u_region not in root_connections[v_region]:
+        if (
+            v_region not in root_connections
+            or u_region not in root_connections[v_region]
+        ):
             if not v_region == u_region:
                 graph.add_edge(
                     u,
                     v,
                     color="red",
                     label=f"{k}",
-                    lhead=subgraphs[v_region].name
+                    lhead=subgraphs[v_region].name,
                 )
             else:
                 graph.add_edge(u, v, color="red", label=f"{k}")
-        elif not detailed and weighted_edges[
-            (f"{u_region}:root", f"{v_region}:root")] < k:
+        elif (
+            not detailed
+            and weighted_edges[(f"{u_region}:root", f"{v_region}:root")] < k
+        ):
             if not v_region == u_region:
                 graph.add_edge(
                     u,
                     v,
                     label=f"{k}",
                     color="orange",
-                    lhead=subgraphs[v_region].name
+                    lhead=subgraphs[v_region].name,
                 )
             else:
                 graph.add_edge(u, v, label=f"{k}", color="orange")
@@ -119,8 +126,10 @@ class FeatureArchitectureTaintGraph(
     """Create a feature architecture taint graph for the given project."""
 
     def __init__(
-        self, plot_config: PlotConfig, report: FeatureArchitectureTaintReport,
-        **kwargs: tp.Any
+        self,
+        plot_config: PlotConfig,
+        report: FeatureArchitectureTaintReport,
+        **kwargs: tp.Any,
     ) -> None:
         super().__init__(plot_config, **kwargs)
         self.report_file = report
@@ -135,8 +144,7 @@ class FeatureArchitectureTaintGraph(
         )
         graph.layout(prog="dot")
         graph.draw(
-            plot_dir / f"{self.report_file.path.stem}_with_root.svg",
-            prog="dot"
+            plot_dir / f"{self.report_file.path.stem}_with_root.svg", prog="dot"
         )
         graph.write(plot_dir / f"{filetype}.dot")
         graph = create_feature_architecture_taint_graph(self.report_file, False)
@@ -154,22 +162,23 @@ class FeatureArchitectureTaintGraphPlotGenerator(
             "-dt",
             "--detailed",
             is_flag=True,
-            help="Plot detailed dependencies."
-        )
-    ]
+            help="Plot detailed dependencies.",
+        ),
+    ],
 ):
     """Plot generator for the feature architecture taint graph."""
 
-    def generate(self) -> tp.List[Plot]:
+    def generate(self) -> list[Plot]:
         return [
             FeatureArchitectureTaintGraph(
                 self.plot_config,
                 FeatureArchitectureTaintReport(path.full_path()),
-                **self.plot_kwargs
-            ) for path in get_processed_revisions_files(
+                **self.plot_kwargs,
+            )
+            for path in get_processed_revisions_files(
                 self.plot_kwargs["case_study"].project_name,
                 FeatureArchitectureTaintReportExperiment,
                 FeatureArchitectureTaintReport,
-                only_newest=True
+                only_newest=True,
             )
         ]

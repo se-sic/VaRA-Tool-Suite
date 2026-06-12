@@ -1,15 +1,11 @@
 import typing as tp
 from collections import namedtuple
-from functools import reduce
-from itertools import groupby, count
-from pyexpat import features
+from itertools import groupby
 from typing import Any
 
 import click
 import pandas as pd
 import yaml
-from docutils.nodes import entry
-from numpy.ma.core import indices
 
 from varats.data.reports.architecture_report import (
     FeatureArchitectureTaintReport,
@@ -17,7 +13,6 @@ from varats.data.reports.architecture_report import (
 from varats.experiments.vara.feature_architecture_taint_report_experiment import (
     FeatureArchitectureTaintReportExperiment,
 )
-from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.report.report import ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
@@ -25,17 +20,17 @@ from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 from varats.tables.design_structure_matrix import (
+    DependencyTypes,
     DesignStructureMatrix,
     InternalDSM,
-    DependencyTypes,
 )
 from varats.ts_utils.cli_util import make_cli_option
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 
 
 def get_all_regions(
-    fat_report: FeatureArchitectureTaintReport
-) -> tp.Dict[str, tp.Set[str]]:
+    fat_report: FeatureArchitectureTaintReport,
+) -> dict[str, set[str]]:
     regions_dict = dict()
     for function in fat_report.function_entries.values():
         if function.file_name not in regions_dict:
@@ -46,8 +41,8 @@ def get_all_regions(
 
 
 def get_all_regions_tuples(
-    fat_report: FeatureArchitectureTaintReport
-) -> tp.Tuple[tp.Set[str], tp.Set[str]]:
+    fat_report: FeatureArchitectureTaintReport,
+) -> tuple[set[str], set[str]]:
     a_regions = set()
     features = set()
     for function in fat_report.function_entries.values():
@@ -58,7 +53,7 @@ def get_all_regions_tuples(
 
 
 def fat_report_to_table(
-    fat_report: FeatureArchitectureTaintReport
+    fat_report: FeatureArchitectureTaintReport,
 ) -> pd.DataFrame:
     labels = get_all_regions_tuples(fat_report)
     idx = pd.MultiIndex.from_product(labels, names=["region", "features"])
@@ -68,8 +63,10 @@ def fat_report_to_table(
             for in_region, in_features in region.incommingRegions.items():
                 for in_feature in in_features:
                     for feature in region.features:
-                        df.loc[(in_region, in_feature),
-                               (function.file_name, feature)] += 1
+                        df.loc[
+                            (in_region, in_feature),
+                            (function.file_name, feature),
+                        ] += 1
     return df
 
 
@@ -79,12 +76,12 @@ fat_dependency_attributes = namedtuple(
 
 
 def fat_report_to_DSM(
-    fat_report: FeatureArchitectureTaintReport
+    fat_report: FeatureArchitectureTaintReport,
 ) -> InternalDSM:
     dsm = InternalDSM(
         fat_report.filename.commit_hash.hash, fat_report.filename.project_name
     )
-    dependencies: tp.Dict[tp.Tuple[str, str], fat_dependency_attributes] = {}
+    dependencies: dict[tuple[str, str], fat_dependency_attributes] = {}
     for function in fat_report.function_entries.values():
         for region in function.interactions:
             for in_region, in_features in region.incommingRegions.items():
@@ -92,26 +89,27 @@ def fat_report_to_DSM(
                     k: len(list(v)) for k, v in groupby(sorted(in_features))
                 }
                 if dependencies.get((in_region, function.file_name)) is None:
-                    dependencies[(in_region, function.file_name)
-                                ] = fat_dependency_attributes(
-                                    len(in_features), feature_dict,
-                                    set(region.features)
-                                )
+                    dependencies[(in_region, function.file_name)] = (
+                        fat_dependency_attributes(
+                            len(in_features), feature_dict, set(region.features)
+                        )
+                    )
                 else:
                     existing = dependencies[(in_region, function.file_name)]
-                    dependencies[(in_region, function.file_name)
-                                ] = fat_dependency_attributes(
-                                    existing.weight + len(in_features), {
-                                        **existing.incoming_features,
-                                        **feature_dict
-                                    },
-                                    existing.region_features.union(
-                                        set(region.features)
-                                    )
-                                )
+                    dependencies[(in_region, function.file_name)] = (
+                        fat_dependency_attributes(
+                            existing.weight + len(in_features),
+                            {**existing.incoming_features, **feature_dict},
+                            existing.region_features.union(
+                                set(region.features)
+                            ),
+                        )
+                    )
     for (src, dst), attributes in dependencies.items():
-        if not "root" in attributes.incoming_features != set(
-        ) or not "root" in attributes.region_features:
+        if (
+            not "root" in attributes.incoming_features != set()
+            or "root" not in attributes.region_features
+        ):
             dsm.add_dependency(src, dst, "Feature Induced")
         dsm.add_dependency(
             src,
@@ -120,17 +118,18 @@ def fat_report_to_DSM(
             weight=attributes.weight,
             attributes={
                 "Incoming Features": attributes.incoming_features,
-                "Region Features": attributes.region_features
-            }
+                "Region Features": attributes.region_features,
+            },
         )
     return dsm
 
 
 class FeatureArchitectureTaintTable(Table, table_name="FAT_table"):
-
     def __init__(
-        self, table_config: tp.Any, report_path: ReportFilepath,
-        **table_kwargs: tp.Any
+        self,
+        table_config: tp.Any,
+        report_path: ReportFilepath,
+        **table_kwargs: tp.Any,
     ) -> None:
         super().__init__(table_config, **table_kwargs)
         self.report = FeatureArchitectureTaintReport(report_path.full_path())
@@ -155,7 +154,6 @@ class FeatureArchitectureTaintTable(Table, table_name="FAT_table"):
 
 
 class FeatureArchitectureDsm(DesignStructureMatrix, table_name="Fat_DSM"):
-
     def __init__(
         self,
         table_config: tp.Any,
@@ -170,24 +168,27 @@ class FeatureArchitectureDsm(DesignStructureMatrix, table_name="Fat_DSM"):
             self.dsm.merge(
                 InternalDSM.from_dv8_json_string(
                     table_kwargs["dv8_matrix"].read(),
-                    table_kwargs["case_study"].project_name
+                    table_kwargs["case_study"].project_name,
                 )
             )
         self.dsm.apply_architecture_model()
 
 
 def feature_dirven_dependency_filter_factory(
-    structural_dependencies: tp.List[str | DependencyTypes] = (
-        "Call", "Use", "Extend", "Contain", "Import"
+    structural_dependencies: list[str | DependencyTypes] = (
+        "Call",
+        "Use",
+        "Extend",
+        "Contain",
+        "Import",
     ),
-    threshold: float = 1
-) -> tp.Callable[[list[InternalDSM.Dependency]], tp.Optional[str]]:
+    threshold: float = 1,
+) -> tp.Callable[[list[InternalDSM.Dependency]], str | None]:
 
-    def filter_func(
-        dependencies: list[InternalDSM.Dependency]
-    ) -> tp.Optional[str]:
+    def filter_func(dependencies: list[InternalDSM.Dependency]) -> str | None:
         dep_dict = {
-            k: list(v) for k, v in groupby(
+            k: list(v)
+            for k, v in groupby(
                 sorted(dependencies, key=lambda d: d.name), lambda d: d.name
             )
         }
@@ -203,15 +204,20 @@ def feature_dirven_dependency_filter_factory(
                 feature_involvment_count = {}
                 for interaction in feature_interactions:
                     for feature, weight in interaction.attributes[
-                        "Incoming Features"].items():
+                        "Incoming Features"
+                    ].items():
                         if feature not in feature_involvment_count:
                             feature_involvment_count[feature] = 0
                         feature_involvment_count[feature] += weight
                 root_weight = feature_involvment_count.get("root", 0)
-                interesting_feature: tp.Optional[str] = None
+                interesting_feature: str | None = None
                 max_weight = 0
                 for feature, weight in feature_involvment_count.items():
-                    if feature != "root" and weight * threshold >= root_weight and weight > max_weight:
+                    if (
+                        feature != "root"
+                        and weight * threshold >= root_weight
+                        and weight > max_weight
+                    ):
                         interesting_feature = feature
                         max_weight = weight
                 return interesting_feature
@@ -223,10 +229,12 @@ def feature_dirven_dependency_filter_factory(
 class FeatureInducedDependencyTable(
     Table, table_name="feature_induced_dependency_table"
 ):
-
     def __init__(
-        self, table_config: tp.Any, report_path: ReportFilepath,
-        dv8_matrix: tp.IO, **table_kwargs: tp.Any
+        self,
+        table_config: tp.Any,
+        report_path: ReportFilepath,
+        dv8_matrix: tp.IO,
+        **table_kwargs: tp.Any,
     ) -> None:
         super().__init__(table_config, **table_kwargs)
         self.report = FeatureArchitectureTaintReport(report_path.full_path())
@@ -238,8 +246,7 @@ class FeatureInducedDependencyTable(
             )
         )
 
-
-#        self.dsm.apply_architecture_model()
+    #        self.dsm.apply_architecture_model()
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         """
@@ -281,10 +288,12 @@ class FeatureInducedDependencyTable(
 class OverlappingDependencies(
     Table, table_name="overlapping_dependencies_table"
 ):
-
     def __init__(
-        self, table_config: tp.Any, report_path: ReportFilepath,
-        dv8_matrix: tp.IO, **table_kwargs: tp.Any
+        self,
+        table_config: tp.Any,
+        report_path: ReportFilepath,
+        dv8_matrix: tp.IO,
+        **table_kwargs: tp.Any,
     ) -> None:
         super().__init__(table_config, **table_kwargs)
         self.report = FeatureArchitectureTaintReport(report_path.full_path())
@@ -296,8 +305,7 @@ class OverlappingDependencies(
         self.dsm = fat_report_to_DSM(self.report)
         self.dsm.merge(self.dv8_matrix)
 
-
-#        self.dsm.apply_architecture_model()
+    #        self.dsm.apply_architecture_model()
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         """
@@ -314,7 +322,7 @@ class OverlappingDependencies(
         df = pd.DataFrame(
             self.dsm.count_overlapping_dependencies(dependencies, dependencies)
         )
-        kwargs: tp.Dict[str, tp.Any] = {}
+        kwargs: dict[str, tp.Any] = {}
         style = df.style
         if table_format.is_latex():
             kwargs["hrules"] = True
@@ -326,15 +334,17 @@ class OverlappingDependencies(
             style,
             wrap_table=wrap_table,
             wrap_landscape=True,
-            **kwargs
+            **kwargs,
         )
 
 
 class ModelInteractions(Table, table_name="model_interactions_table"):
-
     def __init__(
-        self, table_config: tp.Any, report_path: ReportFilepath,
-        modules: tp.List[str], **table_kwargs: tp.Any
+        self,
+        table_config: tp.Any,
+        report_path: ReportFilepath,
+        modules: list[str],
+        **table_kwargs: tp.Any,
     ) -> None:
         super().__init__(table_config, **table_kwargs)
         self.report = FeatureArchitectureTaintReport(report_path.full_path())
@@ -352,26 +362,31 @@ class ModelInteractions(Table, table_name="model_interactions_table"):
                 self.a
             ) or function.file_name.endswith(self.b):
                 for region in function.interactions:
-                    for in_region, in_features in region.incommingRegions.items(
-                    ):
-                        if in_region.endswith(
-                            self.a
-                        ) and function.file_name.endswith(
-                            self.b
-                        ) or in_region.endswith(
-                            self.b
-                        ) and function.file_name.endswith(self.a):
-                            filtered_report[f_entry(
-                                function.file_name, function.demangled_name
-                            )] = region_entry(in_region, in_features)
+                    for (
+                        in_region,
+                        in_features,
+                    ) in region.incommingRegions.items():
+                        if (
+                            in_region.endswith(self.a)
+                            and function.file_name.endswith(self.b)
+                        ) or (
+                            in_region.endswith(self.b)
+                            and function.file_name.endswith(self.a)
+                        ):
+                            filtered_report[
+                                f_entry(
+                                    function.file_name, function.demangled_name
+                                )
+                            ] = region_entry(in_region, in_features)
         return yaml.dump(filtered_report)
 
 
 class ScatteringTable(Table, table_name="scattering_table"):
-
     def __init__(
-        self, table_config: tp.Any, report_path: ReportFilepath,
-        **table_kwargs: tp.Any
+        self,
+        table_config: tp.Any,
+        report_path: ReportFilepath,
+        **table_kwargs: tp.Any,
     ):
         super().__init__(table_config, **table_kwargs)
         self.report = FeatureArchitectureTaintReport(report_path.full_path())
@@ -393,7 +408,7 @@ class ScatteringTable(Table, table_name="scattering_table"):
         df = pd.DataFrame.from_dict(
             feature_scattering, orient="index", columns=["Scattering"]
         )
-        kwargs: tp.Dict[str, tp.Any] = {}
+        kwargs: dict[str, tp.Any] = {}
         style = df.style
         if table_format.is_latex():
             kwargs["hrules"] = True
@@ -405,7 +420,7 @@ class ScatteringTable(Table, table_name="scattering_table"):
             style,
             wrap_table=wrap_table,
             wrap_landscape=True,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -414,18 +429,19 @@ class FeatureArchitectureTaintTableGenerator(
 ):
     """Table generator for Feature Architecture Taint Table."""
 
-    def generate(self) -> tp.List[Table]:
+    def generate(self) -> list[Table]:
         return [
             FeatureArchitectureTaintTable(
                 self.table_config, path, **self.table_kwargs
-            ) for path in get_processed_revisions_files(
+            )
+            for path in get_processed_revisions_files(
                 self.table_kwargs["case_study"].project_name,
                 FeatureArchitectureTaintReportExperiment,
                 FeatureArchitectureTaintReport,
                 file_name_filter=get_case_study_file_name_filter(
                     self.table_kwargs["case_study"]
                 ),
-                only_newest=True
+                only_newest=True,
             )
         ]
 
@@ -441,24 +457,23 @@ class FeatureArchitectureTaintDSMGenerator(
             type=click.File("r"),
             required=False,
             metavar="dv8_matrix",
-            help="The dv8 Matrix to convert."
-        )
-    ]
+            help="The dv8 Matrix to convert.",
+        ),
+    ],
 ):
     """Table generator for Feature Architecture Taint Table."""
 
-    def generate(self) -> tp.List[Table]:
+    def generate(self) -> list[Table]:
         return [
-            FeatureArchitectureDsm(
-                self.table_config, path, **self.table_kwargs
-            ) for path in get_processed_revisions_files(
+            FeatureArchitectureDsm(self.table_config, path, **self.table_kwargs)
+            for path in get_processed_revisions_files(
                 self.table_kwargs["case_study"].project_name,
                 FeatureArchitectureTaintReportExperiment,
                 FeatureArchitectureTaintReport,
                 file_name_filter=get_case_study_file_name_filter(
                     self.table_kwargs["case_study"]
                 ),
-                only_newest=True
+                only_newest=True,
             )
         ]
 
@@ -474,24 +489,25 @@ class OverLappingDependenciesTableGenerator(
             type=click.File("r"),
             required=True,
             metavar="dv8_matrix",
-            help="The dv8 Matrix to convert."
-        )
-    ]
+            help="The dv8 Matrix to convert.",
+        ),
+    ],
 ):
     """Table generator for Feature Induced Dependency Table."""
 
-    def generate(self) -> tp.List[Table]:
+    def generate(self) -> list[Table]:
         return [
             OverlappingDependencies(
                 self.table_config, path, **self.table_kwargs
-            ) for path in get_processed_revisions_files(
+            )
+            for path in get_processed_revisions_files(
                 self.table_kwargs["case_study"].project_name,
                 FeatureArchitectureTaintReportExperiment,
                 FeatureArchitectureTaintReport,
                 file_name_filter=get_case_study_file_name_filter(
                     self.table_kwargs["case_study"]
                 ),
-                only_newest=True
+                only_newest=True,
             )
         ]
 
@@ -507,24 +523,25 @@ class FeatureInducedDependencyTableGenerator(
             type=click.File("r"),
             required=True,
             metavar="dv8_matrix",
-            help="The dv8 Matrix to convert."
-        )
-    ]
+            help="The dv8 Matrix to convert.",
+        ),
+    ],
 ):
     """Table generator for Feature Induced Dependency Table."""
 
-    def generate(self) -> tp.List[Table]:
+    def generate(self) -> list[Table]:
         return [
             FeatureInducedDependencyTable(
                 self.table_config, path, **self.table_kwargs
-            ) for path in get_processed_revisions_files(
+            )
+            for path in get_processed_revisions_files(
                 self.table_kwargs["case_study"].project_name,
                 FeatureArchitectureTaintReportExperiment,
                 FeatureArchitectureTaintReport,
                 file_name_filter=get_case_study_file_name_filter(
                     self.table_kwargs["case_study"]
                 ),
-                only_newest=True
+                only_newest=True,
             )
         ]
 
@@ -541,12 +558,11 @@ class ModuleInteractionsTableGenerator(
             nargs=2,
             required=True,
             metavar="modules",
-            help="The dv8 Matrix to convert."
-        )
-    ]
+            help="The dv8 Matrix to convert.",
+        ),
+    ],
 ):
-
-    def generate(self) -> tp.List[Table]:
+    def generate(self) -> list[Table]:
         return [
             ModelInteractions(self.table_config, path, **self.table_kwargs)
             for path in get_processed_revisions_files(
@@ -556,7 +572,7 @@ class ModuleInteractionsTableGenerator(
                 file_name_filter=get_case_study_file_name_filter(
                     self.table_kwargs["case_study"]
                 ),
-                only_newest=True
+                only_newest=True,
             )
         ]
 
@@ -564,10 +580,9 @@ class ModuleInteractionsTableGenerator(
 class ScatteringTableGenerator(
     TableGenerator,
     generator_name="scattering-table",
-    options=[REQUIRE_CASE_STUDY]
+    options=[REQUIRE_CASE_STUDY],
 ):
-
-    def generate(self) -> tp.List[Table]:
+    def generate(self) -> list[Table]:
         return [
             ScatteringTable(self.table_config, path, **self.table_kwargs)
             for path in get_processed_revisions_files(
@@ -577,6 +592,6 @@ class ScatteringTableGenerator(
                 file_name_filter=get_case_study_file_name_filter(
                     self.table_kwargs["case_study"]
                 ),
-                only_newest=True
+                only_newest=True,
             )
         ]

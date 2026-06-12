@@ -1,4 +1,5 @@
 """Module for the :class:`FeatureProvider`."""
+
 import typing as tp
 from pathlib import Path
 
@@ -13,7 +14,7 @@ from varats.utils.filesystem_util import lock_file
 class FeatureModelNotFound(FileNotFoundError):
     """Exception raised when the specified feature model could not be found."""
 
-    def __init__(self, project: Project, fm_path: tp.Optional[Path]) -> None:
+    def __init__(self, project: Project, fm_path: Path | None) -> None:
         err_msg = f"Could not find feature model for project {project.name}!\n"
         if fm_path:
             err_msg += f"No file at: {fm_path}."
@@ -30,7 +31,7 @@ class FeatureModelProvider(Provider):
 
     @classmethod
     def create_provider_for_project(
-        cls, project: tp.Type[Project]
+        cls, project: type[Project]
     ) -> tp.Optional['FeatureModelProvider']:
         """
         Creates a provider instance for the given project if possible.
@@ -43,7 +44,7 @@ class FeatureModelProvider(Provider):
 
     @classmethod
     def create_default_provider(
-        cls, project: tp.Type[Project]
+        cls, project: type[Project]
     ) -> 'FeatureModelProvider':
         """
         Creates a default provider instance that can be used with any project.
@@ -58,8 +59,8 @@ class FeatureModelProvider(Provider):
     def get_feature_model_path(
         self,
         # Currently, unused until pascals impl is ready
-        revision: str  # pylint: disable=W0613
-    ) -> tp.Optional[Path]:
+        revision: str,  # pylint: disable=W0613
+    ) -> Path | None:
         """
         Get the path to a feature model for a specific `revision` that describes
         the features of a project and their relationships. In case that no

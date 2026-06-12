@@ -17,7 +17,7 @@ class ArchitectureModelProvider(Provider):
 
     @classmethod
     def create_provider_for_project(
-        cls, project: tp.Type[Project]
+        cls, project: type[Project]
     ) -> tp.Optional['ArchitectureModelProvider']:
         """
         Creates a provider instance for the given project if possible.
@@ -30,7 +30,7 @@ class ArchitectureModelProvider(Provider):
 
     @classmethod
     def create_default_provider(
-        cls, project: tp.Type[Project]
+        cls, project: type[Project]
     ) -> 'ArchitectureModelProvider':
         """
         Creates a default provider instance that can be used with any project.
@@ -42,7 +42,9 @@ class ArchitectureModelProvider(Provider):
             "All usages should be covered by the project specific provider."
         )
 
-    def get_architecture_model_path(self,) -> tp.Optional[Path]:
+    def get_architecture_model_path(
+        self,
+    ) -> Path | None:
         """
         Get the path to a architecture model for a specific `revision` that
         describes the architectures of a project and their relationships. In
@@ -58,8 +60,9 @@ class ArchitectureModelProvider(Provider):
 
         fully_qualified_am_name = "ArchitectureModel"
 
-        for project_dir in self._get_architecture_model_repository_path(
-        ).iterdir():
+        for (
+            project_dir
+        ) in self._get_architecture_model_repository_path().iterdir():
             if project_dir.name.lower() == project_name:
                 for poss_am_file in project_dir.iterdir():
                     if poss_am_file.stem == fully_qualified_am_name:
@@ -90,19 +93,21 @@ class ArchitectureModelProvider(Provider):
 
 
 class ArchitectureModelNotFound(Exception):
-    """Exception to be raised if no architecture model could be found for a
-    project."""
+    """
+    Exception to be raised if no architecture model could be found for a
+    project.
+    """
 
-    def __init__(
-        self, project: tp.Type[Project], path: tp.Optional[Path]
-    ) -> None:
+    def __init__(self, project: type[Project], path: Path | None) -> None:
         self.project = project
         self.path = path
         super().__init__(self.__str__())
 
     def __str__(self) -> str:
         if self.path is None:
-            return f"No architecture model found for project {self.project.NAME}"
+            return (
+                f"No architecture model found for project {self.project.NAME}"
+            )
         return f"No architecture model found for project {self.project.NAME} at {self.path}"
 
 
@@ -110,12 +115,13 @@ class ArchitectureModel:
     """Class representing an architecture model."""
 
     class Location:
-        """Class representing a file, start- and end-line in an architecture
-        model."""
+        """
+        Class representing a file, start- and end-line in an architecture
+        model.
+        """
 
         def __init__(
-            self, file: str, start_line: tp.Optional[int],
-            end_line: tp.Optional[int]
+            self, file: str, start_line: int | None, end_line: int | None
         ) -> None:
             self.file = file
             self.start_line = start_line
@@ -123,32 +129,33 @@ class ArchitectureModel:
 
     def __init__(self, path: Path, project: str) -> None:
         self.path = path
-        with open(path, 'r') as stream:
+        with open(path) as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             raw_model = next(documents)
             raw_module_definitions = raw_model["Modules"]
-            self.modules: tp.Dict[str, tp.List[ArchitectureModel.Location]] = {}
+            self.modules: dict[str, list[ArchitectureModel.Location]] = {}
             for raw_module_definition in raw_module_definitions:
                 self.modules[raw_module_definition["Name"]] = [
                     ArchitectureModel.Location(
                         loc["File"],
                         loc["StartLine"] if "StartLine" in loc else None,
-                        loc["EndLine"] if "EndLine" in loc else None
-                    ) for loc in raw_module_definition["Locations"]
+                        loc["EndLine"] if "EndLine" in loc else None,
+                    )
+                    for loc in raw_module_definition["Locations"]
                 ]
             if "Packages" not in raw_model:
                 self.packages = {}
                 return
             raw_package_definitions = raw_model["Packages"]
-            self.packages: tp.Dict[str, tp.List[str]] = {}
+            self.packages: dict[str, list[str]] = {}
             for raw_package_definition in raw_package_definitions:
-                self.packages[raw_package_definition["Name"]] = \
+                self.packages[raw_package_definition["Name"]] = (
                     raw_package_definition["Modules"]
+                )
 
-    def get_module_for_location(self,
-                                file: str,
-                                line: tp.Optional[int] = None
-                               ) -> tp.Optional[str]:
+    def get_module_for_location(
+        self, file: str, line: int | None = None
+    ) -> str | None:
         """
         Get the module a specific file and line belongs to.
 
@@ -165,8 +172,8 @@ class ArchitectureModel:
                     if not line:
                         return module
                     if (
-                        location.start_line is None or
-                        location.start_line <= line
+                        location.start_line is None
+                        or location.start_line <= line
                     ) and (
                         location.end_line is None or location.end_line >= line
                     ):

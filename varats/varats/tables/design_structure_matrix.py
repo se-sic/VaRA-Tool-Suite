@@ -1,4 +1,3 @@
-import enum
 import json
 import typing as tp
 from enum import Enum
@@ -32,32 +31,38 @@ class DependencyTypes(Enum):
     def __eq__(self, other):
         if isinstance(other, str):
             return self.value == other
-        elif isinstance(other, DependencyTypes):
+        if isinstance(other, DependencyTypes):
             return self.value == other.value
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __hash__(self):
         return hash(self.value)
 
 
 class InternalDSM:
-    """Internal representation of a Design Structure Matrix Used as an interface
-    between reports and different DSM tools."""
+    """
+    Internal representation of a Design Structure Matrix Used as an interface
+    between reports and different DSM tools.
+    """
+
     name: str
     project: str
-    dependencies: tp.List["InternalDSM.Dependency"]
+    dependencies: list["InternalDSM.Dependency"]
 
     class Dependency:
         source: str
         target: str
         weight: int
         name: str
-        attributes: tp.Dict[str, tp.Dict[str, int]]
+        attributes: dict[str, dict[str, int]]
 
         def __init__(
-            self, source: str, target: str, name: str, weight: int,
-            attributes: tp.Optional[tp.Dict[str, tp.Dict[str, int]]]
+            self,
+            source: str,
+            target: str,
+            name: str,
+            weight: int,
+            attributes: dict[str, dict[str, int]] | None,
         ) -> None:
             self.source = source
             self.target = target
@@ -74,7 +79,7 @@ class InternalDSM:
     def __init__(self, name: str, project: str) -> None:
         self.name = name
         self.project = project
-        self.dependencies: tp.List[InternalDSM.Dependency] = []
+        self.dependencies: list[InternalDSM.Dependency] = []
 
     def add_dependency(
         self,
@@ -82,7 +87,7 @@ class InternalDSM:
         target: str,
         name: str,
         weight: int = 1,
-        attributes: tp.Optional[tp.Dict[str, tp.Dict[str, int]]] = None
+        attributes: dict[str, dict[str, int]] | None = None,
     ) -> None:
         dependency = InternalDSM.Dependency(
             source, target, name, weight, attributes
@@ -102,9 +107,9 @@ class InternalDSM:
             dependency.target = am.get_module_for_location(dependency.target)
 
     def as_dsm_dict(
-        self
+        self,
     ) -> dict[tuple[str, str], list["InternalDSM.Dependency"]]:
-        dsm_dict: dict[tuple[str, str], list["InternalDSM.Dependency"]] = {}
+        dsm_dict: dict[tuple[str, str], list[InternalDSM.Dependency]] = {}
         for dependency in self.dependencies:
             key = (dependency.source, dependency.target)
             if key not in dsm_dict:
@@ -128,8 +133,11 @@ class InternalDSM:
             variables = json_dict["variables"]
             if "cells" in json_dict and isinstance(json_dict["cells"], list):
                 for cell in json_dict["cells"]:
-                    if "src" in cell and "dest" in cell and "values" in cell and isinstance(
-                        cell["values"], dict
+                    if (
+                        "src" in cell
+                        and "dest" in cell
+                        and "values" in cell
+                        and isinstance(cell["values"], dict)
                     ):
                         source_entry = variables[cell["src"]]
                         target_entry = variables[cell["dest"]]
@@ -140,15 +148,23 @@ class InternalDSM:
         return dsm
 
     def merge(self, other: 'InternalDSM') -> None:
-        """Merge another DSM into this one, combining dependencies with the same
-        source and target."""
+        """
+        Merge another DSM into this one, combining dependencies with the same
+        source and target.
+        """
         for other_dependency in other.dependencies:
             found = False
             for dependency in self.dependencies:
-                if dependency.source == other_dependency.source and dependency.target == other_dependency.target and dependency.name == other_dependency.name:
+                if (
+                    dependency.source == other_dependency.source
+                    and dependency.target == other_dependency.target
+                    and dependency.name == other_dependency.name
+                ):
                     dependency.weight += other_dependency.weight
-                    for group, attributes in other_dependency.attributes.items(
-                    ):
+                    for (
+                        group,
+                        attributes,
+                    ) in other_dependency.attributes.items():
                         if group not in dependency.attributes:
                             dependency.attributes[group] = {}
                         for attribute, value in attributes.items():
@@ -161,10 +177,12 @@ class InternalDSM:
                 self.dependencies.append(other_dependency)
 
     def count_overlapping_dependencies(
-        self, A: tp.List[str], B: tp.List[str]
+        self, A: list[str], B: list[str]
     ) -> dict[str, dict[str, int]]:
-        """Count occurrences where dependencies of a type in A align with one or
-        more dependencies of a type form B."""
+        """
+        Count occurrences where dependencies of a type in A align with one or
+        more dependencies of a type form B.
+        """
         as_dict = self.as_dsm_dict()
         count_dict: dict[str, dict[str, int]] = {}
         for key, dependencies in as_dict.items():
@@ -174,12 +192,16 @@ class InternalDSM:
                         count_dict[dependency.name] = {}
                     for other_dependency in dependencies:
                         if other_dependency.name in B:
-                            if other_dependency.name not in count_dict[
-                                dependency.name]:
+                            if (
+                                other_dependency.name
+                                not in count_dict[dependency.name]
+                            ):
                                 count_dict[dependency.name][
-                                    other_dependency.name] = 0
-                            count_dict[dependency.name][other_dependency.name
-                                                       ] += 1
+                                    other_dependency.name
+                                ] = 0
+                            count_dict[dependency.name][
+                                other_dependency.name
+                            ] += 1
         return count_dict
 
 
@@ -191,10 +213,10 @@ Export to DSMEditor XML format
 class DSMEditorXML:
     title: str
     project: str
-    entries: tp.Dict[str, "DSMEditorXML.DSMEntry"]
-    groups: tp.List["DSMGroup"]
-    connections: tp.List["DSMConnection"]
-    interfaces: tp.Dict[str, tp.Dict[str, "DMSInterface"]]
+    entries: dict[str, "DSMEditorXML.DSMEntry"]
+    groups: list["DSMGroup"]
+    connections: list["DSMConnection"]
+    interfaces: dict[str, dict[str, "DMSInterface"]]
     entryUid: int = 0
     groupUid: int = 0
     interfaceUid: int = 0
@@ -220,16 +242,16 @@ class DSMEditorXML:
         name: str
         priority: int
         uid: int
-        background_color: tp.Tuple[float, float, float]
-        foreground_color: tp.Tuple[float, float, float]
+        background_color: tuple[float, float, float]
+        foreground_color: tuple[float, float, float]
 
         def __init__(
             self,
             uid: int,
             name: str,
             priority: int,
-            background_color: tp.Tuple[float, float, float] = (1.0, 1.0, 1.0),
-            foreground_color: tp.Tuple[float, float, float] = (0.0, 0.0, 0.0)
+            background_color: tuple[float, float, float] = (1.0, 1.0, 1.0),
+            foreground_color: tuple[float, float, float] = (0.0, 0.0, 0.0),
         ) -> None:
             self.uid = uid
             self.name = name
@@ -256,7 +278,7 @@ class DSMEditorXML:
         col_uid: int
         name: str
         weight: float
-        interfaces: tp.List[int]
+        interfaces: list[int]
 
         def __init__(
             self,
@@ -264,7 +286,7 @@ class DSMEditorXML:
             col_uid: int,
             name: str,
             weight: float = 1.0,
-            interfaces=None
+            interfaces=None,
         ) -> None:
             if interfaces is None:
                 interfaces = []
@@ -282,8 +304,9 @@ class DSMEditorXML:
             ET.SubElement(connection, "weight").text = str(self.weight)
             interfaces = ET.SubElement(connection, "interfaces")
             for interface in self.interfaces:
-                ET.SubElement(interfaces,
-                              "interface").set("uid", str(interface))
+                ET.SubElement(interfaces, "interface").set(
+                    "uid", str(interface)
+                )
             return connection
 
     class DSMEntry:
@@ -308,8 +331,9 @@ class DSMEditorXML:
             ET.SubElement(col, "name").text = self.name
             ET.SubElement(col, "sort_index").text = str(self.index)
             ET.SubElement(col, "group1").text = str(self.group)
-            ET.SubElement(col, "alias"
-                         ).text = str(self.alias if is_col else self.uid)
+            ET.SubElement(col, "alias").text = str(
+                self.alias if is_col else self.uid
+            )
             return col
 
     def __init__(self, DSM: InternalDSM) -> None:
@@ -329,16 +353,22 @@ class DSMEditorXML:
                         self.get_or_create_interface(group, item, item[:2])
                     )
             self.add_connection(
-                source_entry.uid, target_entry.alias, dependency.name,
-                dependency.weight, [i.uid for i in dep_interfaces]
+                source_entry.uid,
+                target_entry.alias,
+                dependency.name,
+                dependency.weight,
+                [i.uid for i in dep_interfaces],
             )
 
     def get_or_create_entry(self, name: str) -> DSMEntry:
         if name in self.entries:
             return self.entries[name]
         entry = DSMEditorXML.DSMEntry(
-            self.entryUid, name,
-            len(self.entries) + 1, 2147483647, self.entryUid + 1
+            self.entryUid,
+            name,
+            len(self.entries) + 1,
+            2147483647,
+            self.entryUid + 1,
         )
         self.entries[name] = entry
         self.entryUid += 2
@@ -369,7 +399,7 @@ class DSMEditorXML:
         col_uid: int,
         name: str = "x",
         weight: float = 1.0,
-        interfaces=None
+        interfaces=None,
     ) -> None:
         if interfaces is None:
             interfaces = []
@@ -419,17 +449,20 @@ Export to DV8 DSM format
 
 
 class DV8DSM:
-
-    variables: tp.Dict[str, int]
-    cells: tp.Dict[tp.Tuple[int, int], tp.Dict[str, int]]
+    variables: dict[str, int]
+    cells: dict[tuple[int, int], dict[str, int]]
     name: str
 
     def __init__(self, DSM: InternalDSM) -> None:
         self.name = f"{DSM.project}_{DSM.name}"
         self.variables = {
-            item: index for index, item in enumerate(
-                list({dep.source for dep in DSM.dependencies
-                     }.union({dep.target for dep in DSM.dependencies}))
+            item: index
+            for index, item in enumerate(
+                list(
+                    {dep.source for dep in DSM.dependencies}.union(
+                        {dep.target for dep in DSM.dependencies}
+                    )
+                )
             )
         }
         self.cells = {}
@@ -442,34 +475,37 @@ class DV8DSM:
                 self.cells[(source_index, target_index)] = {}
             if dependency.name not in self.cells[(source_index, target_index)]:
                 self.cells[(source_index, target_index)][dependency.name] = 0
-            self.cells[(source_index, target_index)][dependency.name
-                                                    ] += dependency.weight
+            self.cells[(source_index, target_index)][dependency.name] += (
+                dependency.weight
+            )
             if dependency.attributes is not None:
                 for group, attribute in dependency.attributes.items():
                     for atr in attribute:
                         attribute_name = f"{group} ({atr})"
-                        if attribute_name not in self.cells[
-                            (source_index, target_index)]:
-                            self.cells[(source_index,
-                                        target_index)][attribute_name] = 0
-                        self.cells[(source_index, target_index
-                                   )][attribute_name] += dependency.weight
+                        if (
+                            attribute_name
+                            not in self.cells[(source_index, target_index)]
+                        ):
+                            self.cells[(source_index, target_index)][
+                                attribute_name
+                            ] = 0
+                        self.cells[(source_index, target_index)][
+                            attribute_name
+                        ] += dependency.weight
 
     def to_dv8_string(self) -> str:
         out_dict = {
-            "@schemaVersion":
-                "1.0",
-            "name":
-                self.name,
-            "variables":
-                list(self.variables.keys()),
-            "cells": [{
-                "src": key[0],
-                "dest": key[1],
-                "values": {
-                    name: val for name, val in value.items()
+            "@schemaVersion": "1.0",
+            "name": self.name,
+            "variables": list(self.variables.keys()),
+            "cells": [
+                {
+                    "src": key[0],
+                    "dest": key[1],
+                    "values": {name: val for name, val in value.items()},
                 }
-            } for key, value in self.cells.items()]
+                for key, value in self.cells.items()
+            ],
         }
 
         return json.dumps(out_dict)
@@ -482,18 +518,18 @@ def architecture_model_to_DV8_clustering(
         "@schemaVersion": "1.0",
         "name": f"{project}_ArchitectureModel_Clustering",
     }
-    groups: tp.Dict[str, dict[str, tp.Any]] = {}
+    groups: dict[str, dict[str, tp.Any]] = {}
     for module, locations in architecture_model.modules.items():
         group = {
-            "@type":
-                "group",
-            "name":
-                module,
-            "nested": [{
-                "@type": "item",
-                "name": str.join("/",
-                                 loc.file.split('/')[1:])
-            } for loc in locations]
+            "@type": "group",
+            "name": module,
+            "nested": [
+                {
+                    "@type": "item",
+                    "name": str.join("/", loc.file.split('/')[1:]),
+                }
+                for loc in locations
+            ],
         }
         groups[module] = group
     for package, modules in architecture_model.packages.items():
@@ -502,36 +538,36 @@ def architecture_model_to_DV8_clustering(
             "name": package,
             "nested": [
                 groups[module] for module in modules if module in groups
-            ]
+            ],
         }
         for module in modules:
-            if module in groups:
-                del groups[module]
+            groups.pop(module, None)
         groups[package] = group
     out_dict["structure"] = [group for _, group in groups.items()]
     return json.dumps(out_dict, indent=4)
 
 
 class DesignStructureMatrix(Table, table_name=None):
-
     dsm: InternalDSM
 
     def __init__(self, table_config: TableConfig, **kwargs: tp.Any):
         super().__init__(table_config, **kwargs)
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        return DSMEditorXML(
-            self.dsm
-        ).to_xml_string() if table_format == TableFormat.DSM else DV8DSM(
-            self.dsm
-        ).to_dv8_string()  #TODO integrate with table formats
+        return (
+            DSMEditorXML(self.dsm).to_xml_string()
+            if table_format == TableFormat.DSM
+            else DV8DSM(self.dsm).to_dv8_string()
+        )  # TODO integrate with table formats
 
 
 class ArchitectureModelDSMTable(DesignStructureMatrix, table_name="DV8_DSM"):
-
     def __init__(
-        self, table_config: tp.Any, dv8_matrix: tp.TextIO, project_name: str,
-        **table_kwargs: tp.Any
+        self,
+        table_config: tp.Any,
+        dv8_matrix: tp.TextIO,
+        project_name: str,
+        **table_kwargs: tp.Any,
     ) -> None:
         super().__init__(table_config, **table_kwargs)
         json_string = dv8_matrix.read()
@@ -540,7 +576,6 @@ class ArchitectureModelDSMTable(DesignStructureMatrix, table_name="DV8_DSM"):
 
 
 class ArchitectureModelDV8Clustering(Table, table_name="DV8_Clust"):
-
     def __init__(
         self, table_config: tp.Any, project_name: str, **table_kwargs: tp.Any
     ) -> None:
@@ -572,7 +607,7 @@ class ArchitectureModelDSMTableGenerator(
             type=click.File("r"),
             required=True,
             metavar="dv8_matrix",
-            help="The dv8 Matrix to convert."
+            help="The dv8 Matrix to convert.",
         ),
         make_cli_option(
             "-p",
@@ -580,18 +615,21 @@ class ArchitectureModelDSMTableGenerator(
             type=str,
             required=True,
             metavar="project_name",
-            help="The project name the dv8 matrix is for."
-        )
-    ]
+            help="The project name the dv8 matrix is for.",
+        ),
+    ],
 ):
-    """Table generator for generating a Design Structure Matrix from a dv8
-    matrix file."""
+    """
+    Table generator for generating a Design Structure Matrix from a dv8
+    matrix file.
+    """
 
-    def generate(self) -> tp.List[Table]:
+    def generate(self) -> list[Table]:
         return [
             ArchitectureModelDSMTable(
-                self.table_config, self.table_kwargs["dv8_matrix"],
-                self.table_kwargs["project_name"]
+                self.table_config,
+                self.table_kwargs["dv8_matrix"],
+                self.table_kwargs["project_name"],
             )
         ]
 
@@ -606,14 +644,16 @@ class ArchitectureModelDV8ClusterGenerator(
             type=str,
             required=True,
             metavar="project_name",
-            help="The project name the dv8 matrix is for."
+            help="The project name the dv8 matrix is for.",
         )
-    ]
+    ],
 ):
-    """Table generator for generating a Design Structure Matrix from a dv8
-    matrix file."""
+    """
+    Table generator for generating a Design Structure Matrix from a dv8
+    matrix file.
+    """
 
-    def generate(self) -> tp.List[Table]:
+    def generate(self) -> list[Table]:
         return [
             ArchitectureModelDV8Clustering(
                 self.table_config, self.table_kwargs["project_name"]

@@ -1,12 +1,12 @@
 """Project file for xz."""
-import typing as tp
+
 from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import cmake, make
-from benchbuild.utils.revision_ranges import RevisionRange, GoodBadSubgraph
+from benchbuild.utils.revision_ranges import GoodBadSubgraph, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -15,19 +15,19 @@ from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    ProjectBinaryWrapper,
-    get_local_project_repo,
     BinaryType,
-    verify_binaries,
+    ProjectBinaryWrapper,
     RevisionBinaryMap,
+    get_local_project_repo,
+    verify_binaries,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
+    RepositoryHandle,
     ShortCommitHash,
     typed_revision_range,
-    RepositoryHandle,
 )
 from varats.utils.settings import bb_cfg
 
@@ -46,53 +46,57 @@ class Bzip2(VProject):
             local="bzip2",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
+            shallow=False,
         ),
         HTTPMultiple(
             local="geo-maps",
             remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0"
+                "1.0": "https://github.com/simonepri/geo-maps/releases/"
+                "download/v0.6.0"
             },
             files=[
-                "countries-land-1m.geo.json", "countries-land-10m.geo.json",
-                "countries-land-100m.geo.json"
-            ]
+                "countries-land-1m.geo.json",
+                "countries-land-10m.geo.json",
+                "countries-land-100m.geo.json",
+            ],
         ),
         FeatureSource(),
         HTTPMultiple(
             local="geo-maps-compr",
             remote={
-                "1.0":
-                    "https://github.com/se-sic/compression-data/"
-                    "raw/master/bzip2/geo-maps/"
+                "1.0": "https://github.com/se-sic/compression-data/"
+                "raw/master/bzip2/geo-maps/"
             },
             files=[
                 "countries-land-100m.geo.json.bz2",
                 "countries-land-10m.geo.json.bz2",
-                "countries-land-1m.geo.json.bz2"
-            ]
-        )
+                "countries-land-1m.geo.json.bz2",
+            ],
+        ),
     ]
-    _AUTOTOOLS_VERSIONS = GoodBadSubgraph([
-        "8cfd87aed5ba8843af50569fb440489b1ca74259"
-    ], ["e264a7f7c44fae62f5be9840946f6bc0e8cd6512"],
-                                          "Uses autotools instead of cmake")
-    _MAKE_VERSIONS = GoodBadSubgraph([
-        "33d134030248633ffa7d60c0a35a783c46da034b"
-    ], ["8cfd87aed5ba8843af50569fb440489b1ca74259"], "Uses a basic Makefile")
+    _AUTOTOOLS_VERSIONS = GoodBadSubgraph(
+        ["8cfd87aed5ba8843af50569fb440489b1ca74259"],
+        ["e264a7f7c44fae62f5be9840946f6bc0e8cd6512"],
+        "Uses autotools instead of cmake",
+    )
+    _MAKE_VERSIONS = GoodBadSubgraph(
+        ["33d134030248633ffa7d60c0a35a783c46da034b"],
+        ["8cfd87aed5ba8843af50569fb440489b1ca74259"],
+        "Uses a basic Makefile",
+    )
 
     CONTAINER = [
         (
-            RevisionRange("ad723d6558718e9bbaca930e7e715c9ee754e90e",
-                          "HEAD"), get_base_image(ImageBase.DEBIAN_10)
+            RevisionRange("ad723d6558718e9bbaca930e7e715c9ee754e90e", "HEAD"),
+            get_base_image(ImageBase.DEBIAN_10),
         ),
         (
             _AUTOTOOLS_VERSIONS,
-            get_base_image(ImageBase.DEBIAN_10
-                          ).run('apt', 'install', '-y', 'autoconf', 'automake')
-        ), (_MAKE_VERSIONS, get_base_image(ImageBase.DEBIAN_10))
+            get_base_image(ImageBase.DEBIAN_10).run(
+                'apt', 'install', '-y', 'autoconf', 'automake'
+            ),
+        ),
+        (_MAKE_VERSIONS, get_base_image(ImageBase.DEBIAN_10)),
     ]
 
     WORKLOADS = {
@@ -110,9 +114,9 @@ class Bzip2(VProject):
                 creates=[
                     "geo-maps/countries-land-1m.geo.json.bz2",
                     "geo-maps/countries-land-10m.geo.json.bz2",
-                    "geo-maps/countries-land-100m.geo.json.bz2"
+                    "geo-maps/countries-land-100m.geo.json.bz2",
                 ],
-                requires_all_args={"--compress"}
+                requires_all_args={"--compress"},
             ),
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
@@ -127,17 +131,17 @@ class Bzip2(VProject):
                 creates=[
                     "geo-maps-compr/countries-land-1m.geo.json",
                     "geo-maps-compr/countries-land-10m.geo.json",
-                    "geo-maps-compr/countries-land-100m.geo.json"
+                    "geo-maps-compr/countries-land-100m.geo.json",
                 ],
-                requires_all_args={"--decompress"}
-            )
+                requires_all_args={"--decompress"},
+            ),
         ],
     }
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List[ProjectBinaryWrapper]:
+        revision: ShortCommitHash,
+    ) -> list[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_repo(Bzip2.NAME))
 
         binary_map.specify_binary(
@@ -145,15 +149,15 @@ class Bzip2(VProject):
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "e264a7f7c44fae62f5be9840946f6bc0e8cd6512", "HEAD"
-            )
+            ),
         )
         binary_map.specify_binary(
             'bzip2',
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "33d134030248633ffa7d60c0a35a783c46da034b",
-                "e264a7f7c44fae62f5be9840946f6bc0e8cd6512"
-            )
+                "e264a7f7c44fae62f5be9840946f6bc0e8cd6512",
+            ),
         )
         return binary_map[revision]
 
@@ -186,13 +190,16 @@ class Bzip2(VProject):
         else:
             (bzip2_source / "build").mkdir(parents=True, exist_ok=True)
             with local.cwd(bzip2_source / "build"):
-
                 with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                     bb.watch(cmake)("..")
 
                     bb.watch(cmake)(
-                        "--build", ".", "--config", "Release", "-j",
-                        get_number_of_jobs(bb_cfg())
+                        "--build",
+                        ".",
+                        "--config",
+                        "Release",
+                        "-j",
+                        get_number_of_jobs(bb_cfg()),
                     )
         with local.cwd(bzip2_source):
             verify_binaries(self)
@@ -214,6 +221,10 @@ class Bzip2(VProject):
         else:
             with local.cwd(bzip2_source / "build"):
                 bb.watch(cmake)(
-                    "--build", ".", "--config", "Release", "-j",
-                    get_number_of_jobs(bb_cfg())
+                    "--build",
+                    ".",
+                    "--config",
+                    "Release",
+                    "-j",
+                    get_number_of_jobs(bb_cfg()),
                 )

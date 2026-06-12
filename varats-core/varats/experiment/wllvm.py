@@ -40,6 +40,7 @@ class BCFileExtensions(Enum):
     requirements, e.g., was compiled with debug metadata or compiled with
     optimizations.
     """
+
     value: str  # pylint: disable=invalid-name
 
     DEBUG = 'dbg'
@@ -74,7 +75,6 @@ class RunWLLVM(base.Extension):  # type: ignore
     configured to use exactly the same compiler as localhost!
 
     Examples:
-
     * Usage without distcc:
       ``RunWLLVM()``
     * Usage with distcc enabled:
@@ -84,14 +84,14 @@ class RunWLLVM(base.Extension):  # type: ignore
     def __init__(
         self,
         *extensions: base.Extension,
-        config: tp.Optional[tp.Dict[str, str]] = None,
-        distcc_hosts: tp.Optional[str] = None,
-        **kwargs: tp.Any
+        config: dict[str, str] | None = None,
+        distcc_hosts: str | None = None,
+        **kwargs: tp.Any,
     ):
         super().__init__(*extensions, config=config, **kwargs)
         self._distcc_hosts = distcc_hosts
 
-    def __create_distcc_scripts(self) -> tp.Tuple[Path, Path]:
+    def __create_distcc_scripts(self) -> tuple[Path, Path]:
         project_dir = Path(sys.argv[0]).parent
         distcc_cc = project_dir / "distcc-clang"
         distcc_cxx = project_dir / "distcc-clang++"
@@ -129,7 +129,7 @@ class RunWLLVM(base.Extension):  # type: ignore
         wllvm = wllvm.with_env(
             LLVM_COMPILER="clang",
             PATH=list_to_path(env_path_list),
-            LD_LIBRARY_PATH=list_to_path(libs_path)
+            LD_LIBRARY_PATH=list_to_path(libs_path),
         )
 
         if self._distcc_hosts:
@@ -156,11 +156,12 @@ class Extract(actions.ProjectStep):  # type: ignore
         project_name: str,
         binary_name: str,
         project_version: str,
-        bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None
+        bc_file_extensions: list[BCFileExtensions] | None = None,
     ) -> str:
-        """Parses parameter information into a filename template to name a
-        bitcode file."""
-
+        """
+        Parses parameter information into a filename template to name a
+        bitcode file.
+        """
         if bc_file_extensions is None:
             bc_file_extensions = []
 
@@ -169,25 +170,28 @@ class Extract(actions.ProjectStep):  # type: ignore
 
             ext_sep = ""
             for ext in sorted(bc_file_extensions):
-                experiment_bc_file_ext += (ext_sep + ext.value)
+                experiment_bc_file_ext += ext_sep + ext.value
                 ext_sep = '_'
         else:
             experiment_bc_file_ext = ''
 
-        return f"{project_name}-{binary_name}-{project_version}" \
-               f"{experiment_bc_file_ext}.bc"
+        return (
+            f"{project_name}-{binary_name}-{project_version}"
+            f"{experiment_bc_file_ext}.bc"
+        )
 
     def __init__(
         self,
         project: Project,
-        bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
-        handler: tp.Optional[PEErrorHandler] = None
+        bc_file_extensions: list[BCFileExtensions] | None = None,
+        handler: PEErrorHandler | None = None,
     ) -> None:
         super().__init__(project=project)
         self.__action_fn = tp.cast(
-            tp.Callable[..., tp.Any],
+            'tp.Callable[..., tp.Any]',
             FunctionPEErrorWrapper(self.extract, handler)
-            if handler else self.extract
+            if handler
+            else self.extract,
         )
 
         if bc_file_extensions is None:
@@ -196,16 +200,18 @@ class Extract(actions.ProjectStep):  # type: ignore
         self.bc_file_extensions = bc_file_extensions
 
     def __call__(self) -> actions.StepResult:
-        return tp.cast(actions.StepResult, self.__action_fn())
+        return tp.cast('actions.StepResult', self.__action_fn())
 
     def extract(self) -> actions.StepResult:
-        """This step extracts the bitcode of the executable of the project into
-        one file."""
+        """
+        This step extracts the bitcode of the executable of the project into
+        one file.
+        """
         self.project: VProject
 
         bc_cache_folder = self.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(bb_cfg()["varats"]["result"]),
-            project_name=str(self.project.name)
+            project_name=str(self.project.name),
         )
         mkdir("-p", local.path() / bc_cache_folder)
 
@@ -214,12 +220,13 @@ class Extract(actions.ProjectStep):  # type: ignore
                 project_name=str(self.project.name),
                 binary_name=str(binary.name),
                 project_version=self.project.version_of_primary,
-                bc_file_extensions=self.bc_file_extensions
+                bc_file_extensions=self.bc_file_extensions,
             )
 
             target_binary = Path(self.project.source_of_primary) / binary.path
             if is_gllvm_available():
                 from benchbuild.utils.cmd import get_bc
+
                 get_bc("-b", target_binary)
             else:
                 extract_bc("-b", target_binary)
@@ -229,8 +236,7 @@ class Extract(actions.ProjectStep):  # type: ignore
 
 
 def project_bc_files_in_cache(
-    project: Project,
-    required_bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]]
+    project: Project, required_bc_file_extensions: list[BCFileExtensions] | None
 ) -> bool:
     """
     Checks if all bc files, corresponding to the projects binaries, are in the
@@ -242,19 +248,19 @@ def project_bc_files_in_cache(
 
     Returns: True, if all BC files are present, False otherwise.
     """
-
     all_files_present = True
     for binary in project.binaries:
         all_files_present &= path.exists(
             local.path(
                 Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                     cache_dir=str(bb_cfg()["varats"]["result"]),
-                    project_name=str(project.name)
-                ) + Extract.get_bc_file_name(
+                    project_name=str(project.name),
+                )
+                + Extract.get_bc_file_name(
                     project_name=str(project.name),
                     binary_name=binary.name,
                     project_version=project.version_of_primary,
-                    bc_file_extensions=required_bc_file_extensions
+                    bc_file_extensions=required_bc_file_extensions,
                 )
             )
         )
@@ -263,9 +269,10 @@ def project_bc_files_in_cache(
 
 
 def _create_default_bc_file_creation_actions(
-    project: Project, required_bc_file_extensions: tp.List[BCFileExtensions],
-    extraction_error_handler: tp.Optional[PEErrorHandler]
-) -> tp.List[actions.Step]:
+    project: Project,
+    required_bc_file_extensions: list[BCFileExtensions],
+    extraction_error_handler: PEErrorHandler | None,
+) -> list[actions.Step]:
     """
     Creates the default action pipeline to compile a project and run the BC
     files extraction step.
@@ -284,7 +291,7 @@ def _create_default_bc_file_creation_actions(
         Extract(
             project,
             required_bc_file_extensions,
-            handler=extraction_error_handler
+            handler=extraction_error_handler,
         )
     )
     return analysis_actions
@@ -292,12 +299,13 @@ def _create_default_bc_file_creation_actions(
 
 def get_bc_cache_actions(
     project: Project,
-    bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
-    extraction_error_handler: tp.Optional[PEErrorHandler] = None,
+    bc_file_extensions: list[BCFileExtensions] | None = None,
+    extraction_error_handler: PEErrorHandler | None = None,
     bc_action_creator: tp.Callable[
-        [Project, tp.List[BCFileExtensions], tp.Optional[PEErrorHandler]],
-        tp.List[actions.Step]] = _create_default_bc_file_creation_actions
-) -> tp.List[actions.Step]:
+        [Project, list[BCFileExtensions], PEErrorHandler | None],
+        list[actions.Step],
+    ] = _create_default_bc_file_creation_actions,
+) -> list[actions.Step]:
     """
     Builds the action pipeline, if needed, to fill the BC file cache that
     provides BC files for the compiled binaries of a project.
@@ -311,11 +319,9 @@ def get_bc_cache_actions(
 
     Returns: required actions to populate the BC cache
     """
-
     if not project_bc_files_in_cache(project, bc_file_extensions):
         return bc_action_creator(
-            project, bc_file_extensions if bc_file_extensions else [],
-            extraction_error_handler
+            project, bc_file_extensions or [], extraction_error_handler
         )
 
     return []
@@ -324,7 +330,7 @@ def get_bc_cache_actions(
 def get_cached_bc_file_path(
     project: Project,
     binary: ProjectBinaryWrapper,
-    required_bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
+    required_bc_file_extensions: list[BCFileExtensions] | None = None,
 ) -> Path:
     """
     Look up the path to a BC file from the BC cache.
@@ -339,7 +345,7 @@ def get_cached_bc_file_path(
     bc_cache_folder = local.path(
         Extract.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(bb_cfg()["varats"]["result"]),
-            project_name=str(project.name)
+            project_name=str(project.name),
         )
     )
 
@@ -347,7 +353,7 @@ def get_cached_bc_file_path(
         project_name=project.name,
         binary_name=binary.name,
         project_version=project.version_of_primary,
-        bc_file_extensions=required_bc_file_extensions
+        bc_file_extensions=required_bc_file_extensions,
     )
     if not bc_file_path.exists():
         raise LookupError(

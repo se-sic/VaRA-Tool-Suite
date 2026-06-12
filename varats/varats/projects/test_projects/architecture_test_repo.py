@@ -1,19 +1,17 @@
 """Project file for lepton."""
-import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import make, cmake, mkdir
+from benchbuild.utils.cmd import cmake, make, mkdir
 from plumbum import local
 
-from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    ProjectBinaryWrapper,
     BinaryType,
+    ProjectBinaryWrapper,
+    RevisionBinaryMap,
     get_local_project_repo,
     verify_binaries,
-    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
@@ -21,8 +19,10 @@ from varats.utils.git_util import ShortCommitHash
 
 
 class Architecture_Test(VProject):
-    """Lepton is a tool and file format for losslessly compressing JPEGs by an
-    average of 22%."""
+    """
+    Lepton is a tool and file format for losslessly compressing JPEGs by an
+    average of 22%.
+    """
 
     NAME = 'architecture_test'
     GROUP = 'cpp_projects'
@@ -35,15 +35,15 @@ class Architecture_Test(VProject):
             local="feature-architecture-test",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
+            shallow=False,
         ),
-        FeatureSource()
+        FeatureSource(),
     ]
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List[ProjectBinaryWrapper]:
+        revision: ShortCommitHash,
+    ) -> list[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
             get_local_project_repo(Architecture_Test.NAME)
         )

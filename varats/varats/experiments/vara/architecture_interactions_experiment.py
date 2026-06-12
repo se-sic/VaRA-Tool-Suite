@@ -1,5 +1,7 @@
-"""Implements an experiment which generates an architecture report for the
-project."""
+"""
+Implements an experiment which generates an architecture report for the
+project.
+"""
 
 import typing as tp
 
@@ -10,17 +12,17 @@ from benchbuild.utils.cmd import opt
 
 from varats.data.reports.architecture_report import ArchitectureTaintReport
 from varats.experiment.experiment_util import (
-    VersionExperiment,
     ExperimentHandle,
-    exec_func_with_pe_error_handler,
-    get_default_compile_error_wrapped,
+    VersionExperiment,
     create_default_analysis_failure_handler,
     create_default_compiler_error_handler,
     create_new_success_result_filepath,
+    exec_func_with_pe_error_handler,
+    get_default_compile_error_wrapped,
 )
 from varats.experiment.wllvm import (
-    RunWLLVM,
     BCFileExtensions,
+    RunWLLVM,
     get_bc_cache_actions,
     get_cached_bc_file_path,
 )
@@ -46,17 +48,24 @@ class ArchitectureTaintAnalysis(actions.ProjectStep):  # type: ignore
 
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, ArchitectureTaintReport, self.project,
-                binary, config_id
+                self.__experiment_handle,
+                ArchitectureTaintReport,
+                self.project,
+                binary,
+                config_id,
             )
 
             opt_params = [
-                "--enable-new-pm=0", "-vara-AD", "-vara-ATR",
-                "-vara-use-phasar", f"-vara-report-outfile={result_file}",
+                "--enable-new-pm=0",
+                "-vara-AD",
+                "-vara-ATR",
+                "-vara-use-phasar",
+                f"-vara-report-outfile={result_file}",
                 get_cached_bc_file_path(
-                    self.project, binary,
-                    [BCFileExtensions.NO_OPT, BCFileExtensions.ARCH]
-                )
+                    self.project,
+                    binary,
+                    [BCFileExtensions.NO_OPT, BCFileExtensions.ARCH],
+                ),
             ]
 
             run_cmd = opt[opt_params]
@@ -64,9 +73,10 @@ class ArchitectureTaintAnalysis(actions.ProjectStep):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, self.project,
-                    ArchitectureTaintReport
-                )
+                    self.__experiment_handle,
+                    self.project,
+                    ArchitectureTaintReport,
+                ),
             )
 
         return actions.StepResult.OK
@@ -82,20 +92,28 @@ class ArchitectureTaintReportExperiment(VersionExperiment, shorthand="ATRE"):
     def actions_for_project(
         self, project: Project
     ) -> tp.MutableSequence[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in the
-        call in a fixed order."""
-
+        """
+        Returns the specified steps to run the project(s) specified in the
+        call in a fixed order.
+        """
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+        project.runtime_extension = (
+            run.RuntimeExtension(project, self) << time.RunWithTime()
+        )
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = compiler.RunCompiler(project, self) \
-            << RunWLLVM() \
+        project.compiler_extension = (
+            compiler.RunCompiler(project, self)
+            << RunWLLVM()
             << run.WithTimeout()
+        )
 
         project.cflags += [
-            "-O1", "-Xclang", "-disable-llvm-optzns", "-g0", "-fvara-arch"
+            "-O1",
+            "-Xclang",
+            "-disable-llvm-optzns",
+            "-g0",
+            "-fvara-arch",
         ]
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
