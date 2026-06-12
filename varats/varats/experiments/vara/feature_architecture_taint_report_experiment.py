@@ -75,9 +75,8 @@ class FeatureArchitectureTaintAnalysis(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "--enable-new-pm=0", "-vara-AD", "-vara-PTFDD", "-vara-FBFD",
-                "-vara-FATR", "-vara-use-phasar",
-                f"-vara-report-outfile={result_file}",
+                "-passes=vara-FATR", "-vara-feature-detection=PTFDD",
+                "-vara-use-phasar", f"-vara-report-outfile={result_file}",
                 get_cached_bc_file_path(
                     self.project, binary, [
                         BCFileExtensions.NO_OPT,
