@@ -10,7 +10,6 @@ from varats.utils.settings import vara_cfg
 
 def discover() -> None:
     """Auto import all BenchBuild experiments."""
-
     __all__ = []
 
     for _, module_name, _ in pkgutil.walk_packages(

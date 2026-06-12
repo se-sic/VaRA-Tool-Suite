@@ -26,7 +26,7 @@ def convert_path_to_module_path(path: Path) -> str:
 def load_python_modules_from_external_project(
     project_folder: Path,
     module_folder: Path,
-    export_context: tp.Optional[tp.List[tp.Any]] = None
+    export_context: list[tp.Any] | None = None,
 ) -> None:
     """
     Load additional python modules from an external project.
@@ -44,8 +44,9 @@ def load_python_modules_from_external_project(
     )
     module_prefix = f"{convert_path_to_module_path(relative_mf)}."
 
-    for _, module_name, _ in pkgutil.walk_packages([str(module_folder)],
-                                                   module_prefix):
+    for _, module_name, _ in pkgutil.walk_packages(
+        [str(module_folder)], module_prefix
+    ):
         if export_context:
             export_context.append(module_name)
 

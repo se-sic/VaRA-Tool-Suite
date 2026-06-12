@@ -110,7 +110,7 @@ def _set_external_repository(path: str) -> None:
 
     if not is_valid:
         msg_lines = [
-            "Repository Not Complying To Template",
+            "Repository not complying to template!",
             f"  Repository path: {repo_path}",
             "  Missing or invalid folders:",
         ]
