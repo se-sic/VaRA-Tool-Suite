@@ -100,7 +100,7 @@ Configuration
 
 Registered external repositories are stored in the VaRA configuration file. The configuration key is:
 
-.. code-block:: ini
+.. code-block:: yaml
 
     external_source_repositories = [
         "/path/to/repo1",
