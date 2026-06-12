@@ -128,6 +128,13 @@ Or fork it on GitHub and clone your fork for better portability:
 
     git clone https://github.com/YOUR-USERNAME/varats-oot-template.git my-vara-extensions
 
+
+If you prefer to create the structure manually instead of cloning:
+
+.. code-block:: console
+
+    mkdir -p my-vara-extensions/{directory names from template repository}
+
 **Step 2: Add your custom content**
 
 Navigate to your cloned repository and add your custom projects, experiments, research_tools, tables, plots, and reports to the respective folders:
@@ -145,29 +152,8 @@ Once your repository is ready, register it:
 
     vara-external set /absolute/path/to/my-vara-extensions
 
-**Step 4: Use in experiments**
-
 Your custom projects and experiments are now available to VaRA-TS and can be used in experiment configurations.
 
-Manual Setup (Alternative)
-..........................
-
-If you prefer to create the structure manually instead of cloning:
-
-.. code-block:: console
-
-    mkdir -p my-vara-extensions/{projects,experiments,research_tools,tables,plots,reports}
-
-Template Repository
--------------------
-
-For a complete example of a well-structured external repository with all required folders and structure, see the `VaRA Out-of-Tree Template <https://github.com/se-sic/varats-oot-template>`_.
-
-**Recommended approach:**
-
-1. **Clone** the template locally for a quick start
-2. **Fork** the template on GitHub for a portable, version-controlled repository under your own account
-3. Use `vara-external set` to register it with VaRA-TS
 
 Troubleshooting
 ---------------
