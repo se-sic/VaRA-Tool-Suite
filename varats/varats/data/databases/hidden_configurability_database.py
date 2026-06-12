@@ -304,7 +304,8 @@ def _get_data_single_config_libzmq(
                     "variation": variation,
                     "metric": metric,
                     "value": patched_report.latencies,
-                    "value_relative": [float((t / base_values[metric]) - 1)
+                    # Lower latency is better, so we negate the relative value
+                    "value_relative": [float((t / base_values[metric]) - 1) * -1
                                        for t in patched_report.latencies],
                     "config_id": config_id,
                 })
@@ -401,7 +402,7 @@ def _get_data_single_config_default(
                     "metric": "wall_clock_time",
                     "value": patch_report.measurements_wall_clock_time(wl),
                     "value_relative": [
-                        float((t / base_times[wl]) - 1)
+                        float((t / base_times[wl]) - 1) * -1
                         for t in patch_report.measurements_wall_clock_time(wl)
                     ],
                     "config_id": report.filename.config_id,
@@ -412,11 +413,12 @@ def _get_data_single_config_default(
                     "metric": "max_resident_size",
                     "value": patch_report.max_resident_sizes(wl),
                     "value_relative": [
-                        float((t / base_rss[wl]) - 1)
+                        float((t / base_rss[wl]) - 1) * -1
                         for t in patch_report.max_resident_sizes(wl)
                     ],
                     "config_id": report.filename.config_id,
                 }])
+
 
     result = pd.DataFrame.from_records(data_rows)
 
@@ -442,7 +444,7 @@ def _get_data_single_config_benchbase(
     data_rows = []
     base_data = {
         "throughput": {},
-        "goodput": {},
+        "latency_avg": {},
     }
 
     for result_file in result_files:
@@ -457,8 +459,10 @@ def _get_data_single_config_benchbase(
             if baseline_report is None:
                 continue
 
+            base_latencies = [l.average_latency for l in
+                              baseline_report.summary(base_name).latencies]
+
             data_rows.extend([
-                # TODO: Latencies?
                 {
                     "binary-wl": f"{binary}/{base_name}",
                     "config_opportunity": "__baseline__",
@@ -472,8 +476,8 @@ def _get_data_single_config_benchbase(
                     "binary-wl": f"{binary}/{base_name}",
                     "config_opportunity": "__baseline__",
                     "variation": None,
-                    "metric": "goodput",
-                    "value": baseline_report.summary(base_name).goodput,
+                    "metric": "latency_avg",
+                    "value": base_latencies,
                     "value_relative": None,
                     "config_id": report.filename.config_id,
                 }
@@ -482,8 +486,8 @@ def _get_data_single_config_benchbase(
             base_data["throughput"][base_name] = np.mean(
                 baseline_report.summary(base_name).throughput
             )
-            base_data["goodput"][base_name] = np.mean(
-                baseline_report.summary(base_name).goodput
+            base_data["latency_avg"][base_name] = np.mean(
+                base_latencies
             )
 
             for patch_name in patch_names:
@@ -493,6 +497,8 @@ def _get_data_single_config_benchbase(
                     continue
 
                 cp = patch_name.split("=")[0], patch_name.split("=")[-1]
+
+                latencies = [l.average_latency for l in patched_report.summary(base_name).latencies]
 
                 data_rows.extend([{
                     "binary-wl": f"{binary}/{base_name}",
@@ -509,17 +515,17 @@ def _get_data_single_config_benchbase(
                     "binary-wl": f"{binary}/{base_name}",
                     "config_opportunity": f"{cp[0]}",
                     "variation": cp[1],
-                    "metric": "goodput",
-                    "value": patched_report.summary(base_name).goodput,
+                    "metric": "latency_avg",
+                    "value": latencies,
                     "value_relative": [
-                        float((t / base_data["goodput"][base_name]) - 1)
-                        for t in patched_report.summary(base_name).goodput
+                        # For latency, lower is better
+                        float((t / base_data["latency_avg"][base_name]) - 1) * -1
+                        for t in latencies
                     ],
                     "config_id": report.filename.config_id,
                 }])
 
-    result = pd.DataFrame.from_records(data_rows)
-    return result
+    return pd.DataFrame.from_records(data_rows)
 
 
 def _load_cached_df(
