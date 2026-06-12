@@ -11,32 +11,11 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from tests.helper_utils import run_in_test_environment
+from tests.helper_utils import UnitTestFixtures, run_in_test_environment
 from varats.tools import driver_external
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
-
-
-def create_mock_external_repo(tmp_path: Path) -> Path:
-    """
-    Create a mock external repository with required template structure.
-
-    Args:
-        tmp_path: Temporary directory path for creating the mock repo
-
-    Returns:
-        Path to the mock repository root
-    """
-    # Create non-nested (flat) structure: template folders directly under tmp_path
-    root = tmp_path
-    root.mkdir(parents=True, exist_ok=True)
-
-    # Create template folders
-    for folder in driver_external.TEMPLATE_FOLDERS:
-        (root / folder).mkdir(exist_ok=True)
-
-    return tmp_path
 
 
 class TestValidateExternalRepo(unittest.TestCase):
@@ -54,32 +33,31 @@ class TestValidateExternalRepo(unittest.TestCase):
 
     def test_repo_not_being_directory(self) -> None:
         """Path pointing to a file returns False with appropriate error message."""
-        tmp_path = Path(tempfile.mkdtemp())
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
 
-        file_path = tmp_path / "not_a_directory.txt"
-        file_path.touch()
+            file_path = tmp_path / "not_a_directory.txt"
+            file_path.touch()
 
-        is_valid, errors = driver_external.validate_external_repo(file_path)
+            is_valid, errors = driver_external.validate_external_repo(file_path)
 
-        self.assertFalse(is_valid)
-        self.assertIn("Repository path is not a directory", errors)
+            self.assertFalse(is_valid)
+            self.assertIn("Repository path is not a directory", errors)
 
-    @run_in_test_environment()
     def test_invalid_structure(self) -> None:
         """Missing nested structure or template folders returns False."""
-        tmp_path = Path(tempfile.mkdtemp())
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
 
-        # Create a directory without nested structure
-        is_valid, errors = driver_external.validate_external_repo(tmp_path)
+            # Create a directory without nested structure
+            is_valid, errors = driver_external.validate_external_repo(tmp_path)
 
-        self.assertFalse(is_valid)
-        self.assertTrue(len(errors) > 0)
+            self.assertFalse(is_valid)
+            self.assertTrue(len(errors) > 0)
 
-    @run_in_test_environment()
+    @run_in_test_environment(UnitTestFixtures.EXTERNAL_REPO_TEMPLATE)
     def test_valid_structure(self) -> None:
-        tmp_path = Path(tempfile.mkdtemp())
-
-        repo_path = create_mock_external_repo(tmp_path)
+        repo_path = Path.cwd() / "external_repo"
         is_valid, errors = driver_external.validate_external_repo(repo_path)
 
         self.assertTrue(is_valid)
@@ -89,13 +67,10 @@ class TestValidateExternalRepo(unittest.TestCase):
 class TestRegisterExternalRepository(unittest.TestCase):
     """Unit tests for register_external_repository function."""
 
-    @run_in_test_environment()
+    @run_in_test_environment(UnitTestFixtures.EXTERNAL_REPO_TEMPLATE)
     def test_config_updated_successfully(self) -> None:
         """Config is updated successfully with the correct path."""
-        tmp_path = Path(tempfile.mkdtemp())
-
-        # Create a valid mock repository
-        repo_path = create_mock_external_repo(tmp_path)
+        repo_path = Path.cwd() / "external_repo"
 
         # Get initial config state
         initial_repos = vara_cfg()['external_source_repositories'].value.copy()
@@ -115,21 +90,19 @@ class TestDriverExternal(unittest.TestCase):
     @run_in_test_environment()
     def test_invalid_file_structure(self) -> None:
         """Correct output when invalid file structure."""
-        tmp_path = Path(tempfile.mkdtemp())
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
 
-        # Create invalid repo (no nested structure)
-        runner = CliRunner()
-        result = runner.invoke(driver_external.main, ["set", str(tmp_path)])
-        self.assertNotEqual(0, result.exit_code)
-        self.assertLogs("Repository Not Complying To Template")
+            # Create invalid repo (no nested structure)
+            runner = CliRunner()
+            result = runner.invoke(driver_external.main, ["set", str(tmp_path)])
+            self.assertNotEqual(0, result.exit_code)
+            self.assertLogs("Repository Not Complying To Template")
 
-    @run_in_test_environment()
+    @run_in_test_environment(UnitTestFixtures.EXTERNAL_REPO_TEMPLATE)
     def test_already_registered_repo_not_duplicated(self) -> None:
         """Already registered repo is not duplicated."""
-        tmp_path = Path(tempfile.mkdtemp())
-
-        # Create valid repo
-        repo_path = create_mock_external_repo(tmp_path)
+        repo_path = Path.cwd() / "external_repo"
 
         runner = CliRunner()
 
@@ -147,11 +120,10 @@ class TestDriverExternal(unittest.TestCase):
         repo_count = sum(1 for r in repos if str(repo_path) in r)
         self.assertEqual(1, repo_count)
 
-    @run_in_test_environment()
+    @run_in_test_environment(UnitTestFixtures.EXTERNAL_REPO_TEMPLATE)
     def test_exception_caught_on_registration_failure(self) -> None:
         """Exception caught when register_external_repository fails."""
-        tmp_path = Path(tempfile.mkdtemp())
-        repo_path = create_mock_external_repo(tmp_path)
+        repo_path = Path.cwd() / "external_repo"
 
         runner = CliRunner()
 
@@ -168,13 +140,10 @@ class TestDriverExternal(unittest.TestCase):
         self.assertNotEqual(0, result.exit_code)
         self.assertLogs("Could not set external repository configuration")
 
-    @run_in_test_environment()
+    @run_in_test_environment(UnitTestFixtures.EXTERNAL_REPO_TEMPLATE)
     def test_first_repo_added_successfully(self) -> None:
         """First repo with valid structure is added successfully."""
-        tmp_path = Path(tempfile.mkdtemp())
-
-        # Create valid repo
-        repo_path = create_mock_external_repo(tmp_path)
+        repo_path = Path.cwd() / "external_repo"
 
         runner = CliRunner()
         result = runner.invoke(driver_external.main, ["set", str(repo_path)])
@@ -185,22 +154,21 @@ class TestDriverExternal(unittest.TestCase):
         repos = vara_cfg()['external_source_repositories'].value
         self.assertIn(str(Path(repo_path).resolve()), repos)
 
-    @run_in_test_environment()
+    @run_in_test_environment(UnitTestFixtures.EXTERNAL_REPO_TEMPLATE)
     def test_additional_repos_added_successfully(self) -> None:
         """Additional distinct repos with valid structure are also added successfully."""
         runner = CliRunner()
         repo_paths = []
 
-        # Add first repo
-        tmp_path1 = Path(tempfile.mkdtemp())
-        repo_path1 = create_mock_external_repo(tmp_path1)
+        repo_path1 = Path.cwd() / "external_repo"
         result1 = runner.invoke(driver_external.main, ["set", str(repo_path1)])
         self.assertEqual(0, result1.exit_code)
         repo_paths.append(repo_path1)
 
-        # Add second repo
-        tmp_path2 = Path(tempfile.mkdtemp())
-        repo_path2 = create_mock_external_repo(tmp_path2)
+        # Re-copy the fixture into a second directory for a distinct repo.
+        second_repo = Path.cwd() / "external_repo_second"
+        shutil.copytree(repo_path1, second_repo)
+        repo_path2 = second_repo
         result2 = runner.invoke(driver_external.main, ["set", str(repo_path2)])
         self.assertEqual(0, result2.exit_code)
         repo_paths.append(repo_path2)
@@ -212,11 +180,10 @@ class TestDriverExternal(unittest.TestCase):
 
         self.assertEqual(len(repo_paths), len(repos))
 
-    @run_in_test_environment()
+    @run_in_test_environment(UnitTestFixtures.EXTERNAL_REPO_TEMPLATE)
     def test_invalid_registered_repo_unregistered_on_confirm(self) -> None:
         """Invalid registered repo is removed when the user confirms unregistering it."""
-        tmp_path = Path(tempfile.mkdtemp())
-        repo_path = create_mock_external_repo(tmp_path)
+        repo_path = Path.cwd() / "external_repo"
 
         runner = CliRunner()
 
@@ -229,12 +196,10 @@ class TestDriverExternal(unittest.TestCase):
         # Break the structure so validation fails on the next invocation.
         shutil.rmtree(repo_path / driver_external.TEMPLATE_FOLDERS[0])
 
-        with patch(
-            "varats.tools.driver_external.click.confirm", return_value=True
-        ):
-            result = runner.invoke(
-                driver_external.main, ["set", str(repo_path)]
-            )
+        result = runner.invoke(
+            driver_external.main, ["set", str(repo_path)],
+            input="y\n"
+        )
 
         self.assertEqual(0, result.exit_code)
         self.assertLogs("Unregistered invalid external repository")
@@ -242,11 +207,10 @@ class TestDriverExternal(unittest.TestCase):
         repos = vara_cfg()["external_source_repositories"].value
         self.assertNotIn(str(repo_path), repos)
 
-    @run_in_test_environment()
+    @run_in_test_environment(UnitTestFixtures.EXTERNAL_REPO_TEMPLATE)
     def test_invalid_registered_repo_kept_on_decline(self) -> None:
         """Invalid registered repo stays registered when the user declines unregistering it."""
-        tmp_path = Path(tempfile.mkdtemp())
-        repo_path = create_mock_external_repo(tmp_path)
+        repo_path = Path.cwd() / "external_repo"
 
         runner = CliRunner()
 
@@ -259,12 +223,10 @@ class TestDriverExternal(unittest.TestCase):
         # Break the structure so validation fails on the next invocation.
         shutil.rmtree(repo_path / driver_external.TEMPLATE_FOLDERS[0])
 
-        with patch(
-            "varats.tools.driver_external.click.confirm", return_value=False
-        ):
-            result = runner.invoke(
-                driver_external.main, ["set", str(repo_path)]
-            )
+        result = runner.invoke(
+            driver_external.main, ["set", str(repo_path)],
+            input="n\n"
+        )
 
         self.assertEqual(0, result.exit_code)
         self.assertNoLogs()

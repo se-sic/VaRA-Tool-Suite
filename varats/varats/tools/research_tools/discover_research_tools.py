@@ -9,20 +9,14 @@ from varats.utils.settings import vara_cfg
 
 def initialize_research_tools() -> None:
     """Initialize builtin and external research tools."""
-    # Register builtin tools
+    # Import builtin tools to trigger automatic registration via __init_subclass__
     from varats.tools.research_tools.phasar import Phasar
-    from varats.tools.research_tools.szz_unleashed import SZZUnleashed
-    from varats.tools.research_tools.vara import VaRA
+    from varats.tools.research_tools.szz_unleashed import SZZUnleashed # noqa: F401
+    from varats.tools.research_tools.vara import VaRA   # noqa: F401
 
-    _builtin_tools = {
-        "phasar": Phasar,
-        "szzunleashed": SZZUnleashed,
-        "vara": VaRA,
-    }
-
-    for name, tool_class in _builtin_tools.items():
-        if name not in ResearchTool.REGISTRY:
-            ResearchTool.REGISTRY[name] = tool_class
+    # Phasar is abstract (has unimplemented methods), so __init_subclass__ skips it. 
+    # Registering it manually.
+    ResearchTool.REGISTRY["phasar"] = Phasar
 
     # Load external research tools from registered repositories
     extra_sources = vara_cfg()['external_source_repositories'].value
