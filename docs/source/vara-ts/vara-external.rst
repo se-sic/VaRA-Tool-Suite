@@ -129,12 +129,6 @@ Or fork it on GitHub and clone your fork for better portability:
     git clone https://github.com/YOUR-USERNAME/varats-oot-template.git my-vara-extensions
 
 
-If you prefer to create the structure manually instead of cloning:
-
-.. code-block:: console
-
-    mkdir -p my-vara-extensions/{directory names from template repository}
-
 **Step 2: Add your custom content**
 
 Navigate to your cloned repository and add your custom projects, experiments, research_tools, tables, plots, and reports to the respective folders:
