@@ -5,7 +5,7 @@ from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
-from benchbuild.source import Git, HTTPUntar
+from benchbuild.source import Git, HTTPMultiple
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -17,11 +17,11 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
     RevisionBinaryMap,
-    get_local_project_repo,
+    get_local_project_repo, ProjectBinaryWrapper,
 )
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, RepositoryHandle, RepositoryAtCommit
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     TestResult,
@@ -47,37 +47,38 @@ class CryptoMiniSAT(VProject):
             shallow=False,
         ),
         PatchVariationSource(),
-        # The specific combination of branches between cryptominisat, cadical and cadiback
-        # is not easy to automatically determine. We follow the current (2026-03) approach from
-        # cryptominisats CI, which uses the latest commit on the default branches.
+        # The specific combination of branches between
+        # cryptominisat, cadical and cadiback
+        # is not easy to automatically determine.
+        # One needs to clearly specify the correct commits when running the experiments.
+        # Known working combination:
+        # cryptominisat: ...
+        # cadical: 729939aba815b1837b1590279e66c61ed9d3092f
+        # cadiback: a44d5a94c8b8c2c4c8c77116ce80d2bb3a974252
         Git(
             remote="https://github.com/meelgroup/cadical",
             local="cadical-cms",
             refspec="origin/HEAD",
-            limit=1,
-            shallow=True,
+            limit=None,
+            shallow=False,
         ),
         Git(
             remote="https://github.com/meelgroup/cadiback",
             local="cadiback-cms",
             refspec="origin/HEAD",
-            limit=1,
-            shallow=True,
+            limit=None,
+            shallow=False,
         ),
-        HTTPUntar(
-            local="traffic_kkb_unknown.cnf",
+        HTTPMultiple(
+            local="main2024",
             remote={
-                "1.0": "https://github.com/se-sic/picoSAT-mirror/releases/"
-                "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
+                "1.0": "https://github.com/se-sic/picoSAT-vara/releases/download/workloads-main-2024-hc/"
             },
-        ),
-        HTTPUntar(
-            local="childsnack_p11.cnf",
-            remote={
-                "1.0": "https://github.com/se-sic/picoSAT-mirror/releases/"
-                "download/picoSAT-965/"
-                "UNSAT_H_instances_childsnack_p11.hddl_1.cnf.tar.gz"
-            },
+            files=[
+                "heule-noL-11-12.sanitized.cnf",
+                "mp1-ps-5000.cnf",
+                "stable-300.cnf",
+            ]
         ),
     ]
 
@@ -85,13 +86,18 @@ class CryptoMiniSAT(VProject):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("cryptominisat") / RSBinary("cryptominisat5"),
-                "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf",
-                label="traffic-kkb-unknown",
+                "main2024/heule-noL-11-12.sanitized.cnf",
+                label="heule-noL-11-12",
             ),
             VCommand(
                 SourceRoot("cryptominisat") / RSBinary("cryptominisat5"),
-                "childsnack_p11.cnf/childsnack_p11.cnf",
-                label="childsnack-p11",
+                "main2024/mp1-ps-5000.cnf",
+                label="mp1-ps-5000",
+            ),
+            VCommand(
+                SourceRoot("cryptominisat") / RSBinary("cryptominisat5"),
+                "main2024/stable-300.cnf",
+                label="stable-300",
             ),
         ]
     }
@@ -132,7 +138,8 @@ class CryptoMiniSAT(VProject):
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash,
-    ) -> list['ProjectBinaryWrapper']:
+    ) -> list[ProjectBinaryWrapper]:
+        """Returns the binaries for a given revision."""
         binary_map = RevisionBinaryMap(
             get_local_project_repo(CryptoMiniSAT.NAME)
         )
@@ -146,11 +153,14 @@ class CryptoMiniSAT(VProject):
         return binary_map[revision]
 
     def compile(self) -> None:
-        # Multiple steps required:
-        # 1. Build cadical
-        # 2. Build cadiback
-        # 3. Build cryptominisat with the built cadical and cadiback
+        """
+        Compile the project.
 
+        Requires multiple steps:
+            1. Build cadical
+            2. Build cadiback
+            3. Build cryptominisat with the built cadical and cadiback
+        """
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
@@ -165,9 +175,8 @@ class CryptoMiniSAT(VProject):
 
         cmake = local["cmake"]
         make = local["make"]
-        with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-            with local.cwd(cadical_src):
-                with local.env(CXXFLAGS="-fPIC"):
+        with (local.env(CC=str(c_compiler), CXX=str(cxx_compiler))):
+            with local.cwd(cadical_src), local.env(CXXFLAGS="-fPIC"):
                     bb.watch(local["./configure"])()
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
@@ -188,8 +197,8 @@ class CryptoMiniSAT(VProject):
             )
             shutil.copy(cadiback_src / "libcadiback.so", crypto_src / "build")
 
-            with local.cwd(crypto_src / "build"):
-                with local.env(LD_LIBRARY_PATH=str(build_dir / "lib")):
+            with local.cwd(crypto_src / "build"), \
+                 local.env(LD_LIBRARY_PATH=str(build_dir / "lib")):
                     bb.watch(cmake)(
                         "-DENABLE_TESTING=ON", "-DIPASIR=ON", "-S", ".."
                     )
@@ -198,15 +207,16 @@ class CryptoMiniSAT(VProject):
                     )
 
     def recompile(self) -> None:
+        """Recompile the project."""
         build_dir = Path(self.builddir) / "build"
-        with local.env(LD_LIBRARY_PATH=str(build_dir / "lib")):
-            with local.cwd(Path(self.source_of_primary) / "build"):
+        with local.env(LD_LIBRARY_PATH=str(build_dir / "lib")), \
+             local.cwd(Path(self.source_of_primary) / "build"):
                 cmake = local["cmake"]
                 bb.watch(cmake)(
                     "--build", ".", "-j", get_number_of_jobs(bb_cfg())
                 )
 
-    def run_tests(self) -> None:
+    def run_tests(self) -> None:  # noqa: D102
         pass
 
     ##############################
@@ -248,7 +258,8 @@ class CryptoMiniSAT(VProject):
             tests_to_exclude: List of test cases to exclude.
 
         Returns:
-            returns a dictionary mapping test names to respective result (e.g., 'passed', 'failed', 'skipped').
+            returns a dictionary mapping test names to respective result
+            (e.g., 'passed', 'failed', 'skipped').
         """
         return ctest_run_testsuite(
             build_dir=Path(self.source_of_primary) / "build",
@@ -259,8 +270,9 @@ class CryptoMiniSAT(VProject):
 
     def get_test_names(self) -> tp.Iterable[str]:
         """
-        Returns a list of tests that can be run for this project in the current
-        revision and configuration. Requires that prepare_test_environment() was
+        Returns a list of tests that can be run for this project.
+
+        Requires that prepare_test_environment() was
         called before.
 
         Returns:

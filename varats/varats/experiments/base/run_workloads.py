@@ -12,8 +12,9 @@ from varats.experiment.experiment_util import (
     ZippedReportFolder,
     create_new_success_result_filepath,
     get_config_patch_steps,
-    get_default_compile_error_wrapped,
+    get_default_compile_error_wrapped, create_stable_success_result_filepath, get_config_reverse_patch_steps,
 )
+from varats.experiment.steps.combinators import IfThenElse, AlwaysOk
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
 from varats.experiment.workload_util import (
@@ -23,12 +24,12 @@ from varats.experiment.workload_util import (
     workload_commands,
 )
 from varats.experiments.hidden_config.hidden_config_utils import (
-    get_variations_as_dict,
+    get_variations_as_dict, sample_variations,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.hidden_configurability_experiments import (
     filter_workloads,
-    get_project_binaries,
+    get_project_binaries, TimePatchedWorkloadsStep,
 )
 from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
@@ -196,68 +197,75 @@ class RunPatchedWorkloads(FeatureExperiment, shorthand="RPWL"):
                     f"Available patches: {[patch.shortname for patch in patches]}"
                 )
 
-            # TODO
+            for patch in patches_filtered:
+                patch_variations = variations[patch.shortname]
 
-        patch_steps = []
+                if len(patch_variations) != 1:
+                    print(
+                        f"Warning: Patch '{patch.shortname}' defines more than one argument. This is not supported currently. Skipping this patch."
+                    )
+                    continue
+                arg_name = next(iter(patch_variations))
+                values: list[int] = list(patch_variations[arg_name])
 
-        variations = get_variations_as_dict(project)
-        for patch in patches:
-            if patch.shortname not in variations:
-                print(
-                    f"No variations found for patch {patch.shortname} in project {project.name}, skipping..."
-                )
-                continue
+                if arg_name not in patch.arguments:
+                    print(
+                        f"Warning: Patch '{patch.shortname}' does not define argument '{arg_name}'."
+                    )
+                    print(f"Available arguments: {patch.arguments}")
+                    continue
 
-            patch_variations = variations[patch.shortname]
+                num_samples = 20
+                values.extend(sample_variations(values, num_samples))
 
-            if len(patch_variations) > 1:
-                print(
-                    f"Multiple arguments defined for patch {patch.shortname} in project {project.name}. Only one argument will be used at a time during rendering."
-                )
-
-            for arg_name, values in patch_variations.items():
                 for value in values:
-                    patch_args = {arg_name: value}
-                    patch_steps.append(ApplyPatch(project, patch, **patch_args))
-                    patch_steps.append(ReCompile(project))
-                    patch_steps.extend([
-                        RunAllWorkloads(
-                            project,
-                            binary,
-                            self,
-                            self.NUM_REPETITIONS,
-                            file_name=MPRBinAggregate.
-                            create_patched_report_name(
-                                patch, binary.name, **patch_args
-                            ) + ".zip"
+                    zipped_steps.append(
+                        ApplyPatch(project, patch, **{arg_name: value})
+                    )
+
+                    if len(zipped_steps) == 1:
+                        # First iteration, perform a full compile
+                        condition = actions.Compile(project)
+                    else:
+                        condition = ReCompile(project)
+
+                    for b in get_project_binaries(project):
+                        zipped_steps.append(
+                            IfThenElse(
+                                project,
+                                condition=condition,
+                                then_step=AlwaysOk(
+                                    RunAllWorkloads(
+                                        project,
+                                        b,
+                                        self.NUM_REPETITIONS,
+                                        file_name=MPRBinAggregate.
+                                                  create_patched_report_name(
+                                            patch, b.name, **{arg_name: value}
+                                        ) + ".zip"
+                                    )
+                                ),
+                            )
                         )
-                        for binary in project.binaries
-                        if binary.type == BinaryType.EXECUTABLE
-                    ])
-                    patch_steps.append(
-                        RevertPatch(project, patch, **patch_args)
+
+                    zipped_steps.append(
+                        RevertPatch(project, patch, **{arg_name: value})
                     )
 
-        analysis_actions = get_config_patch_steps(project)
-
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(
-            ZippedExperimentSteps(
-                result_filepath, [
-                    RunAllWorkloads(
-                        project,
-                        binary,
-                        self,
-                        self.NUM_REPETITIONS,
-                        file_name=MPRBinAggregate.
-                        create_baseline_report_name(binary.name) + ".zip"
-                    )
-                    for binary in project.binaries
-                    if binary.type == BinaryType.EXECUTABLE
-                ] + patch_steps
-            )
+        fake_binary = ProjectBinaryWrapper("ALL", Path(), BinaryType.EXECUTABLE)
+        result_filepath = create_stable_success_result_filepath(
+            self.get_handle(),
+            MPRBinAggregate,
+            project,
+            fake_binary,
+            get_current_config_id(project),
         )
 
+        analysis_actions.append(
+            ZippedExperimentSteps(result_filepath, zipped_steps)
+        )
+
+        analysis_actions.extend(get_config_reverse_patch_steps(project))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

@@ -6,26 +6,26 @@ from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
-from benchbuild.utils.cmd import make, cmake, mkdir
+from benchbuild.utils.cmd import cmake, make, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.containers.containers import get_base_image, ImageBase
+from varats.containers.containers import ImageBase, get_base_image
 from varats.experiment.workload_util import (
-    WorkloadCategory,
-    RSBinary,
     ConfigParams,
+    RSBinary,
+    WorkloadCategory,
     WorkloadSpecificReportAggregate,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    ProjectBinaryWrapper,
     BinaryType,
+    ProjectBinaryWrapper,
+    RevisionBinaryMap,
     get_local_project_repo,
     verify_binaries,
-    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
@@ -35,22 +35,28 @@ from varats.report.report import BaseReport
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
+    TestResult,
     ctest_get_test_names,
     ctest_run_testsuite,
-    TestResult,
 )
+
+COUNT_ARGS = [f"{2**x}" for x in range(3, 20)]
 
 
 class Libzmq(VProject):
-    """The ZeroMQ lightweight messaging kernel is a library which extends the
+    """
+    ZeroMQ is a lightweight messaging kernel library.
+
+    It extends the
     standard socket interfaces with features traditionally provided by
-    specialised messaging middleware products."""
+    specialised messaging middleware products.
+    """
 
     NAME = 'libzmq'
     GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.CPP_LIBRARY
 
-    SOURCE = [
+    SOURCE: tp.ClassVar = [
         PaperConfigSpecificGit(
             project_name="libzmq",
             remote="https://github.com/zeromq/libzmq.git",
@@ -68,30 +74,24 @@ class Libzmq(VProject):
         'libsodium-dev', 'pkg-config'
     )
 
-    COUNT_ARGS = [f"{2**x}" for x in range(3, 20)]
-
-    WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
-            VCommand(
+    WORKLOADS: tp.ClassVar = {
+        WorkloadSet(WorkloadCategory.EXAMPLE):
+            [VCommand(
                 SourceRoot("libzmq_git") / RSBinary("inproc_thr"),
-                ConfigParams(),
+                count,
                 "10000000",
-                label=f"bench-inproc-thr",
-                requires_any_args=set(COUNT_ARGS),
-            ),
+                label=f"bench-inproc-thr-{count}",
+            ) for count in COUNT_ARGS] + [
             VCommand(
                 SourceRoot("libzmq_git") / RSBinary("inproc_lat"),
-                ConfigParams(),
+                count,
                 "1000000",
-                label=f"bench-inproc-lat",
-                requires_any_args=set(COUNT_ARGS),
-            ),
+                label=f"bench-inproc-lat-{count}",
+            ) for count in COUNT_ARGS]  + [
             VCommand(
                 SourceRoot("libzmq_git") / RSBinary("benchmark_radix_tree"),
                 label="bench-radix-tree",
-                requires_all_args={"radix"},
-            )
-        ]
+            )]
     }
 
     @staticmethod

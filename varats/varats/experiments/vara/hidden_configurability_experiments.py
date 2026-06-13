@@ -496,7 +496,9 @@ _PROJECT_WORKLOADS = {
         "nocturne-1080p",
     ],
     # ZMQ
-    "libzmq": ["bench-inproc-lat", "bench-inproc-thr", "bench-radix-tree"],
+    "libzmq": [f"bench-inproc-lat-{count}" for count in [2**x for x in range(10,20)]]
+              +[f"bench-inproc-thr-{count}" for count in [2**x for x in range(10,20)]]+
+              ["bench-radix-tree"],
     # Compression
     "brotli": [
         "geo-maps-countries-land-250m",
@@ -504,18 +506,18 @@ _PROJECT_WORKLOADS = {
         "lukas_2d_16_dicom",
         "enwik8",
     ],
-    "xz": ["countries-land-250m", "silesia", "lukas_2d_16_dicom", "enwik8"],
-    "7zip": ["countries-250m-geo", "silesia", "lukas_2d_16_dicom", "enwik8"],
-    "bzip2": ["med-geo-compress", "silesia", "lukas_2d_16_dicom", "enwik8"],
-    "lrzip": ["countries-land-250m", "silesia", "lukas_2d_16_dicom", "enwik8"],
+    "xz": ["countries-land-250m", "silesia", "lukas-2d-16-dicom", "enwik8"],
+    "7zip": ["countries-250m-geo", "silesia", "lukas-2d-16-dicom", "enwik8"],
+    "bzip2": ["med-geo-compress", "silesia", "lukas-2d-16-dicom", "enwik8"],
+    "lrzip": ["countries-land-250m", "silesia", "lukas-2d-16-dicom", "enwik8"],
 
     # Databases
     "mariadb": ["tpcc", "tpch", "auctionmark"],
     "mysql": ["tpcc", "tpch", "auctionmark"],
     "postgres": ["tpcc", "tpch", "auctionmark"],
     # SAT Solvers
-    "cadical": ["traffic-kkb-unknown"],
-    "cryptominisat": ["traffic-kkb-unknown", "childsnack-p11"],
+    "cadical": ["heule-noL-11-12", "mp1-ps-5000", "stable-300"],
+    "cryptominisat": ["heule-noL-11-12", "mp1-ps-5000", "stable-300"],
 }
 
 
