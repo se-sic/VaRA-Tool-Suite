@@ -4,7 +4,7 @@ from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
-from benchbuild.source import HTTPUntar
+from benchbuild.source import HTTPMultiple, HTTPUntar
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -15,6 +15,7 @@ from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
+    ProjectBinaryWrapper,
     RevisionBinaryMap,
     get_local_project_repo,
 )
@@ -42,20 +43,16 @@ class Cadical(VProject):
             shallow=False,
         ),
         PatchVariationSource(),
-        HTTPUntar(
-            local="traffic_kkb_unknown.cnf",
+        HTTPMultiple(
+            local="main2024",
             remote={
-                "1.0": "https://github.com/se-sic/picoSAT-mirror/releases/"
-                "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
+                "1.0": "https://github.com/se-sic/picoSAT-vara/releases/download/workloads-main-2024-hc/"
             },
-        ),
-        HTTPUntar(
-            local="childsnack_p11.cnf",
-            remote={
-                "1.0": "https://github.com/se-sic/picoSAT-mirror/releases/"
-                "download/picoSAT-965/"
-                "UNSAT_H_instances_childsnack_p11.hddl_1.cnf.tar.gz"
-            },
+            files=[
+                "heule-noL-11-12.sanitized.cnf",
+                "mp1-ps-5000.cnf",
+                "stable-300.cnf",
+            ]
         ),
     ]
 
@@ -66,30 +63,38 @@ class Cadical(VProject):
         'build-essential',
         'pkg-config',
         'clang',
+        'libpcre3',
+        'libpcre3-dev',
     )
 
     WORKLOADS: typing.ClassVar = {
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("cadical") / RSBinary("cadical"),
-                "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf",
-                label="traffic-kkb-unknown",
+                "main2024/heule-noL-11-12.sanitized.cnf",
+                label="heule-noL-11-12",
             ),
             VCommand(
                 SourceRoot("cadical") / RSBinary("cadical"),
-                "childsnack_p11.cnf/UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
-                label="childsnack-p11",
+                "main2024/mp1-ps-5000.cnf",
+                label="mp1-ps-5000",
+            ),
+            VCommand(
+                SourceRoot("cadical") / RSBinary("cadical"),
+                "main2024/stable-300.cnf",
+                label="stable-300",
             ),
         ]
     }
 
-    def run_tests(self) -> None:
+    def run_tests(self) -> None: # noqa: D102
         pass
 
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash,
-    ) -> list['ProjectBinaryWrapper']:
+    ) -> list[ProjectBinaryWrapper]:
+        """Returns the binaries for a given revision."""
         binary_map = RevisionBinaryMap(get_local_project_repo(Cadical.NAME))
 
         binary_map.specify_binary(
@@ -99,6 +104,7 @@ class Cadical(VProject):
         return binary_map[revision]
 
     def compile(self) -> None:
+        """Compile the project."""
         src_dir = Path(self.source_of_primary)
 
         c_compiler = bb.compiler.cc(self)
@@ -115,6 +121,7 @@ class Cadical(VProject):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def recompile(self):
+        """Recompile the project."""
         src_dir = Path(self.source_of_primary)
 
         with local.cwd(src_dir):
@@ -160,9 +167,10 @@ class Cadical(VProject):
             tests_to_exclude: List of test cases to exclude.
 
         Returns:
-            returns a dictionary mapping test names to respective result (e.g., 'passed', 'failed', 'skipped').
+            returns a dictionary mapping test names to respective result
+            (e.g., 'passed', 'failed', 'skipped').
         """
-        __TEST_SUITES = {
+        __test_suites = {
             "api": self._run_api_tests,
             "usage": self._run_usage_tests,
             "cnf": self._run_cnf_tests,
@@ -171,17 +179,17 @@ class Cadical(VProject):
         }
 
         if not tests_to_run:
-            tests_to_run = __TEST_SUITES.keys()
+            tests_to_run = __test_suites.keys()
 
         if tests_to_exclude:
             tests_to_run = set(tests_to_run) - set(tests_to_exclude)
 
         test_results = {}
         for suite in tests_to_run:
-            if suite not in __TEST_SUITES:
+            if suite not in __test_suites:
                 raise ValueError(f"Unknown test suite: {suite}")
 
-            test_results.update(__TEST_SUITES[suite]())
+            test_results.update(__test_suites[suite]())
 
         return test_results
 
@@ -191,7 +199,7 @@ class Cadical(VProject):
         extract_name: tp.Callable[[str], str | None],
         extract_result: tp.Callable[[str], TestResult | None],
     ) -> dict[str, TestResult]:
-        test_results = {}
+        test_results: dict[str, TestResult] = {}
 
         test_dir = Path(self.source_of_primary) / "test"
 
@@ -208,7 +216,8 @@ class Cadical(VProject):
                 name = extract_name(line)
                 if name:
                     if active_test is not None:
-                        # Previous test did not report a result, mark it as failed
+                        # Previous test did not report a result,
+                        # mark it as Unknown.
                         test_results[test_name] = TestResult.UNKNOWN
                     active_test = line.split("'")[1]
                     test_name = f"{suite_name}::{active_test}"
@@ -324,11 +333,16 @@ class Cadical(VProject):
 
     def get_test_names(self) -> tp.Iterable[str]:
         """
-        Returns a list of tests that can be run for this project in the current
-        revision and configuration. Requires that prepare_test_environment() was
+        Returns a list of tests that can be run for this project.
+
+        Requires that prepare_test_environment() was
         called before.
 
         Returns:
              A list of tests available for this project.
         """
-        return list(self.run_testsuite().keys())
+        test_results = self.run_testsuite()
+        if test_results is None:
+            return []
+
+        return list(test_results.keys())
