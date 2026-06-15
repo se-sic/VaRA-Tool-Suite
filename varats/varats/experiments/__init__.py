@@ -10,7 +10,6 @@ from varats.utils.settings import vara_cfg
 
 def discover() -> None:
     """Auto import all BenchBuild experiments."""
-
     __all__ = []
 
     for _, module_name, _ in pkgutil.walk_packages(
@@ -22,5 +21,5 @@ def discover() -> None:
 
     extra_sources = vara_cfg()['external_source_repositories'].value
     for p in [Path(p) for p in extra_sources]:
-        module_folder = esh.determine_project_source_root(p) / "experiments"
+        module_folder = p / "experiments"
         esh.load_python_modules_from_external_project(p, module_folder, __all__)

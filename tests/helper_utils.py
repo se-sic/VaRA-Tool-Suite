@@ -109,6 +109,9 @@ class UnitTestFixtures:
     PLOTS = FileFixture(TEST_INPUTS_DIR / "plots", Path("plots"))
     TABLES = FileFixture(TEST_INPUTS_DIR / "tables", Path("tables"))
     ARTEFACTS = FileFixture(TEST_INPUTS_DIR / "artefacts", Path("artefacts"))
+    EXTERNAL_REPO_TEMPLATE = FileFixture(
+        TEST_INPUTS_DIR / "external_repo_template", Path("external_repo")
+    )
 
     # Projects available for testing:
     # BROTLI = RepoFixture.for_project(Brotli)

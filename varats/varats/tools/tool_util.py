@@ -4,14 +4,15 @@ import typing as tp
 from functools import wraps
 from pathlib import Path
 
-from varats.tools.research_tools.phasar import Phasar
-from varats.tools.research_tools.research_tool import ResearchTool
-from varats.tools.research_tools.szz_unleashed import SZZUnleashed
-from varats.tools.research_tools.vara import VaRA
+from varats.tools.research_tools.discover_research_tools import (
+    initialize_research_tools,
+)
+from varats.tools.research_tools.research_tool import (
+    ResearchTool,
+    ResearchToolTy,
+)
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import vara_cfg
-
-ResearchToolTy = tp.Union[tp.Type[VaRA], tp.Type[Phasar], tp.Type[SZZUnleashed]]
 
 
 def get_research_tool_type(name: str) -> ResearchToolTy:
@@ -23,21 +24,13 @@ def get_research_tool_type(name: str) -> ResearchToolTy:
 
     Returns: the research tool type corresponding to ``name``
     """
-    if name in ("VaRA", "vara"):
-        return VaRA
-
-    if name == "phasar":
-        return Phasar
-
-    if name == "szzunleashed":
-        return SZZUnleashed
-
-    raise LookupError(f"Could not find research tool {name}")
+    initialize_research_tools()
+    tool_type = ResearchTool.get_tool_type(name)
+    return tp.cast("ResearchToolTy", tool_type)
 
 
 def get_research_tool(
-    name: str,
-    source_location: tp.Optional[Path] = None
+    name: str, source_location: Path | None = None
 ) -> ResearchTool[tp.Any]:
     """
     Look up a research tool by name.
@@ -67,16 +60,19 @@ def get_research_tool(
     return rs_type(src_folder)
 
 
-def get_supported_research_tool_names() -> tp.List[str]:
-    """Returns a list of all supported research tools."""
-    return ["phasar", "vara", "szzunleashed"]
+def get_supported_research_tool_names() -> list[str]:
+    """Returns a list of all supported research tools, including external ones."""
+    initialize_research_tools()
+    return ResearchTool.get_registered_tool_names()
 
 
 def configuration_lookup_error_handler(
-    func: tp.Callable[..., None]
+    func: tp.Callable[..., None],
 ) -> tp.Callable[..., None]:
-    """Wrapper for drivers to catch internal Exceptions and provide a helpful
-    message to the user."""
+    """
+    Wrapper for drivers to catch internal Exceptions and provide a helpful
+    message to the user.
+    """
 
     @wraps(func)
     def wrapper_configuration_lookup_error_handler(
