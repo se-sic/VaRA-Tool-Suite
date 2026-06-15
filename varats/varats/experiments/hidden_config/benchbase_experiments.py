@@ -96,7 +96,7 @@ def _run_benchbase(
     java_dir = Benchbase.get_java_dir()
 
     with local.cwd(benchbase_exec_dir), local.env(
-        PATH=str(java_dir.absolute()) + ":" + local.env["PATH"],
+        PATH=str(java_dir.absolute() / "bin") + ":" + local.env["PATH"],
         JAVA_HOME=str(java_dir.absolute())
     ):
         print(f"Running workload: {workload}")
