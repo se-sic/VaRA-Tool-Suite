@@ -194,19 +194,51 @@ class LibZMQBenchmarkReport(BaseReport, shorthand="ZBR", file_type=".txt"):
         self.__latency = None
         self.__throughput_msg = None
         self.__throughput_mb = None
+        self.__trie_lookup_time = None
+        self.__radix_tree_time = None
 
         with open(path) as f:
-            for line in f:
-                if "message size" in line:
-                    self.__message_size = int(line.split(" ")[2].strip())
-                if "count" in line:
-                    self.__count = int(line.split(" ")[2].strip())
-                if "latency" in line:
-                    self.__latency = float(line.split(" ")[2].strip())
-                if "throughput" in line and "msg/s" in line:
-                    self.__throughput_msg = float(line.split(" ")[2].strip())
-                if "throughput" in line and "Mb/s" in line:
-                    self.__throughput_mb = float(line.split(" ")[2].strip())
+            # get first line to determine the type of report
+            first_line = f.readline()
+            if "message size" in first_line:
+                # Case for latency and throughput reports
+                for line in f:
+                    if "message size" in line:
+                        self.__message_size = int(line.split(" ")[2].strip())
+                    if "count" in line:
+                        self.__count = int(line.split(" ")[2].strip())
+                    if "latency" in line:
+                        self.__latency = float(line.split(" ")[2].strip())
+                    if "throughput" in line and "msg/s" in line:
+                        self.__throughput_msg = float(line.split(" ")[2].strip())
+                    if "throughput" in line and "Mb/s" in line:
+                        self.__throughput_mb = float(line.split(" ")[2].strip())
+            else:
+                # Case for radix tree benchmark report
+                # Report structure:
+                """
+                keys = 10000, queries = 1000000, key size = 20
+                [trie]
+                Average lookup time = 121.0 ns
+                [radix_tree]
+                Average lookup time = 102.0 ns
+                """
+                # We ignore meta parameter
+                for line in f:
+                    if "[trie]" in line:
+                        # Next line contains the trie lookup time
+                        next_line = f.readline()
+                        if "Average lookup time" in next_line:
+                            self.__trie_lookup_time = float(
+                                next_line.split("=")[1].strip().split(" ")[0]
+                            )
+                    if "[radix_tree]" in line:
+                        # Next line contains the radix tree lookup time
+                        next_line = f.readline()
+                        if "Average lookup time" in next_line:
+                            self.__radix_tree_time = float(
+                                next_line.split("=")[1].strip().split(" ")[0]
+                            )
 
     @property
     def message_size(self) -> int:
@@ -228,8 +260,15 @@ class LibZMQBenchmarkReport(BaseReport, shorthand="ZBR", file_type=".txt"):
     def throughput_mb(self) -> float:
         return self.__throughput_mb
 
+    @property
+    def trie_lookup_time(self) -> float:
+        return self.__trie_lookup_time
 
-class LibZMQ_WLAggregate(
+    @property
+    def radix_tree_time(self) -> float:
+        return self.__radix_tree_time
+
+class LibZMQWLAggregate(
     WorkloadSpecificReportAggregate[LibZMQBenchmarkReport],
     shorthand="ZBR_WLA",
     file_type=".zip"
@@ -238,69 +277,133 @@ class LibZMQ_WLAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(
-            path, LibZMQBenchmarkReport, label_method=lambda p: "Default"
+            path, LibZMQBenchmarkReport
         )
 
-        self._latencies: tp.List[float] = [
-            report.latency
-            for report in self.reports("Default")
-            if report.latency is not None
-        ]
+        self._metrics = {}
 
-        self._throughputs_msg: tp.List[float] = [
-            report.throughput_msg
-            for report in self.reports("Default")
-            if report.throughput_msg is not None
-        ]
+        self._metrics["latency"] = {
+            wl: [report.latency
+            for report in self.reports(wl)
+            if report.latency is not None] for wl in self.workload_names()
+        }
 
-        self._throughputs_mb: tp.List[float] = [
-            report.throughput_mb
-            for report in self.reports("Default")
-            if report.throughput_mb is not None
-        ]
+        self._metrics["throughput_msg"]: dict[str, list[float]] = {
+            wl: [report.throughput_msg
+            for report in self.reports(wl)
+            if report.throughput_msg is not None] for wl in self.workload_names()
+        }
+
+        self._metrics["throughput_mb"]: dict[str, list[float]] = {
+            wl: [report.throughput_mb
+            for report in self.reports(wl)
+            if report.throughput_mb is not None] for wl in self.workload_names()
+        }
+
+        self._metrics["trie_lookup_time"]: dict[str, list[float]] = {
+            wl: [report.trie_lookup_time
+            for report in self.reports(wl)
+            if report.trie_lookup_time is not None] for wl in self.workload_names()
+        }
+
+        self._metrics["radix_tree_time"]: dict[str, list[float]] = {
+            wl: [report.radix_tree_time
+            for report in self.reports(wl)
+            if report.radix_tree_time is not None] for wl in self.workload_names()
+        }
 
     @property
-    def latencies(self) -> tp.List[float]:
-        return self._latencies
+    def latencies(self) -> dict[str, list[float]]:
+        return self._metrics["latency"]
 
     @property
-    def throughputs_msg(self) -> tp.List[float]:
-        return self._throughputs_msg
+    def throughputs_msg(self) -> dict[str, list[float]]:
+        return self._metrics["throughput_msg"]
 
     @property
-    def throughputs_mb(self) -> tp.List[float]:
-        return self._throughputs_mb
+    def throughputs_mb(self) -> dict[str, list[float]]:
+        return self._metrics["throughput_mb"]
+
+    @property
+    def trie_lookup_times(self) -> dict[str, list[float]]:
+        return self._metrics["trie_lookup_time"]
+
+    @property
+    def radix_tree_times(self) -> dict[str, list[float]]:
+        return self._metrics["radix_tree_time"]
+
+    @property
+    def metrics(self) -> dict[str, dict[str, list[float]]]:
+        return self._metrics
 
 
 class LibZMQMPReport(
-    MultiPatchReport[LibZMQ_WLAggregate], shorthand="ZBR_MPA", file_type=".zip"
+    MultiPatchReport[LibZMQWLAggregate], shorthand="ZBR_MPA", file_type=".zip"
 ):
     """LibZMQ multi-patch report aggregate."""
 
+    @staticmethod
+    def _parse_binary_name_from_baseline_report_name(file_name: str) -> str:
+        # Baseline report name structure: baseline_{binary_name}.zip
+        if file_name.endswith(".zip"):
+            file_name.strip(".zip")
+        return file_name[len("baseline_"):]
+
+    @staticmethod
+    def _parse_binary_name_from_patched_report_name(file_name: str) -> str:
+        # Patched report name structure: patched_{patch_shortname_length}_{patch_shortname}_{binary_name}.zip
+        if file_name.endswith(".zip"):
+            file_name.strip(".zip")
+        fn_without_prefix = file_name[len("patched_"):]
+        split_leftover_fn = fn_without_prefix.partition("_")
+        shortname_length = int(split_leftover_fn[0])
+        return "".join(split_leftover_fn[2:])[shortname_length + 1:]
+
     def __init__(self, path: Path) -> None:
-        super().__init__(path, LibZMQ_WLAggregate)
-        self.__patched_reports: tp.Dict[str, LibZMQ_WLAggregate] = {}
+        super().__init__(path, LibZMQWLAggregate)
+        self.__patched_reports: tp.Dict[str, LibZMQWLAggregate] = {}
         self.__base = None
-        self.__bases = []
+        self.__base_by_binary: dict[str, LibZMQWLAggregate] = {}
+        self.__patched_reports_by_binary: dict[str, dict[str, LibZMQWLAggregate]] = {}
 
         with tempfile.TemporaryDirectory() as tmp_result_dir:
             shutil.unpack_archive(path, extract_dir=tmp_result_dir)
 
             for report in Path(tmp_result_dir).iterdir():
                 if self.is_baseline_report(report.name):
-                    base_report = LibZMQ_WLAggregate(report)
+                    base_report = LibZMQWLAggregate(report)
                     self.__base = base_report
-                    self.__bases.append(base_report)
-                elif self.is_patched_report(report.name):
-                    self.__patched_reports[
-                        self._parse_patch_shorthand_from_report_name(
+                    self.__base_by_binary[
+                        self._parse_binary_name_from_baseline_report_name(
                             report.name
-                        )] = LibZMQ_WLAggregate(report)
+                        )] = base_report
+                elif self.is_patched_report(report.name):
+                    binary_name = self._parse_binary_name_from_patched_report_name(
+                        report.name
+                    )
+                    patch_shortname = self._parse_patch_shorthand_from_report_name(
+                        report.name
+                    )
+                    self.__patched_reports[
+                        patch_shortname
+                    ] = LibZMQWLAggregate(report)
+                    if binary_name not in self.__patched_reports_by_binary:
+                        self.__patched_reports_by_binary[binary_name] = {}
+                    self.__patched_reports_by_binary[binary_name][
+                        patch_shortname
+                    ] = LibZMQWLAggregate(report)
 
             if not self.__base or not self.__patched_reports:
                 raise AssertionError(
                     f"Reports were missing in the file {path=}"
                 )
 
-    def all_baseline_reports(self) -> tp.List[LibZMQ_WLAggregate]:
-        return self.__bases
+    @property
+    def binaries(self) -> tp.Collection[str]:
+        return self.__base_by_binary.keys()
+
+    def baseline(self, binary_name: str) -> LibZMQWLAggregate:
+        return self.__base_by_binary[binary_name]
+
+    def patched(self, binary_name: str, patch_shortname: str) -> LibZMQWLAggregate:
+        return self.__patched_reports_by_binary[binary_name][patch_shortname]

@@ -26,7 +26,7 @@ from varats.experiments.vara.hidden_configurability_experiments import (
 )
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.projects.cpp_projects.libzmq import LibZMQMPReport
+from varats.projects.cpp_projects.libzmq import LibZMQMPReport, LibZMQWLAggregate
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 
@@ -100,13 +100,15 @@ def get_data_for_single_config(
     if result_df is None:
         # Case distinction for specific projects
         if cs.project_name == "libzmq":
-            df1 = _get_data_single_config_default(cs, config_id)
+            # TODO: Update for use with multiple binaries
+            #df1 = _get_data_single_config_default(cs, config_id)
             # Change all occurrences of config_opportunity "hwm" to "sndbuf"
-            df1.loc[df1["config_opportunity"] == "default_hwm",
-                    "config_opportunity"] = "hwm"
+            #df1.loc[df1["config_opportunity"] == "default_hwm",
+            #        "config_opportunity"] = "hwm"
 
             df2 = _get_data_single_config_libzmq(cs, config_id)
-            result_df = pd.concat([df1, df2], ignore_index=True)
+            result_df = df2
+            #result_df = pd.concat([df1, df2], ignore_index=True)
 
         elif cs.project_name in ["mariadb", "postgresql", "mysql"]:
             result_df = _get_data_single_config_benchbase(cs, config_id)
@@ -240,95 +242,133 @@ def _get_data_single_config_libzmq(
     data_rows = []
     base_values = {}
 
+    def _extract_baselines_from_report(report: LibZMQWLAggregate,
+                                       metric: str,
+                                       config_id: tp.Optional[int],
+                                       base_values):
+        result = [{
+                    "binary-wl": f"{wl}",
+                    "config_opportunity": "__baseline__",
+                    "variation": None,
+                    "metric": metric,
+                    "value": report.metrics[metric][wl],
+                    "config_id": config_id,
+                } for wl in report.workload_names()]
+
+        base_values[metric] = { wl: np.mean(report.metrics[metric][wl])
+                                for wl in report.workload_names() }
+
+        return result
+
+    def _extract_patched_values_from_report(report: LibZMQWLAggregate,
+                                            metric: str,
+                                            config_id: tp.Optional[int],
+                                            config_opportunity: str,
+                                            variation: str,
+                                            base_values,
+                                            negate_relative: bool = False):
+        metric_values = {
+            wl: report.metrics[metric][wl]
+            for wl in report.workload_names()
+        }
+
+        return [{
+                    "binary-wl": f"{wl}",
+                    "config_opportunity": config_opportunity,
+                    "variation": variation,
+                    "metric": metric,
+                    "value": metric_values[wl],
+                    "value_relative": [float((t / base_values[metric][wl]) - 1)
+                                       * (-1 if negate_relative else 1)
+                                       for t in metric_values[wl]],
+                    "config_id": config_id,
+                } for wl in report.workload_names()]
+
+
+
     for result_file in result_files:
         # Load report as LibZMQMPReport
         report: LibZMQMPReport = LibZMQMPReport(result_file.full_path())
 
-        # Parse base reports
-        for base_report in report.all_baseline_reports():
+        for binary in report.binaries:
+            base_report = report.baseline(binary)
             if "inproc_lat" in base_report.filename.filename:
                 metric = "latency"
-                data_rows.append({
-                    "binary-wl": "bench-inproc-lat",
-                    "config_opportunity": "__baseline__",
-                    "variation": None,
-                    "metric": metric,
-                    "value": base_report.latencies,
-                    "config_id": config_id,
-                })
+                new_rows = _extract_baselines_from_report(base_report,
+                                                          metric,
+                                                          config_id,
+                                                          base_values)
+                data_rows.extend(new_rows)
 
-                base_values[metric] = np.mean(base_report.latencies)
             elif "inproc_thr" in base_report.filename.filename:
-                data_rows.extend([{
-                    "binary-wl": "bench-inproc-thr",
-                    "config_opportunity": "__baseline__",
-                    "variation": None,
-                    "metric": "throughput_msg",
-                    "value": base_report.throughputs_msg,
-                    "config_id": config_id
-                }, {
-                    "binary-wl": "bench-inproc-thr",
-                    "config_opportunity": "__baseline__",
-                    "variation": None,
-                    "metric": "throughput_mb",
-                    "value": base_report.throughputs_mb,
-                    "config_id": config_id
-                }])
+                new_rows = _extract_baselines_from_report(base_report,
+                                                            "throughput_mb",
+                                                            config_id,
+                                                            base_values)
+                data_rows.extend(new_rows)
 
-                base_values["throughput_msg"] = np.mean(
-                    base_report.throughputs_msg
-                )
-                base_values["throughput_mb"] = np.mean(
-                    base_report.throughputs_mb
-                )
+            elif "benchmark_radix_tree" in base_report.filename.filename:
+                new_rows = _extract_baselines_from_report(base_report,
+                                                            "trie_lookup_time",
+                                                            config_id,
+                                                            base_values)
+                data_rows.extend(new_rows)
 
-        def extract_variation(patch_name: str) -> str:
-            # patch names follow the pattern "<patch_name>_<base_file_name>_<config_point>=<value>"
-            # We want to extract <value>
-            name_path = Path(patch_name).stem
-            split_leftover_fn = name_path.partition("_")
-            config_part = split_leftover_fn[-1]
-            config_point = config_part.split('=')
-            return config_point[1]
+                new_rows = _extract_baselines_from_report(base_report,
+                                                            "radix_tree_time",
+                                                            config_id,
+                                                            base_values)
+                data_rows.extend(new_rows)
 
-        for patch_name in report.get_patch_names():
-            patched_report = report.get_report_for_patch(patch_name)
+            for patch_name in report.get_patch_names():
+                patched_report = report.patched(binary, patch_name)
+                opportunity, variation = extract_config_point(patched_report.filename.filename)
 
-            variation = extract_variation(patch_name)
+                if "inproc_lat" in patched_report.filename.filename:
+                    data_rows.extend(_extract_patched_values_from_report(
+                        patched_report,
+                            metric,
+                            config_id,
+                            opportunity,
+                            variation,
+                            base_values,
+                            negate_relative=True
+                    ))
+                elif "inproc_thr" in patched_report.filename.filename:
+                    data_rows.extend(
+                        _extract_patched_values_from_report(
+                            patched_report,
+                            "throughput_mb",
+                            config_id,
+                            opportunity,
+                            variation,
+                            base_values
+                        )
+                    )
+                elif "benchmark_radix_tree" in patched_report.filename.filename:
+                    data_rows.extend(
+                        _extract_patched_values_from_report(
+                            patched_report,
+                            "trie_lookup_time",
+                            config_id,
+                            opportunity,
+                            variation,
+                            base_values,
+                            negate_relative=True
+                        )
+                    )
 
-            if "inproc_lat" in patched_report.filename.filename:
-                metric = "latency"
-                data_rows.append({
-                    "binary-wl": "bench-inproc-lat",
-                    "config_opportunity": "hwm",
-                    "variation": variation,
-                    "metric": metric,
-                    "value": patched_report.latencies,
-                    # Lower latency is better, so we negate the relative value
-                    "value_relative": [float((t / base_values[metric]) - 1) * -1
-                                       for t in patched_report.latencies],
-                    "config_id": config_id,
-                })
-            elif "inproc_thr" in patched_report.filename.filename:
-                data_rows.extend([{
-                    "binary-wl": "bench-inproc-thr",
-                    "config_opportunity": "hwm",
-                    "variation": variation,
-                    "metric": "throughput_msg",
-                    "value": patched_report.throughputs_msg,
-                    "value_relative": [float((t / base_values["throughput_msg"]) - 1)
-                                       for t in patched_report.throughputs_msg],
-                    "config_id": config_id
-                }, {
-                    "binary-wl": "bench-inproc-thr",
-                    "config_opportunity": "hwm",
-                    "variation": variation,
-                    "metric": "throughput_mb",
-                    "value": patched_report.throughputs_mb,
-                    "value_relative": [float((t / base_values["throughput_mb"]) - 1)
-                                       for t in patched_report.throughputs_mb],
-                    "config_id": config_id
-                }])
+                    data_rows.extend(
+                        _extract_patched_values_from_report(
+                            patched_report,
+                            "radix_tree_time",
+                            config_id,
+                            opportunity,
+                            variation,
+                            base_values,
+                            negate_relative=True
+                        )
+                    )
 
     return pd.DataFrame.from_records(data_rows)
 
