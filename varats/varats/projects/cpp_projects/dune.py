@@ -14,6 +14,7 @@ from varats.containers.containers import ImageBase, get_base_image
 from varats.experiment.experiment_util import ZippedReportFolder
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
+from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
@@ -58,7 +59,7 @@ class DunePerfRegression(VProject):
     GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.CPP_LIBRARY
 
-    SOURCE = [
+    SOURCE: tp.ClassVar = [
         PaperConfigSpecificGit(
             project_name='DunePerfRegression',
             remote='https://github.com/se-sic/dune-VaRA.git',
@@ -67,12 +68,13 @@ class DunePerfRegression(VProject):
             limit=None,
             shallow=False
         ),
-        FeatureSource()
+        FeatureSource(),
+        PatchVariationSource()
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10)
 
-    WORKLOADS = {
+    WORKLOADS: tp.ClassVar = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot(
@@ -136,13 +138,13 @@ class DunePerfRegression(VProject):
         ]
     }
 
-    __DUNE_MODULES = [
+    __DUNE_MODULES: tp.ClassVar[list[str]] = [
         "dune-common", "dune-istl", "dune-geometry", "dune-uggrid", "dune-grid",
         "dune-typetree", "dune-multidomaingrid", "dune-localfunctions",
         "dune-functions", "dune-alugrid", "dune-pdelab"
     ]
 
-    __CMAKE_FLAGS = [
+    __CMAKE_FLAGS: tp.ClassVar[list[str]] = [
         "-DDUNE_ENABLE_PYTHONBINDINGS=OFF",
         "-DCMAKE_DISABLE_FIND_PACKAGE_MPI=TRUE",
         "-DCMAKE_DISABLE_FIND_PACKAGE_Doxygen=TRUE",

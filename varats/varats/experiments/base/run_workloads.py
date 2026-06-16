@@ -1,6 +1,8 @@
+import subprocess
 import textwrap
 from pathlib import Path
 
+import benchbuild as bb
 from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
@@ -75,12 +77,14 @@ class RunAllWorkloads(OutputFolderStep):
                     )
 
                     for i in range(self.__repetitions):
+                        print(f"Running {prj_command.command.label}...")
+
                         run_report_name = binary_report_folder / create_workload_specific_filename(
                             "text-report", prj_command.command, i, ".txt"
                         )
 
                         with cleanup(prj_command):
-                            (pb_cmd > str(run_report_name))()
+                            (pb_cmd > str(run_report_name))(stderr=subprocess.STDOUT)
 
         return actions.StepResult.OK
 
@@ -127,7 +131,7 @@ class RunPatchedWorkloads(FeatureExperiment, shorthand="RPWL"):
 
     NAME = "RunPatchedWorkloads"
     PATCH_TAG = "hidden-config"
-    NUM_REPETITIONS = 10
+    NUM_REPETITIONS = 2
 
     REPORT_SPEC = ReportSpecification(MPRBinAggregate)
 

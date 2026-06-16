@@ -16,7 +16,7 @@ from varats.project.project_util import (
     RevisionBinaryMap,
     get_local_project_repo,
     BinaryType,
-    verify_binaries,
+    verify_binaries, ProjectBinaryWrapper,
 )
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
@@ -32,7 +32,7 @@ class DuckDB(VProject):
     GROUP = "cpp_projects"
     DOMAIN = ProjectDomains.DATABASE
 
-    SOURCE = [
+    SOURCE: tp.ClassVar = [
         PaperConfigSpecificGit(
             project_name="duckdb",
             remote="https://github.com/duckdb/duckdb.git",
@@ -44,21 +44,33 @@ class DuckDB(VProject):
         PatchVariationSource()
     ]
 
-    WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
+    WORKLOADS: tp.ClassVar = {
+        WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("duckdb") / RSBinary("benchmark_runner"),
                 "--disable-timeout",
                 "benchmark/large/ingestion/tpch/native/ingest_lineitem.benchmark",
                 label="tpch-csv-ingest-lineitem"
-            )
+            ),
+            VCommand(
+                SourceRoot("duckdb") / RSBinary("benchmark_runner"),
+                "--disable-timeout",
+                "benchmark/micro/compression/dictionary/dictionary_store_worst_case_with_null.benchmark",
+                label="micro-dict-store-wc-null"
+            ),
+            VCommand(
+                SourceRoot("duckdb") / RSBinary("benchmark_runner"),
+                "--disable-timeout",
+                "benchmark/micro/index/create/create_art_varchar.benchmark",
+                label="micro-create-art-varchar"
+            ),
         ]
     }
 
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
-    ) -> tp.List['ProjectBinaryWrapper']:
+    ) -> list[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_repo(DuckDB.NAME))
 
         binary_map.specify_binary("build/release/duckdb", BinaryType.EXECUTABLE)
@@ -118,7 +130,7 @@ class DuckDB(VProject):
         Should be called after prepare_test_environment() to build the tests.
         Once this method is called, the tests should be built and ready to run.
         """
-        self.compile()
+        self.recompile()
 
     def run_testsuite(
         self,
