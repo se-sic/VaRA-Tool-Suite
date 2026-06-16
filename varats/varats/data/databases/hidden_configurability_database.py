@@ -101,14 +101,14 @@ def get_data_for_single_config(
         # Case distinction for specific projects
         if cs.project_name == "libzmq":
             # TODO: Update for use with multiple binaries
-            #df1 = _get_data_single_config_default(cs, config_id)
-            # Change all occurrences of config_opportunity "hwm" to "sndbuf"
-            #df1.loc[df1["config_opportunity"] == "default_hwm",
-            #        "config_opportunity"] = "hwm"
+            df1 = _get_data_single_config_default(cs, config_id)
+            # binary-wl names are "{bin}/{wl}" from this report,
+            # but just "{wl}" from the libzmq-specific report,
+            # so we need to adjust the binary-wl names in this
+            df1["binary-wl"] = df1["binary-wl"].apply(lambda x: x.split("/")[-1])
 
             df2 = _get_data_single_config_libzmq(cs, config_id)
-            result_df = df2
-            #result_df = pd.concat([df1, df2], ignore_index=True)
+            result_df = pd.concat([df1, df2], ignore_index=True)
 
         elif cs.project_name in ["mariadb", "postgresql", "mysql"]:
             result_df = _get_data_single_config_benchbase(cs, config_id)
@@ -390,79 +390,72 @@ def _get_data_single_config_default(
         print(f"No results found for {cs.project_name} ({config_id=})")
         return pd.DataFrame()
 
-    if cs.project_name == "DunePerfRegression":
-        result_files = [
-            rf for rf in result_files if "yasp_q2_3d" in str(rf.full_path())
-        ]
-
     data_rows = []
-
-    base_times = {}
-    base_rss = {}
 
     for result_file in result_files:
         report: MPRTimeWLAggregate = MPRTimeWLAggregate(result_file.full_path())
 
-        binary = report.filename.binary_name
+        for binary in report.binaries:
+            base_times = {}
+            base_rss = {}
+            base_report: WLTimeReportAggregate = report.baseline(binary)
 
-        base_report: WLTimeReportAggregate = report.get_baseline_report()
-
-        for wl in base_report.workload_names():
-            data_rows.extend([{
-                "binary-wl": f"{binary}/{wl}",
-                "config_opportunity": "__baseline__",
-                "variation": None,
-                "metric": "wall_clock_time",
-                "value": base_report.measurements_wall_clock_time(wl),
-                "value_relative": None,
-                "config_id": report.filename.config_id,
-            }, {
-                "binary-wl": f"{binary}/{wl}",
-                "config_opportunity": "__baseline__",
-                "variation": None,
-                "metric": "max_resident_size",
-                "value": base_report.max_resident_sizes(wl),
-                "value_relative": None,
-                "config_id": report.filename.config_id,
-            }])
-
-            base_times[wl] = np.mean(
-                base_report.measurements_wall_clock_time(wl)
-            )
-            base_rss[wl] = np.mean(base_report.max_resident_sizes(wl))
-
-        for patch_report in report.get_patched_reports():
-            cp = extract_config_point(patch_report.filename.filename)
-
-            for wl in patch_report.workload_names():
+            for wl in base_report.workload_names():
                 data_rows.extend([{
                     "binary-wl": f"{binary}/{wl}",
-                    "config_opportunity": f"{cp[0]}",
-                    "variation": cp[1].strip("_"),
+                    "config_opportunity": "__baseline__",
+                    "variation": None,
                     "metric": "wall_clock_time",
-                    "value": patch_report.measurements_wall_clock_time(wl),
-                    "value_relative": [
-                        float((t / base_times[wl]) - 1) * -1
-                        for t in patch_report.measurements_wall_clock_time(wl)
-                    ],
+                    "value": base_report.measurements_wall_clock_time(wl),
+                    "value_relative": None,
                     "config_id": report.filename.config_id,
                 }, {
                     "binary-wl": f"{binary}/{wl}",
-                    "config_opportunity": f"{cp[0]}",
-                    "variation": cp[1].strip("_"),
+                    "config_opportunity": "__baseline__",
+                    "variation": None,
                     "metric": "max_resident_size",
-                    "value": patch_report.max_resident_sizes(wl),
-                    "value_relative": [
-                        float((t / base_rss[wl]) - 1) * -1
-                        for t in patch_report.max_resident_sizes(wl)
-                    ],
+                    "value": base_report.max_resident_sizes(wl),
+                    "value_relative": None,
                     "config_id": report.filename.config_id,
                 }])
 
+                base_times[wl] = np.mean(
+                    base_report.measurements_wall_clock_time(wl)
+                )
+                base_rss[wl] = np.mean(base_report.max_resident_sizes(wl))
 
-    result = pd.DataFrame.from_records(data_rows)
+            for patch_name in report.get_patch_names():
+                patch_report = report.patched(binary, patch_name)
+                cp = extract_config_point(patch_report.filename.filename)
 
-    return result
+                for wl in patch_report.workload_names():
+                    data_rows.extend([{
+                        "binary-wl": f"{binary}/{wl}",
+                        "config_opportunity": f"{cp[0]}",
+                        "variation": cp[1].strip("_"),
+                        "metric": "wall_clock_time",
+                        "value": patch_report.measurements_wall_clock_time(wl),
+                        "value_relative": [
+                            float((t / base_times[wl]) - 1) * -1
+                            for t in patch_report.measurements_wall_clock_time(wl)
+                        ],
+                        "config_id": report.filename.config_id,
+                    }, {
+                        "binary-wl": f"{binary}/{wl}",
+                        "config_opportunity": f"{cp[0]}",
+                        "variation": cp[1].strip("_"),
+                        "metric": "max_resident_size",
+                        "value": patch_report.max_resident_sizes(wl),
+                        "value_relative": [
+                            float((t / base_rss[wl]) - 1) * -1
+                            for t in patch_report.max_resident_sizes(wl)
+                        ],
+                        "config_id": report.filename.config_id,
+                    }])
+
+
+    return pd.DataFrame.from_records(data_rows)
+
 
 
 def _get_data_single_config_benchbase(

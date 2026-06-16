@@ -15,22 +15,54 @@ class MultiPatchReport(
     """Meta report to group together reports of the same type that where
     produced with differently patched projects."""
 
+    @staticmethod
+    def _parse_binary_name_from_baseline_report_name(file_name: str) -> str:
+        # Baseline report name structure: baseline_{binary_name}.zip
+        if file_name.endswith(".zip"):
+            file_name = file_name.removesuffix(".zip")
+        return file_name[len("baseline_"):]
+
+    @staticmethod
+    def _parse_binary_name_from_patched_report_name(file_name: str) -> str:
+        # Patched report name structure: patched_{patch_shortname_length}_{patch_shortname}_{binary_name}.zip
+        if file_name.endswith(".zip"):
+            file_name = file_name.removesuffix(".zip")
+        fn_without_prefix = file_name[len("patched_"):]
+        split_leftover_fn = fn_without_prefix.partition("_")
+        shortname_length = int(split_leftover_fn[0])
+        return "".join(split_leftover_fn[2:])[shortname_length + 1:]
+
     def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
         super().__init__(path)
         self.__patched_reports: tp.Dict[str, ReportTy] = {}
         self.__base = None
+        self.__base_by_binary: dict[str, ReportTy] = {}
+        self.__patched_reports_by_binary: dict[str, dict[str, ReportTy]] = {}
 
         with tempfile.TemporaryDirectory() as tmp_result_dir:
             shutil.unpack_archive(path, extract_dir=tmp_result_dir)
 
             for report in Path(tmp_result_dir).iterdir():
                 if self.is_baseline_report(report.name):
-                    self.__base = report_type(report)
-                elif self.is_patched_report(report.name):
-                    self.__patched_reports[
-                        self._parse_patch_shorthand_from_report_name(
+                    base_report = report_type(report)
+                    self.__base = base_report
+                    self.__base_by_binary[
+                        self._parse_binary_name_from_baseline_report_name(
                             report.name
-                        )] = report_type(report)
+                        )] = base_report
+                elif self.is_patched_report(report.name):
+                    binary_name = self._parse_binary_name_from_patched_report_name(
+                        report.name
+                    )
+                    patch_shortname = self._parse_patch_shorthand_from_report_name(
+                        report.name
+                    )
+                    self.__patched_reports[
+                        patch_shortname] = report_type(report)
+                    if binary_name not in self.__patched_reports_by_binary:
+                        self.__patched_reports_by_binary[binary_name] = {}
+                    self.__patched_reports_by_binary[binary_name][
+                        patch_shortname] = report_type(report)
 
             if not self.__base or not self.__patched_reports:
                 raise AssertionError(
@@ -99,3 +131,13 @@ class MultiPatchReport(
             return base_file_name
         else:
             raise ValueError(f"Invalid report file name: {file_name}")
+
+    @property
+    def binaries(self) -> tp.Collection[str]:
+        return self.__base_by_binary.keys()
+
+    def baseline(self, binary_name: str) -> ReportTy:
+        return self.__base_by_binary[binary_name]
+
+    def patched(self, binary_name: str, patch_shortname: str) -> ReportTy:
+        return self.__patched_reports_by_binary[binary_name][patch_shortname]
