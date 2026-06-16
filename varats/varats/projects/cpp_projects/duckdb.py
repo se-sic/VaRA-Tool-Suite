@@ -1,5 +1,6 @@
 """DuckDB project module."""
 import typing as tp
+from collections import defaultdict
 from pathlib import Path
 
 import benchbuild as bb
@@ -8,7 +9,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local, ProcessExecutionError
 from scipy.ndimage import label
 
-from varats.experiment.workload_util import WorkloadCategory, RSBinary
+from varats.experiment.workload_util import WorkloadCategory, RSBinary, WorkloadSpecificReportAggregate
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
 from varats.project.project_domain import ProjectDomains
@@ -20,6 +21,8 @@ from varats.project.project_util import (
 )
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
+from varats.report.multi_patch_report import MultiPatchReport
+from varats.report.report import BaseReport
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import TestResult, parse_junit_xml
@@ -185,3 +188,89 @@ class DuckDB(VProject):
             result = test_runner("--list-test-names-only", retcode=None).strip()
 
         return result.splitlines()
+
+class DuckDBBenchmarkRunReport(
+    BaseReport,
+    shorthand="DDBR",
+    file_type=".txt"
+):
+    """
+    Report for run with the DuckDB internal benchmark runner.
+
+    The results are a dictionary mapping benchmark names to the runtime in seconds.
+    """
+
+    def __init__(
+        self,
+        path: Path
+    ) -> None:
+        super().__init__(path)
+        self._results = defaultdict(list)
+
+        with self.path.open() as f:
+            # Format of files:
+            # name    run    timing
+            # <name1> <num1>   <time1>
+            # ...
+            for line in f:
+                if line.startswith("name"):
+                    continue
+                parts = line.strip().split()
+                if len(parts) != 3:
+                    continue
+                name, _, timing = parts
+                self._results[name].append(float(timing))
+
+    @property
+    def benchmarks(self) -> str:
+        return self._results.keys()
+
+    def measurements(self, benchmark: str) -> list[float]:
+        return self._results[benchmark]
+
+class DuckDBBenchmarkAggregate(
+    WorkloadSpecificReportAggregate[DuckDBBenchmarkRunReport],
+    shorthand="DDBA",
+    file_type=".zip"
+):
+    """
+    Aggregate report for multiple runs of the DuckDB internal benchmark runner.
+
+    This simply merges the results of multiple runs into a single report
+    """
+
+    def __init__(
+        self, path: Path
+    ) -> None:
+        super().__init__(path, DuckDBBenchmarkRunReport)
+        self._results = defaultdict(list)
+
+        for wl in self.workload_names():
+            reports = self.reports(wl)
+
+            for report in reports:
+                    for benchmark in report.benchmarks:
+                        self._results[benchmark].extend(report.measurements(benchmark))
+
+    @property
+    def benchmarks(self) -> str:
+        return self._results.keys()
+
+    def measurements(self, benchmark: str) -> list[float]:
+        return self._results[benchmark]
+
+class DuckDBMPReport(
+    MultiPatchReport[DuckDBBenchmarkAggregate],
+    shorthand="DDBMP",
+    file_type=".zip"
+):
+    """
+    Multi-patch report for the DuckDB internal benchmark runner.
+
+    This aggregates the results of multiple patches into a single report.
+    """
+
+    def __init__(
+        self, path: Path
+    ) -> None:
+        super().__init__(path, DuckDBBenchmarkAggregate)

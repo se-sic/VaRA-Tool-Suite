@@ -26,6 +26,7 @@ from varats.experiments.vara.hidden_configurability_experiments import (
 )
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.projects.cpp_projects.duckdb import DuckDBMPReport, DuckDBBenchmarkAggregate
 from varats.projects.cpp_projects.libzmq import LibZMQMPReport, LibZMQWLAggregate
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
@@ -112,6 +113,9 @@ def get_data_for_single_config(
 
         elif cs.project_name in ["mariadb", "postgresql", "mysql"]:
             result_df = _get_data_single_config_benchbase(cs, config_id)
+        elif cs.project_name == "duckdb":
+            # Empty dataframe until implemented
+            result_df = _get_data_single_config_duckdb(cs, config_id)
         else:
             result_df = _get_data_single_config_default(cs, config_id)
 
@@ -372,7 +376,60 @@ def _get_data_single_config_libzmq(
 
     return pd.DataFrame.from_records(data_rows)
 
+def _get_data_single_config_duckdb(
+    cs, config_id: tp.Optional[int] = None
+) -> pd.DataFrame:
+    result_files = get_processed_revisions_files(
+        "duckdb",
+        RunPatchedWorkloads,
+        RunPatchedWorkloads.report_spec().main_report,
+        get_case_study_file_name_filter(cs),
+        config_id=config_id,
+        only_newest=False,
+    )
 
+    if len(result_files) == 0:
+        print(f"No results found for {cs.project_name} ({config_id=})")
+        return pd.DataFrame()
+
+    data_rows = []
+    for result_file in result_files:
+        base_values = {}
+        report: DuckDBMPReport = DuckDBMPReport(result_file.full_path())
+
+        for binary in report.binaries:
+            base_report: DuckDBBenchmarkAggregate = report.baseline(binary)
+
+            for wl in base_report.benchmarks:
+                data_rows.extend([{
+                    "binary-wl": f"{binary}/{wl}",
+                    "config_opportunity": "__baseline__",
+                    "variation": None,
+                    "metric": "runtime",
+                    "value": base_report.measurements(wl),
+                    "value_relative": None,
+                    "config_id": report.filename.config_id,
+                }])
+
+                base_values[wl] = np.mean(base_report.measurements(wl))
+
+            for patch_name in report.get_patch_names():
+                patched_report = report.patched(binary, patch_name)
+                opportunity, variation = extract_config_point(patched_report.filename.filename)
+
+                for wl in patched_report.benchmarks:
+                    data_rows.extend([{
+                        "binary-wl": f"{binary}/{wl}",
+                        "config_opportunity": opportunity,
+                        "variation": variation,
+                        "metric": "runtime",
+                        "value": patched_report.measurements(wl),
+                        "value_relative": [float((t / base_values[wl]) - 1) * -1
+                                           for t in patched_report.measurements(wl)],
+                        "config_id": report.filename.config_id,
+                    }])
+
+    return pd.DataFrame.from_records(data_rows)
 
 def _get_data_single_config_default(
     cs: CaseStudy, config_id: tp.Optional[int] = None

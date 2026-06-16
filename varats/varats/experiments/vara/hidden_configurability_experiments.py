@@ -200,13 +200,13 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  # type: ignore
 
     project: VProject
 
-    __GLOBAL_IGNORED_PATTERNS = [
+    __GLOBAL_IGNORED_PATTERNS: tp.ClassVar = [
         "/usr/include",
         "test",
         "examples",
     ]
 
-    __PROJECT_SPECIFIC_IGNORED_PATTERNS = {
+    __PROJECT_SPECIFIC_IGNORED_PATTERNS: tp.ClassVar = {
         HyTeg.NAME: ["eigen/"],
         SevenZip.NAME: ["Windows/", "UI/"],
         Brotli.NAME: ["csharp/", "go/", "java/", "js/", "python/", "research/"],
@@ -234,6 +234,7 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  # type: ignore
         "cryptominisat": ["tests/", "utils/"],
         "cadical": ["test/", "contrib"],
         "x264": ["extras/", "tools/"],
+        "libvpx": ["build/", "build_debug/", "docs/", "examples/", "test/", "third_party/"],
     }
 
     def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
@@ -473,8 +474,7 @@ class FilterHiddenConfigurabilityReport(VersionExperiment, shorthand="FCP"):
 _PROJECT_WORKLOADS = {
     # Dune
     "DunePerfRegression": [
-        "poisson-yasp-q2-3d",
-        "poisson-alugrid",
+        "poisson-ug-pk-2d",
         "poisson-non-separated",
     ],
     # FD
@@ -485,11 +485,11 @@ _PROJECT_WORKLOADS = {
         # "childsnack-opt14-p01-py",
     ],
     # Video Encoding
-    "libvpx": [
-        "aspen-1080p",
+    #"libvpx": [ - Has no relevant config points that are covered
+    #    "aspen-1080p",
         # "old-town-2160p", Excluded for now, takes to long for one run (~15 Minutes)
-        "nocturne-1080p",
-    ],
+    #    "nocturne-1080p",
+    #],
     "x264": [
         "aspen-1080p",
         # "old-town-2160p", Excluded for now, takes to long for one run (~15 Minutes)
@@ -511,10 +511,16 @@ _PROJECT_WORKLOADS = {
     "bzip2": ["med-geo-compress", "silesia", "lukas-2d-16-dicom", "enwik8"],
     "lrzip": ["countries-land-250m", "silesia", "lukas-2d-16-dicom", "enwik8"],
 
-    # Databases
+    # Databases (Benchbase)
     "mariadb": ["tpcc", "tpch", "auctionmark"],
-    "mysql": ["tpcc", "tpch", "auctionmark"],
+    # "mysql": ["tpcc", "tpch", "auctionmark"], # Removed due to compilation issues
     "postgres": ["tpcc", "tpch", "auctionmark"],
+
+    # Database (non-Benchbase)
+    "duckdb": ["tpch-csv-ingest-lineitem",
+               "micro-dict-store-wc-null",
+               "micro-create-art-varchar"],
+
     # SAT Solvers
     "cadical": ["heule-noL-11-12", "mp1-ps-5000", "stable-300"],
     "cryptominisat": ["heule-noL-11-12", "mp1-ps-5000", "stable-300"],
