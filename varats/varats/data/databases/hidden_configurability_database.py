@@ -111,7 +111,7 @@ def get_data_for_single_config(
             df2 = _get_data_single_config_libzmq(cs, config_id)
             result_df = pd.concat([df1, df2], ignore_index=True)
 
-        elif cs.project_name in ["mariadb", "postgresql", "mysql"]:
+        elif cs.project_name in ["mariadb", "postgres", "mysql"]:
             result_df = _get_data_single_config_benchbase(cs, config_id)
         elif cs.project_name == "duckdb":
             # Empty dataframe until implemented
@@ -123,7 +123,20 @@ def get_data_for_single_config(
         if not result_df.empty:
             _cache_df(result_df, cs.project_name, config_id)
 
-    return result_df
+    # Report all rows where the value column has at least 10 measurements,
+    # We should look into these and repeat the measurements if possible
+    false_rows = result_df[result_df["value"].apply(lambda x: len(x) < 10)]
+    if not false_rows.empty:
+        for _, row in false_rows.iterrows():
+            print(
+                f"Warning: {row['binary-wl']}, {row['config_opportunity']}, "
+                f"{row['variation']}, metric {row['metric']} has less than 10 measurements ({len(row['value'])} measurements)."
+            )
+
+    # Exclude all rows where the value column has less than 10 measurements.
+    # This would be an error in our measurement setup that we should look into.
+    return result_df[result_df["value"].apply(lambda x: len(x) >= 10)]
+
 
 def calculate_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -141,10 +154,23 @@ def calculate_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
         - num_settings: Number of settings with at least two variations that are significantly different from the baseline
         - num_sig
     """
-    result_df = df.copy()
+    result_df = df.copy().fillna(-1)
 
     # Filter out baseline rows
     filtered_df = filter_baseline_rows(result_df)
+
+    # Get total number of settings and configuration alternatives for each project
+    base_data = pd.DataFrame.from_records([
+        {
+            "project": p,
+            "num_settings": filtered_df[filtered_df["project"] == p].groupby(
+                ["binary-wl", "metric", "config_id"]
+            ).ngroups,
+            "num_config_alts": filtered_df[filtered_df["project"] == p].groupby(
+                ["config_opportunity", "variation"]
+            ).ngroups,
+        } for p in df["project"].unique()
+    ])
 
     # Select only significant changes
     significant_df = filter_for_significant_changes(filtered_df)
@@ -152,7 +178,9 @@ def calculate_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
     # Group by binary-wl, metric, and config_id, then calculate the Kruskal-Wallis H-test
     def kruskal_wallis(group):
         if len(group) < 2:
-            return pd.Series({"kruskal_statistic": np.nan, "kruskal_pvalue": np.nan})
+            return pd.Series({"kruskal_statistic": np.nan,
+                              "kruskal_pvalue": np.nan,
+                              "effect_size": np.nan})
 
         # Extract the value_relative lists for each variation
         data = [row["value_relative"] for _, row in group.iterrows()]
@@ -160,7 +188,28 @@ def calculate_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
         # Perform the Kruskal-Wallis H-test
         statistic, pvalue = kruskal(*data)
 
-        return pd.Series({"kruskal_statistic": statistic, "kruskal_pvalue": pvalue})
+        # Calculate eta-squared as a measure of effect size
+        # eta^2 = (H- k + 1) / (n - k), where H is the Kruskal-Wallis statistic,
+        # k is the number of groups, and n is the total number of observations
+        eta_squared = (statistic - len(data) + 1) / (sum(len(d) for d in data) - len(data))
+
+        return pd.Series({"kruskal_statistic": statistic,
+                            "kruskal_pvalue": pvalue,
+                            "effect_size": eta_squared})
+
+    def means_min_max(group):
+        if len(group) == 0:
+            return pd.Series({"min_value_relative_mean": np.nan,
+                              "max_value_relative_mean": np.nan})
+
+        lists = [vr for vr in group["value_relative"] if vr is not None]
+        if len(lists) == 0:
+            return pd.Series({"min_value_relative_mean": np.nan,
+                              "max_value_relative_mean": np.nan})
+
+        means = [np.mean(l) if len(l) > 0 else np.nan for l in lists]
+        return pd.Series({"min_value_relative_mean": np.nanmin(means),
+                          "max_value_relative_mean": np.nanmax(means)})
 
     projects = df["project"].unique()
 
@@ -168,7 +217,7 @@ def calculate_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
 
     for p in projects:
         print(f"Calculating Kruskal-Wallis H-test for project {p}...")
-        project_df = significant_df[significant_df["project"] == p].fillna(-1)
+        project_df = significant_df[significant_df["project"] == p]
 
         if project_df.empty:
             print(f"No significant changes found for project {p}, skipping Kruskal-Wallis H-test.")
@@ -178,23 +227,54 @@ def calculate_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
             ["binary-wl", "metric", "config_id"])
 
         num_settings = setting_summary.ngroups
+        num_settings_total = base_data[base_data["project"]==p]["num_settings"].values[0]
 
         # For each setting, collect the value_relative lists for all variations and perform the Kruskal-Wallis H-test
         setting_results = setting_summary.apply(kruskal_wallis)
-        num_sig_settings = setting_results[setting_results["kruskal_pvalue"] < 0.05].shape[0]
+        minmax_results = setting_summary.apply(means_min_max)
+
+        setting_results = pd.concat([setting_results, minmax_results], axis=1)
+        setting_results["mean_diff"] = setting_results["max_value_relative_mean"] - setting_results["min_value_relative_mean"]
+
+        # At least medium effect size
+        min_effect_size = 0.06
+
+        sig_settings = setting_results[
+            (setting_results["kruskal_pvalue"] < 0.05)
+            & (setting_results["effect_size"] >= min_effect_size)
+        ]
+
+        num_sig_settings = sig_settings.shape[0]
 
         # Repeat for configuration alternatives
         config_alt_summary = project_df.groupby(["config_opportunity", "variation"])
+
         num_conf_alts = config_alt_summary.ngroups
+        num_conf_alts_total = base_data[base_data["project"]==p]["num_config_alts"].values[0]
+
         config_alt_results = config_alt_summary.apply(kruskal_wallis)
-        num_sig_config_alts = config_alt_results[config_alt_results["kruskal_pvalue"] < 0.05].shape[0]
+        minmax_results = config_alt_summary.apply(means_min_max)
+        config_alt_results = pd.concat([config_alt_results, minmax_results], axis=1)
+        config_alt_results["mean_diff"] = config_alt_results["max_value_relative_mean"] - config_alt_results["min_value_relative_mean"]
+
+        sig_alts = config_alt_results[(config_alt_results["kruskal_pvalue"] < 0.05)
+        & (config_alt_results["effect_size"] >= min_effect_size)
+        ]
+
+        num_sig_config_alts = sig_alts.shape[0]
 
         data_rows.append({
             "project": p,
             "num_settings": num_settings,
             "num_sig_settings": num_sig_settings,
+            "min_setting_range": sig_settings["mean_diff"].min(),
+            "max_setting_range": sig_settings["mean_diff"].max(),
             "num_config_alts": num_conf_alts,
-            "num_sig_config_alts": num_sig_config_alts
+            "num_sig_config_alts": num_sig_config_alts,
+            "min_config_alt_range": sig_alts["mean_diff"].min(),
+            "max_config_alt_range": sig_alts["mean_diff"].max(),
+            "num_settings_total": num_settings_total,
+            "num_config_alts_total": num_conf_alts_total,
         })
 
     return pd.DataFrame.from_records(data_rows)

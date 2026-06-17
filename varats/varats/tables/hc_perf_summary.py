@@ -15,6 +15,7 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.tables.hc_latex_table_constants import reformat_project_column
 
 
 def _extract_significance_data_for_subset(
@@ -337,12 +338,13 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
         df = df.sort_index()
 
         # Convert Range column to percentages
+        # Prepend + sign to positive numbers for better readability
         def format_range(
             range_tuple: tuple[float | str, float | str]
         ) -> str:
             if range_tuple[0] == "N/A" or range_tuple[1] == "N/A":
                 return "N/A"
-            return f"({range_tuple[0]:.2%}, {range_tuple[1]:.2%})"
+            return f"({range_tuple[0]:+.2%}, {range_tuple[1]:+.2%})"
 
         df["Range"] = df["Range"].apply(format_range)
 
@@ -361,6 +363,7 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
             })
 
             #df["Project"] = df["Project"].apply(lambda x: f"\\textsc{{{x}}}")
+            #df = reformat_project_column(df, column_name="Name")
 
             kwargs["hrules"] = True
             kwargs[
@@ -376,7 +379,7 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
                  r"across all significant changes.")
             kwargs["label"] = "tab:rq1_summary"
 
-        return dataframe_to_table(df, table_format, wrap_table=wrap_table)
+        return dataframe_to_table(df, table_format, wrap_table=wrap_table, **kwargs)
 
 class HCPerfSummaryGenerator(
     TableGenerator, generator_name="hc_perf_summary", options=[]

@@ -28,6 +28,7 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.tables.hc_latex_table_constants import reformat_project_column
 from varats.ts_utils.cli_util import make_cli_option
 from varats.ts_utils.click_param_types import (
     create_multi_case_study_choice,
@@ -239,11 +240,14 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
                     # Just the default configuration
                     num_configs = 1
 
-                num_workloads = len(_PROJECT_WORKLOADS[cs.project_name])
+                num_workloads = len(_PROJECT_WORKLOADS[cs.project_name]) if cs.project_name in _PROJECT_WORKLOADS else 0
 
-                num_metrics = 2 # Currently two for all our projects.
-                # Proper solution would be to load the performance data and count the unique metrics
-                # but that is a bit too much overhead for now.
+                num_metrics = 2 # Manually set
+                if cs.project_name == "duckdb":
+                    num_metrics = 1
+
+                if cs.project_name == "libzmq":
+                    num_metrics = 6
 
 
                 row = {
@@ -268,7 +272,7 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
 
         df = result_df.reset_index(drop=True)
         # Sort by domain first, then by project name
-        df.sort_values(by=["Domain", "Project"], inplace=True)
+        df.sort_values(by=["Domain", "Project", "|CO|"], inplace=True)
 
         kwargs = {}
         style = df.style.hide(axis="index")
@@ -277,13 +281,15 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
             df["LOC"] = df["LOC"].apply(lambda x: f"{x:,}")
 
             # Wrap project names in \textsc{}
-            df["Project"] = df["Project"].apply(lambda x: f"\\textsc{{{x}}}")
+            df = reformat_project_column(df, column_name="Project")
 
             kwargs["hrules"] = True
             kwargs[
                 "caption"
-            ] = ("Overview of our subject systems grouped by domain. "
-                 "For each subject system, we show the total lines of code (LOC), the number of \\canlocs{} (|CL|), and the number of \\conopps{} (|CO|).")
+            ] = (r"Overview of our subject systems grouped by domain. "
+                 r"For each subject system, we report the total lines of code (LOC),"
+                 r" the number of \canlocs{} ($|\symCanLocs{}|$), and the number"
+                 r" of \conopps{} (|\symConfOpps|).")
             kwargs["label"] = "tab:subject_systems"
 
         return dataframe_to_table(
