@@ -50,17 +50,17 @@ class FileFixture(UnitTestFixture):
     """A file or directory that is copied into the test environment."""
 
     def __init__(self, src: Path, dst: Path):
-        self.__src = src
-        self.__dst = dst
+        self._src = src
+        self._dst = dst
 
     def copy_to_env(self, path: Path) -> None:
-        dst = path / self.__dst
-        if self.__src.is_dir():
-            if self.__dst.exists():
-                self.__dst.rmdir()
-            shutil.copytree(self.__src, dst)
+        dst = path / self._dst
+        if self._src.is_dir():
+            if self._dst.exists():
+                self._dst.rmdir()
+            shutil.copytree(self._src, dst)
         else:
-            shutil.copy(self.__src, dst)
+            shutil.copy(self._src, dst)
 
     def cleanup(self) -> None:
         pass
@@ -99,6 +99,59 @@ class RepoFixture(UnitTestFixture):
         base.CFG["tmp_dir"] = bb_tmp
 
 
+class ExternalRepoFixture(FileFixture):
+    """A git repository that is cloned into the test environment and registered."""
+
+    def __init__(self):
+        super().__init__(TEST_INPUTS_DIR / "external_repo_template", Path("external_repo"))
+
+    def copy_to_env(self, path: Path) -> None:
+        super().copy_to_env(path)
+    
+    def cleanup(self) -> None:
+        """Remove imported external test modules and registry entries."""
+
+        from benchbuild.experiment import ExperimentRegistry
+        from varats.table.tables import TableGenerator
+        from varats.tools.research_tools.research_tool import ResearchTool
+        import sys
+
+        registry_items = [
+            (ExperimentRegistry.experiments, "ExternalExperiment"),
+            (TableGenerator.GENERATORS, "external_table"),
+            (ResearchTool.REGISTRY, "externalresearchtool"),
+        ]
+
+        for registry, expected_name in registry_items:
+            for key, value in list(registry.items()):
+                if (
+                    key == expected_name
+                    or getattr(value, "__name__", "") == expected_name
+                ):
+                    registry.pop(key, None)
+
+        module_names = [
+            "experiments.external_experiment",
+            "experiments",
+            "tables.external_table",
+            "tables",
+            "research_tools.external_research_tool",
+            "research_tools",
+            "plots.external_plot",
+            "plots",
+            "projects.external_project",
+            "projects",
+            "reports.external_report",
+            "reports",
+        ]
+
+        for module_name in module_names:
+            sys.modules.pop(module_name, None)
+
+        if str(self._dst) in sys.path:
+            sys.path.remove(str(self._dst))
+
+
 class UnitTestFixtures:
     """Collection/factory for test fixtures."""
 
@@ -109,9 +162,6 @@ class UnitTestFixtures:
     PLOTS = FileFixture(TEST_INPUTS_DIR / "plots", Path("plots"))
     TABLES = FileFixture(TEST_INPUTS_DIR / "tables", Path("tables"))
     ARTEFACTS = FileFixture(TEST_INPUTS_DIR / "artefacts", Path("artefacts"))
-    EXTERNAL_REPO_TEMPLATE = FileFixture(
-        TEST_INPUTS_DIR / "external_repo_template", Path("external_repo")
-    )
 
     # Projects available for testing:
     # BROTLI = RepoFixture.for_project(Brotli)
