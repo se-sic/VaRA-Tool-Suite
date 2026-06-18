@@ -12,7 +12,6 @@ import varats.tables as varats_tables
 from tests.helper_utils import ExternalRepoFixture, run_in_test_environment
 from varats.table.tables import TableGenerator
 from varats.tools import driver_external
-from varats.tools.research_tools.research_tool import ResearchTool
 from varats.tools.tool_util import (
     get_research_tool_type,
     get_supported_research_tool_names,
@@ -30,9 +29,7 @@ class TestExternalRepoDiscoveryComponents(unittest.TestCase):
         repo_path = Path.cwd() / "external_repo"
 
         runner = CliRunner()
-        result = runner.invoke(
-            driver_external.main, ["set", str(repo_path)]
-        )
+        result = runner.invoke(driver_external.main, ["set", str(repo_path)])
         self.assertEqual(0, result.exit_code)
 
         # Discover all components

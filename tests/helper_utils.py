@@ -103,18 +103,22 @@ class ExternalRepoFixture(FileFixture):
     """A git repository that is cloned into the test environment and registered."""
 
     def __init__(self):
-        super().__init__(TEST_INPUTS_DIR / "external_repo_template", Path("external_repo"))
+        super().__init__(
+            TEST_INPUTS_DIR / "external_repo_template", Path("external_repo")
+        )
 
     def copy_to_env(self, path: Path) -> None:
         super().copy_to_env(path)
-    
+
     def cleanup(self) -> None:
         """Remove imported external test modules and registry entries."""
 
+        import sys
+
         from benchbuild.experiment import ExperimentRegistry
+
         from varats.table.tables import TableGenerator
         from varats.tools.research_tools.research_tool import ResearchTool
-        import sys
 
         registry_items = [
             (ExperimentRegistry.experiments, "ExternalExperiment"),
