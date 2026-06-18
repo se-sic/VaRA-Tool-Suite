@@ -1108,7 +1108,7 @@ def load_precision_whitebox_data(
     table_rows = []
 
     for cs in case_studies:
-        if cs.project_name != "DunePerfRegression":
+        if cs.project_name == "DunePerfRegression":
             print(f"Skipping {cs.project_name}...")
             continue
 
@@ -1170,9 +1170,6 @@ def load_precision_whitebox_data(
             )
 
             for patch in ground_truth_report.patch_names:
-                if "preconditioner" in patch:
-                    print(f"Skipping patch {patch}...")
-                    continue
                 relevant_patch = patch.removesuffix("detect") + "1000ms"
                 for profiler in profilers:
                     report_file, rpf = profiler_report_files[profiler]

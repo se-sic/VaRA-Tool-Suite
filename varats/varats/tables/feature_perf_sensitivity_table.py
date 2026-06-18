@@ -123,7 +123,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                         for p in self.PROFILERS
                         for s in self.SEVERITIES
                         if p.name != "Base"],
-                vmin=0,
+                vmin=-1.0,
                 vmax=1.0
             )
 
@@ -415,9 +415,10 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             print(
                 f"Processing case study '{case_study.project_name}' ({idx1+1}/{len(case_studies)})"
             )
-            if case_study.project_name != "SynthFeatureInteraction":
+            if case_study.project_name == "DunePerfRegression":
                 print(f"Skipping case study '{case_study.project_name}'.")
                 continue
+                pass
             rev = case_study.revisions[0]
             project_name = case_study.project_name
 
@@ -544,7 +545,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
         ]
 
         for cs in case_studies:
-            new_row = {'CaseStudy': cs, '# Regressions': 20}
+            new_row = {'CaseStudy': cs, '# Regressions': 20.0}
             for p in self.PROFILERS:
                 for severity in ["1ms", "10ms", "100ms", "1000ms"]:
                     new_row[f"{p.name}_{severity}"] = 0.5

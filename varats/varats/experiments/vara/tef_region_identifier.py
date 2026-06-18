@@ -55,7 +55,7 @@ class TEFFeatureIdentifier(FeatureExperiment, shorthand="TEFid"):
             FeatureInstrType.TEF,
             project=project,
             save_temps=True,
-            instruction_threshold=get_threshold(project)
+            instruction_threshold=0
         )
 
         project.cflags += get_extra_cflags(project)
