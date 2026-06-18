@@ -219,14 +219,20 @@ def create_new_varats_config() -> s.Configuration:
         }
     }
 
-    cfg['patch_provider'] = {
-        "desc":
-            "List of repositories to fetch patches from.",
-        "default": [{
-            "remote": "https://github.com/se-sic/vara-project-patches.git",
-            "local": "patch-configurations",
-            "refspec": "origin/HEAD",
-        }]
+    cfg["patch_provider"] = {
+        "repositories": {
+            "desc":
+                "List of repositories to search for patches.",
+            "default": [{
+                "remote": "https://github.com/se-sic/vara-project-patches.git",
+                "local": "patch-configuration",
+                "refspec": "origin/main",
+            }],
+        },
+        "local_folders": {
+            "desc": "List of local folders to search for patches.",
+            "default": None,
+        },
     }
 
     cfg['sampling'] = {}
