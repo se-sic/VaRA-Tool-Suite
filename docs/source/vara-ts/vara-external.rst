@@ -112,6 +112,10 @@ To manually modify registered repositories, edit your VaRA configuration file di
 Example Workflow
 ----------------
 
+**Step 0: Set up VaRA-TS**
+
+Before using **vara-external**, make sure you have a working VaRA-TS installation. Follow the :doc:`Getting Started </tutorials/getting_started>` guide to install and configure VaRA-TS.
+
 **Step 1: Clone or fork the template repository**
 
 The easiest way to create an external repository is to start from the official template, which already has the correct nested structure and all required folders.
