@@ -197,8 +197,7 @@ class TestDriverExternal(unittest.TestCase):
         shutil.rmtree(repo_path / driver_external.TEMPLATE_FOLDERS[0])
 
         result = runner.invoke(
-            driver_external.main, ["set", str(repo_path)],
-            input="y\n"
+            driver_external.main, ["set", str(repo_path)], input="y\n"
         )
 
         self.assertEqual(0, result.exit_code)
@@ -224,8 +223,7 @@ class TestDriverExternal(unittest.TestCase):
         shutil.rmtree(repo_path / driver_external.TEMPLATE_FOLDERS[0])
 
         result = runner.invoke(
-            driver_external.main, ["set", str(repo_path)],
-            input="n\n"
+            driver_external.main, ["set", str(repo_path)], input="n\n"
         )
 
         self.assertEqual(0, result.exit_code)
