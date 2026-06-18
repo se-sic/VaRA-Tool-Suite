@@ -1,4 +1,5 @@
 import ast
+import math
 import typing as tp
 from collections import defaultdict
 from enum import Enum
@@ -22,9 +23,10 @@ from varats.experiments.vara.hidden_configurability_experiments import (
     MPTextReport,
     TestPatchVariations,
     TimePatchedWorkloads,
-    variation_value_to_str,
+    variation_value_to_str, _PROJECT_WORKLOADS,
 )
 from varats.paper.case_study import CaseStudy
+from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.projects.cpp_projects.duckdb import DuckDBMPReport, DuckDBBenchmarkAggregate
 from varats.projects.cpp_projects.libzmq import LibZMQMPReport, LibZMQWLAggregate
@@ -87,6 +89,23 @@ def filter_for_significant_changes(df: pd.DataFrame) -> pd.DataFrame:
                apply(lambda x: abs(x)
                      >= EffectSize.SMALL)
            )]
+
+def add_binary_significance_info(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add a column "significant_change" to the DataFrame that indicates whether the change is significant.
+
+    A change is considered significant if the p-value is less than 0.05 and the effect size is at least small (Cohen's d >= 0.2).
+    """
+    def calculate_significance(row):
+        if math.isnan(row["significance"]) or math.isnan(row["effect_size"]):
+            return False
+        return row["significance"].pvalue < 0.05 and abs(row["effect_size"]) >= EffectSize.SMALL
+
+    df["significant_change"] = df.apply(
+        calculate_significance,
+        axis=1
+    )
+    return df
 
 def filter_baseline_rows(df: pd.DataFrame) -> pd.DataFrame:
     """Filter rows to only include baseline rows."""
@@ -594,7 +613,6 @@ def _get_data_single_config_default(
     return pd.DataFrame.from_records(data_rows)
 
 
-
 def _get_data_single_config_benchbase(
     cs: CaseStudy, config_id: tp.Optional[int] = None
 ) -> pd.DataFrame:
@@ -739,8 +757,31 @@ def _cache_df(
 
     cache_dataframe(f"{CACHE_DATA_ID}-{config_id}", project_name, df_copy)
 
+def get_all_data() -> pd.DataFrame:
+    """
+    Get all data for all projects and configuration IDs.
 
-def aggregate_data(
+    This function is used to aggregate all data for all projects and configuration IDs into a single DataFrame.
+    """
+    result_df = pd.DataFrame()
+
+    case_studies = get_loaded_paper_config().get_all_case_studies()
+
+    for cs in case_studies:
+        if cs.project_name not in _PROJECT_WORKLOADS:
+            continue
+
+        print(f"Loading data for project {cs.project_name}...")
+        cs_data = aggregate_data_for_cs(cs, None)
+
+        # Add project column as first column
+        cs_data.insert(0, "project", cs.project_name)
+
+        result_df = pd.concat([result_df, cs_data], ignore_index=True)
+
+    return result_df.fillna({"config_id": -1})
+
+def aggregate_data_for_cs(
     cs: CaseStudy, config_ids: tp.Optional[tp.List[int]]
 ) -> pd.DataFrame:
     result_df = pd.DataFrame()
@@ -851,13 +892,12 @@ def add_significance_values(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-
 def get_regressing_configs(
     cs: CaseStudy
 ) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[str, str, float]]]]:
     str_val_map = create_config_opportunities_value_map(cs)
 
-    full_data = aggregate_data(cs, None)
+    full_data = aggregate_data_for_cs(cs, None)
 
     config_ids = full_data["config_id"].unique()
 

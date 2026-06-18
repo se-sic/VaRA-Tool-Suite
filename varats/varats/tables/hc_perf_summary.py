@@ -6,7 +6,8 @@ import pandas as pd
 from varats.data.databases.hidden_configurability_database import (
     ACTIVE_HV_PROJECTS,
     EffectSize,
-    aggregate_data, filter_for_significant_changes,
+    aggregate_data_for_cs,
+    filter_for_significant_changes, get_all_data,
 )
 from varats.experiments.vara.hidden_configurability_experiments import (
     _PROJECT_WORKLOADS,
@@ -15,7 +16,6 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
-from varats.tables.hc_latex_table_constants import reformat_project_column
 
 
 def _extract_significance_data_for_subset(
@@ -70,6 +70,23 @@ def _extract_significance_data_for_subset(
 
     return result
 
+class HCPerfDetailTable(Table, table_name="hc_perf_detail"):
+    """
+    HC Performance impacts in great detail by setting, configuration alternative, metric, and case study.
+
+    'The big table that knows everything' - Lukas
+    """
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        """Tabulates the HC Performance Detail Table."""
+        df = get_all_data()
+
+        # If there is anything in "value_relative", aggregate it to a mean value
+        df["value_relative"] = df["value_relative"].apply(
+            lambda x: np.mean(x) if isinstance(x, list) else x
+        )
+
+        return dataframe_to_table(df, table_format, wrap_table=wrap_table)
+
 class HCPerfMetricsSummaryTable(Table, table_name="hc_perf_metrics_summary"):
     """
     HC Performance impacts by metric and case study.
@@ -106,7 +123,7 @@ class HCPerfMetricsSummaryTable(Table, table_name="hc_perf_metrics_summary"):
             else:
                 config_id = None
             try:
-                cs_data = aggregate_data(cs, [config_id])
+                cs_data = aggregate_data_for_cs(cs, [config_id])
             except Exception as e:  # noqa: BLE001
                 print(f"Error processing {cs.project_name}: {e}")
                 continue
@@ -268,7 +285,7 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
 
             # Gather data for all config IDs of the current case study
             #try:
-            cs_data = aggregate_data(cs, None)
+            cs_data = aggregate_data_for_cs(cs, None)
             #except Exception as e:  # noqa: BLE001
                 #print(f"Error processing {cs.project_name}: {e}")
                 #continue

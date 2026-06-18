@@ -3,7 +3,7 @@ import typing as tp
 import click
 import pandas as pd
 
-from varats.data.databases.hidden_configurability_database import aggregate_data
+from varats.data.databases.hidden_configurability_database import aggregate_data_for_cs
 from varats.experiments.hidden_config.hidden_config_utils import (
     get_all_variations_as_dict,
 )
@@ -25,7 +25,7 @@ class ConfigOpportunitiesSignificanceTable(
         table_data = []
 
         for case_study in case_studies:
-            cs_data = aggregate_data(case_study, None)
+            cs_data = aggregate_data_for_cs(case_study, None)
 
             if cs_data.empty:
                 print(f"No data for {case_study.project_name}")

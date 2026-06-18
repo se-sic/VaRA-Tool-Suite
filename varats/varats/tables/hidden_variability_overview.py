@@ -8,7 +8,7 @@ from junitparser import JUnitXml, junitparser
 
 from varats.data.cache_helper import cache_dataframe, load_cached_df_or_none
 from varats.data.databases.hidden_configurability_database import (
-    aggregate_data,
+    aggregate_data_for_cs,
 )
 from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
@@ -317,7 +317,7 @@ class HCPerfDetailTable(Table, table_name="hc_perf_detail"):
         significant_results = pd.DataFrame()
 
         for case_study in case_studies:
-            cs_data = aggregate_data(case_study, None)
+            cs_data = aggregate_data_for_cs(case_study, None)
 
             if cs_data.empty:
                 continue

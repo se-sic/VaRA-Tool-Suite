@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import PercentFormatter
 
 from varats.data.databases.hidden_configurability_database import (
-    aggregate_data,
+    aggregate_data_for_cs,
     filter_baseline_rows,
     filter_for_significant_changes,
 )
@@ -47,7 +47,7 @@ class PerfChangeSummaryPlot(Plot, plot_name="hc-perf-change-summary"):
                 continue
             print(f"Processing {cs.project_name}...")
 
-            cs_data = aggregate_data(cs, None)
+            cs_data = aggregate_data_for_cs(cs, None)
             if cs_data.empty:
                 print(f"No data for {cs.project_name}, skipping.")
                 continue

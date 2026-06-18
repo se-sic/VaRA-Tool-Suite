@@ -13,7 +13,7 @@ from matplotlib.ticker import PercentFormatter
 
 from varats.data.databases.hidden_configurability_database import (
     EffectSize,
-    aggregate_data,
+    aggregate_data_for_cs,
     create_config_opportunities_value_map,
     extract_config_point,
     filter_for_significant_changes,
@@ -97,7 +97,7 @@ class OpportunitiesStackedDistPlot(
             f"Plotting {self.plot_kwargs['metric']} for {self.plot_kwargs['case_study'].project_name} with opportunity {self.plot_kwargs['config_opportunity']}..."
         )
 
-        df = aggregate_data(case_study, None)
+        df = aggregate_data_for_cs(case_study, None)
         df = _prepare_data(self.plot_kwargs, df)
 
         if df.empty:
@@ -264,7 +264,7 @@ class SignificantOpportunitiesDistPlot(
         metric: str = self.plot_kwargs["metric"]
         print(f"Plotting case study {case_study.project_name} with {metric}")
 
-        full_data = aggregate_data(case_study, None)
+        full_data = aggregate_data_for_cs(case_study, None)
 
         if full_data.empty:
             print(f"No data for {case_study.project_name}")
@@ -670,7 +670,7 @@ class MinMaxAlternativesPlot(Plot, plot_name="min_max_alternatives"):
         case_study: CaseStudy = self.plot_kwargs["case_study"]
 
         # Load the data for the case study
-        df = aggregate_data(case_study, None)
+        df = aggregate_data_for_cs(case_study, None)
         df = _prepare_data(self.plot_kwargs, df)
 
         if df.empty:
@@ -1085,7 +1085,7 @@ class AllHCPlotsGenerator(
 
         for cs in case_studies:
             # Create data cache for the case study
-            df = aggregate_data(cs, None)
+            df = aggregate_data_for_cs(cs, None)
 
             # Get all configuration IDs for the case study
             config_ids = cs.get_config_ids_for_revision(cs.revisions[0])
@@ -1197,7 +1197,7 @@ class CurrentHCPlotsGenerator(
             config_ids = cs_config_ids[cs.project_name]
 
             # Create data cache for the case study
-            df = aggregate_data(cs, config_ids)
+            df = aggregate_data_for_cs(cs, config_ids)
 
             # Filter data for only significant results
             df = filter_for_significant_changes(df)
@@ -1340,7 +1340,7 @@ class AlternativesHeatmapPlot(Plot, plot_name="alternatives_heatmap"):
             print("Using data cache")
             df = self.plot_kwargs["data_cache"]
         else:
-            df = aggregate_data(cs, None)
+            df = aggregate_data_for_cs(cs, None)
 
         df = _prepare_data(self.plot_kwargs, df)
 
@@ -1412,7 +1412,7 @@ class AlternativesHeatmapGenerator(
 
     def generate(self) -> tp.List[Plot]:
         cs = self.plot_kwargs["case_study"]
-        cs_data = aggregate_data(cs, None)
+        cs_data = aggregate_data_for_cs(cs, None)
 
         # Get all workloads for the case study
         workloads = cs_data["binary-wl"].unique()

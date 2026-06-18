@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 
 from varats.data.databases.hidden_configurability_database import (
     ACTIVE_HV_PROJECTS,
-    aggregate_data,
+    aggregate_data_for_cs,
     filter_baseline_rows,
 )
 from varats.paper.paper_config import get_loaded_paper_config
@@ -87,7 +87,7 @@ class SignificantAlternativesSharePlot(
             else:
                 config_id = None
             try:
-                cs_df = aggregate_data(cs, [config_id])
+                cs_df = aggregate_data_for_cs(cs, [config_id])
             except Exception as e:
                 print(f"Error processing {cs.project_name}: {e}")
                 continue
@@ -224,7 +224,7 @@ class GenerateAllSharesPlot(
             else:
                 config_id = None
             try:
-                cs_df = aggregate_data(cs, [config_id])
+                cs_df = aggregate_data_for_cs(cs, [config_id])
             except Exception as e:
                 print(f"Error processing {cs.project_name}: {e}")
                 continue
