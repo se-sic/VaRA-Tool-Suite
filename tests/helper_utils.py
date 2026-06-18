@@ -3,6 +3,7 @@
 import contextlib
 import os
 import shutil
+import sys
 import tempfile
 import typing as tp
 from functools import wraps
@@ -13,12 +14,15 @@ from typing import Protocol
 import benchbuild.utils.settings as bb_settings
 import plumbum as pb
 from benchbuild import Project
+from benchbuild.experiment import ExperimentRegistry
 from benchbuild.source import FetchableSource, Git, Variant, base
 from benchbuild.utils.cmd import git
 
 from varats.base.configuration import ConfigurationImpl, ConfigurationOptionImpl
 from varats.project.project_util import is_git_source
+from varats.table.tables import TableGenerator
 from varats.tools.bb_config import create_new_bb_config
+from varats.tools.research_tools.research_tool import ResearchTool
 from varats.utils import settings
 
 TEST_INPUTS_DIR = Path(__file__).parent / 'TEST_INPUTS'
@@ -112,13 +116,6 @@ class ExternalRepoFixture(FileFixture):
 
     def cleanup(self) -> None:
         """Remove imported external test modules and registry entries."""
-
-        import sys
-
-        from benchbuild.experiment import ExperimentRegistry
-
-        from varats.table.tables import TableGenerator
-        from varats.tools.research_tools.research_tool import ResearchTool
 
         registry_items = [
             (ExperimentRegistry.experiments, "ExternalExperiment"),
