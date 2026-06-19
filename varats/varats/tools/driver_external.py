@@ -13,7 +13,7 @@ from pathlib import Path
 import click
 
 from varats.ts_utils.cli_util import initialize_cli_tool
-from varats.utils.settings import bb_cfg, save_config, vara_cfg
+from varats.utils.settings import bb_cfg, save_bb_config, save_config, vara_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -93,6 +93,7 @@ def register_external_repository(repo_path: Path) -> None:
         )
 
     save_config()
+    save_bb_config()
 
 
 def unregister_external_repository(repo_path: Path) -> None:
@@ -112,6 +113,7 @@ def unregister_external_repository(repo_path: Path) -> None:
         ]
 
     save_config()
+    save_bb_config()
 
 
 @click.group("vara-external")
