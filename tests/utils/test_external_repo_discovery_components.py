@@ -9,6 +9,10 @@ from click.testing import CliRunner
 
 import varats.experiments as varats_experiments
 import varats.tables as varats_tables
+from varats.data.reports import discover as discover_reports
+from varats.plots import discover as discover_plots
+from varats.projects import discover as discover_projects
+
 from tests.helper_utils import ExternalRepoFixture, run_in_test_environment
 from varats.table.tables import TableGenerator
 from varats.tools import driver_external
@@ -35,11 +39,6 @@ class TestExternalRepoDiscoveryComponents(unittest.TestCase):
         # Discover all components
         varats_experiments.discover()
         varats_tables.discover()
-
-        # Import discovery functions for plots, projects, and reports
-        from varats.data.reports import discover as discover_reports
-        from varats.plots import discover as discover_plots
-        from varats.projects import discover as discover_projects
 
         discover_plots()
         discover_projects()
@@ -71,7 +70,7 @@ class TestExternalRepoDiscoveryComponents(unittest.TestCase):
         self.assertTrue(
             any(
                 "external_plot" in module_name
-                for module_name in sys.modules.keys()
+                for module_name in sys.modules
                 if "plots" in module_name
             )
         )
@@ -80,7 +79,7 @@ class TestExternalRepoDiscoveryComponents(unittest.TestCase):
         self.assertTrue(
             any(
                 "external_project" in module_name
-                for module_name in sys.modules.keys()
+                for module_name in sys.modules
                 if "projects" in module_name
             )
         )
@@ -89,7 +88,7 @@ class TestExternalRepoDiscoveryComponents(unittest.TestCase):
         self.assertTrue(
             any(
                 "external_report" in module_name
-                for module_name in sys.modules.keys()
+                for module_name in sys.modules
                 if "reports" in module_name
             )
         )

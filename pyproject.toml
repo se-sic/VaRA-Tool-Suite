@@ -119,7 +119,7 @@ markers = [
 
 [tool.ruff]
 line-length = 80
-exclude = ["CVS", "gui", "filtertree_data.py", ".eggs", "docs/source/conf.py",]
+exclude = ["CVS", "gui", "filtertree_data.py", ".eggs", "docs/source/conf.py", "tests/TEST_INPUTS/external_repo_template/*"]
 indent-width = 4
 
 [tool.ruff.lint]
