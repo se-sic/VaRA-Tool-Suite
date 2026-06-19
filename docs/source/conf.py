@@ -6,22 +6,18 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import sys
+# Something overrides the built-in cmd module, in the readthedocs build
+# environment causing the build to fail. Importing cmd here resolves that.
+import cmd
+from pathlib import Path
+
+sys.path.insert(0, str(Path('../../').resolve()))
+
 # -- Project information -----------------------------------------------------
 import importlib.metadata as metadata
-import logging
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
-import sys
-
-import benchbuild.utils
 
 __version__ = metadata.version('varats')
-
-sys.path.insert(0, os.path.abspath('../../'))
 
 # pylint: skip-file
 project = 'VaRA'
@@ -70,6 +66,7 @@ html_theme = 'haiku'
 
 pygments_style = 'sphinx'
 
+autodoc_mock_imports = ["cmd"]
 autodoc_member_order = "bysource"
 add_function_parentheses = True
 add_module_names = True
@@ -78,11 +75,6 @@ add_module_names = True
 # The exact reason for these errors is unknown but might be related to
 # incompatible cython versions (https://github.com/cython/cython/issues/1953)
 import pandas  # ruff: isort:skip
-import numpy.typing as npt  # ruff: isort:skip
-
-# The _typeshed module is not available during docs build, hence, we import
-# modules that require this module before setting the type checking flag.
-import scipy.stats  # ruff: isort:skip
 
 # Matplotlib >=3.8 has a type-checking-flag-guarded import of a symbol that does
 # not exist in the shipped version.
@@ -101,9 +93,6 @@ import pygit2  # ruff: isort:skip
 import urllib3.exceptions  # ruff: isort:skip
 import varats.utils.git_util  # ruff: isort:skip
 
-# Some packages use new syntax for type checking that isn't available to us
-import jwt.algorithms
-
 import typing as tp  # ruff: isort:skip
 
 tp.TYPE_CHECKING = True
@@ -118,13 +107,7 @@ tp.TYPE_CHECKING = False
 # set the type checking flag so all types can be resolved in the docs
 set_type_checking_flag = True
 
-# -- Prevent import warnings -------------------------------------------------
-
-benchbuild.utils.LOG.setLevel(logging.ERROR)
-
 # -- Generate files ----------------------------------------------------------
-
-from pathlib import Path
 
 from varats.projects.discover_projects import initialize_projects
 from varats.ts_utils.doc_util import (
