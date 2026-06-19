@@ -1,22 +1,23 @@
 """Test varats container tool."""
+
 import importlib
 import re
 import unittest
-import unittest.mock as mock
 from pathlib import Path
+from unittest import mock
 
 from click.testing import CliRunner
 
 from tests.helper_utils import (
     ExternalRepoFixture,
-    run_in_test_environment,
     UnitTestFixtures,
+    run_in_test_environment,
 )
 from varats.experiments import discover_experiments
 from varats.paper.paper_config import load_paper_config
 from varats.projects import discover_projects
 from varats.tools import driver_external, driver_run
-from varats.utils.settings import vara_cfg, save_config, bb_cfg
+from varats.utils.settings import bb_cfg, save_config, vara_cfg
 
 
 class TestDriverRun(unittest.TestCase):
@@ -92,8 +93,10 @@ class TestDriverRun(unittest.TestCase):
         self.assertEqual(0, result.exit_code, result.exception)
         self.assertTrue(Path(str(bb_cfg()["slurm"]["template"])).exists())
         self.assertTrue(
-            (Path(str(vara_cfg()["benchbuild_root"])) /
-             "JustCompile-slurm.sh").exists()
+            (
+                Path(str(vara_cfg()["benchbuild_root"]))
+                / "JustCompile-slurm.sh"
+            ).exists()
         )
 
     @run_in_test_environment(
@@ -114,7 +117,7 @@ class TestDriverRun(unittest.TestCase):
 
         result = runner.invoke(
             driver_run.main,
-            ["-vvv", "-p", "-E", "JustCompile", "external_project"]
+            ["-vvv", "-p", "-E", "JustCompile", "external_project"],
         )
         self.assertEqual(0, result.exit_code, result.output)
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
@@ -126,7 +129,7 @@ class TestDriverRun(unittest.TestCase):
         ExternalRepoFixture(), UnitTestFixtures.PAPER_CONFIGS
     )
     def test_bb_run_select_internal_project_after_registering_external(
-        self
+        self,
     ) -> None:
         runner = CliRunner()
 

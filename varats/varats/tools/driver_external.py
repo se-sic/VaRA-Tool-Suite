@@ -70,8 +70,10 @@ def validate_external_repo(repo_path: Path) -> tuple[bool, list[str]]:
 
 
 def _external_plugin_modules(repo_path: Path, folder_name: str) -> list[str]:
-    """Dotted module paths (e.g. `projects.foo`) for all modules found in
-    `repo_path`'s `folder_name` folder."""
+    """
+    Dotted module paths (e.g. `projects.foo`) for all modules found in
+    `repo_path`'s `folder_name` folder.
+    """
     folder = repo_path / folder_name
     return [
         f"{folder_name}.{module_name}"
@@ -88,8 +90,8 @@ def register_external_repository(repo_path: Path) -> None:
     for folder_name, plugin_key in _BB_PLUGIN_FOLDERS.items():
         plugin_conf = bb_cfg()["plugins"][plugin_key]
         plugin_conf.value[:] = list(
-            set(plugin_conf.value) |
-            set(_external_plugin_modules(repo_path, folder_name))
+            set(plugin_conf.value)
+            | set(_external_plugin_modules(repo_path, folder_name))
         )
 
     save_config()
@@ -107,7 +109,8 @@ def unregister_external_repository(repo_path: Path) -> None:
             _external_plugin_modules(repo_path, folder_name)
         )
         plugin_conf.value[:] = [
-            module_name for module_name in plugin_conf.value
+            module_name
+            for module_name in plugin_conf.value
             if module_name not in modules_to_remove
         ]
 
