@@ -13,7 +13,7 @@ from click.testing import CliRunner
 
 from tests.helper_utils import ExternalRepoFixture, run_in_test_environment
 from varats.tools import driver_external
-from varats.utils.settings import vara_cfg
+from varats.utils.settings import vara_cfg, bb_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -154,6 +154,11 @@ class TestDriverExternal(unittest.TestCase):
         repos = vara_cfg()['external_source_repositories'].value
         self.assertIn(str(Path(repo_path).resolve()), repos)
 
+        # test that the experiments and projects from the registered repo are in bb_cfg as well
+        self.assertTrue(any(exp.startswith("experiments.external_experiment") for exp in bb_cfg()["plugins"]["experiments"].value))
+        self.assertTrue(any(exp.startswith("projects.external_project") for exp in bb_cfg()["plugins"]["projects"].value))
+
+
     @run_in_test_environment(ExternalRepoFixture())
     def test_additional_repos_added_successfully(self) -> None:
         """Additional distinct repos with valid structure are also added successfully."""
@@ -194,7 +199,7 @@ class TestDriverExternal(unittest.TestCase):
         self.assertEqual(0, register_result.exit_code)
 
         # Break the structure so validation fails on the next invocation.
-        shutil.rmtree(repo_path / driver_external.TEMPLATE_FOLDERS[0])
+        shutil.rmtree(repo_path / driver_external.TEMPLATE_FOLDERS[-1])
 
         result = runner.invoke(
             driver_external.main, ["set", str(repo_path)], input="y\n"
@@ -205,6 +210,10 @@ class TestDriverExternal(unittest.TestCase):
 
         repos = vara_cfg()["external_source_repositories"].value
         self.assertNotIn(str(repo_path), repos)
+
+        # test that the experiments and projects from the unregistered repo are removed from bb_cfg as well
+        self.assertFalse(any(exp.startswith("experiments.external_experiment") for exp in bb_cfg()["plugins"]["experiments"].value))
+        self.assertFalse(any(exp.startswith("projects.external_project") for exp in bb_cfg()["plugins"]["projects"].value))
 
     @run_in_test_environment(ExternalRepoFixture())
     def test_invalid_registered_repo_kept_on_decline(self) -> None:
