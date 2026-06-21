@@ -4,11 +4,15 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
+from matplotlib.ticker import PercentFormatter
 
+from varats.data.cache_helper import cache_dataframe, load_cached_df_or_none
 from varats.data.databases.hidden_configurability_database import (
-    ACTIVE_HV_PROJECTS,
     aggregate_data_for_cs,
     filter_baseline_rows,
+)
+from varats.experiments.vara.hidden_configurability_experiments import (
+    _PROJECT_WORKLOADS,
 )
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
@@ -54,6 +58,24 @@ class SignificantAlternativesSharePlot(
 
         return pd.DataFrame.from_records(table_rows)
 
+    @staticmethod
+    def _load_cached_data():
+        dtypes = {
+            "project": "str",
+            "binary-wl": "str",
+            "metric": "str",
+            "config_opportunity": "str",
+            "share": "float"
+        }
+        df = load_cached_df_or_none(
+            "HC-SIG-PLOT", "ALL", dtypes
+        )
+
+        if df is None:
+            return None
+
+        return df
+
     def load_data(self):
         case_studies = self.plot_kwargs.get("case_study", None)
 
@@ -69,27 +91,21 @@ class SignificantAlternativesSharePlot(
 
         table_rows = []
 
+        cached_df = self._load_cached_data()
+        if cached_df is not None:
+            print("Using cached data for significant alternatives share plot.")
+            return cached_df
+
         for cs in case_studies:
-            if cs.project_name not in ACTIVE_HV_PROJECTS:
+            if cs.project_name not in _PROJECT_WORKLOADS:
                 print(
-                    f"Skipping {cs.project_name} as it is not an active HV subject system"
+                    f"Skipping {cs.project_name} as it is not "
+                    f"an active HV subject system"
                 )
                 continue
-            print(f"Processing {cs.project_name}...")
-            # Filter to single config ID for projects with multiple
-            __cs_configs = {
-                "libzmq": [13],
-                "FastDownward": [0],
-                "libvpx": [0],
-            }
-            if cs.project_name in __cs_configs:
-                config_id = __cs_configs[cs.project_name][0]
-            else:
-                config_id = None
-            try:
-                cs_df = aggregate_data_for_cs(cs, [config_id])
-            except Exception as e:
-                print(f"Error processing {cs.project_name}: {e}")
+            cs_df = aggregate_data_for_cs(cs, None)
+            if cs_df.empty:
+                print(f"No data for {cs.project_name}, skipping.")
                 continue
 
             cs_df = filter_baseline_rows(cs_df)
@@ -133,7 +149,12 @@ class SignificantAlternativesSharePlot(
                 ]].to_dict("records")
             )
 
-        return pd.DataFrame.from_records(table_rows)
+        df = pd.DataFrame.from_records(table_rows)
+
+        # Cache DF
+        cache_dataframe("HC-SIG-PLOT", "ALL", df)
+
+        return df
 
     def plot(self, view_mode: bool) -> None:
         # Load the data
@@ -143,30 +164,95 @@ class SignificantAlternativesSharePlot(
             print("No data to plot.")
             return
 
-        # Calculate the density of significant differences
-        plt.figure(figsize=(10, 6))
-        if True:
-            # test histogram as alternative to density plot, bins each 5%
-            bins = 20
-            bin_width = 0.05
+        # Multiple violin plots
+        # We want one overall violin plot with a left half violin
+        # Then for each domain we want a separate right half violin plot, all on the same axis
+        # We can achieve this by preparing the data in the right way
+        #   - Add a column "domain" to the data, which contains the domain of the project
+        #   - Duplicate each row with a domain "all" for the overall density plot
+        #   - Include a side column that is either "left" for the overall plot or "right" for the domain plots
+        # We then use violinplot with x="domain", y="share", hue="side"
+            # Add group column for multiple plots
+        domain_mapping = {
+            project.project_cls.NAME: str(project.project_cls.DOMAIN)
+            for project in get_loaded_paper_config().get_all_case_studies()}
+        data["domain"] = data["project"].apply(lambda x: domain_mapping.get(x, "other"))
+        data["side"] = "right"
 
-            sns.histplot(data['share'], bins=20, kde=False)
-        else:
-            sns.kdeplot(data['share'], fill=True, clip=(0, 1), bw_adjust=0.2)
-            plt.title('Density of Significant Differences')
-            plt.xlabel(
-                'Share of configuration alternatives with significant difference to baseline'
+        # Add one dummy entry per domain for the right side
+        for domain in data["domain"].unique():
+            dummy_row = {
+                "project": "dummy_project",
+                "binary-wl": "dummy_binary_wl",
+                "metric": "dummy_metric",
+                "config_opportunity": "dummy_config_opportunity",
+                "share": 0,
+                "domain": domain,
+                "side": "left"
+            }
+            data = pd.concat([data, pd.DataFrame.from_records([dummy_row])], ignore_index=True)
+
+        all_data = data.copy()
+        all_data["domain"] = "All"
+        all_data["side"] = "left"
+
+        vals = all_data["share"].values
+
+        q1, q2, q3 = np.percentile(vals, [25, 50, 75])
+
+        data = pd.concat([data, all_data], ignore_index=True)
+
+        dummy_row = {
+            "project": "dummy_project",
+            "binary-wl": "dummy_binary_wl",
+            "metric": "dummy_metric",
+            "config_opportunity": "dummy_config_opportunity",
+            "share": 0,
+            "domain": "All",
+            "side": "right"
+        }
+        data = pd.concat([data, pd.DataFrame.from_records([dummy_row])], ignore_index=True)
+
+        # Set figure width based on number of domains
+        plt.figure(figsize=(len(data["domain"].unique()) * 2, 4))
+
+        ax = sns.violinplot(data=data,
+                       x="domain",
+                       y="share",
+                       hue="side",
+                       split=True,
+                       inner="quart",
+                       bw_method=0.2,
+                       order=sorted(data["domain"].unique().tolist()),
+                       hue_order=["left", "right"],
+                       width=0.8,
+                       dodge=False)
+
+        for q in [q1, q3]:
+            ax.axhline(
+                q,
+                color="red",
+                linestyle=":",
+                alpha=0.5,
+                zorder=0
             )
-            plt.ylabel('Density')
-
-        plt.xlabel(
-            'Share of configuration alternatives with significant difference to baseline'
+        ax.axhline(
+            q2,
+            color="red",
+            linestyle="--",
+            alpha=0.5,
+            zorder=0
         )
-        plt.xticks([0.05 * i + 0.025 for i in range(bins)], ["< 5%"] +
-                   [f"{5*i}-{5*(i+1)}%" for i in range(1, bins - 1)] +
-                   ["> 95%"])
-        # Rotate xticks for better readability
-        plt.xticks(rotation=90)
+
+        # Hide legend
+        plt.legend([], [], frameon=False)
+        # Cut off y at 0,1
+        plt.ylim(0, 1)
+        plt.ylabel("")
+        plt.xlabel("")
+
+        # Percent formatter for y axis
+        plt.gca().yaxis.set_major_formatter(PercentFormatter(1.0))
 
 
 class SignificantAlternativesSharePlotGenerator(
@@ -210,7 +296,7 @@ class GenerateAllSharesPlot(
     PlotGenerator, generator_name="hc_all_significant_alts_shares", options=[]
 ):
 
-    def generate(self) -> tp.List['varats.plot.plot.Plot']:
+    def generate(self) -> list[Plot]:
         all_cs = get_loaded_paper_config().get_all_case_studies()
         plots = []
         for cs in all_cs:

@@ -90,16 +90,29 @@ def filter_for_significant_changes(df: pd.DataFrame) -> pd.DataFrame:
                      >= EffectSize.SMALL)
            )]
 
-def add_binary_significance_info(df: pd.DataFrame) -> pd.DataFrame:
+def add_significance_groups(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Add a column "significant_change" to the DataFrame that indicates whether the change is significant.
+    Add a column "significant_change" to the DataFrame for inter-rater agreement analysis.
 
-    A change is considered significant if the p-value is less than 0.05 and the effect size is at least small (Cohen's d >= 0.2).
+    We add the following groups:
+    - non_significant (change is not statistically significant)
+    - significant_pos (change is statistically significant and has a positive impact on mean performance)
+    - significant_neg (change is statistically significant and has a negative impact on mean performance)
+    - error (Row has an error, e.g., missing values in significance or effect size)
     """
     def calculate_significance(row):
-        if math.isnan(row["significance"]) or math.isnan(row["effect_size"]):
-            return False
-        return row["significance"].pvalue < 0.05 and abs(row["effect_size"]) >= EffectSize.SMALL
+        if isinstance(row["significance"], float) and math.isnan(row["significance"]):
+            return "error"
+        if isinstance(row["effect_size"], float) and math.isnan(row["effect_size"]):
+            return "error"
+
+        if not (row["significance"].pvalue < 0.05 and abs(row["effect_size"]) >= EffectSize.SMALL):
+            return "non_significant"
+
+        if np.mean(row["value_relative"]) > 0:
+            return "significant_pos"
+
+        return "significant_neg"
 
     df["significant_change"] = df.apply(
         calculate_significance,

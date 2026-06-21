@@ -76,10 +76,10 @@ class PerfChangeSummaryPlot(Plot, plot_name="hc-perf-change-summary"):
             PercentFormatter(decimals=0,xmax=1)
         )
 
-        plt.title("Relative Performance Changes by Project")
+        plt.title("")
         plt.ylabel("Relative Performance Change (%)")
         plt.xlabel("")
-        plt.xticks(rotation=90)
+        plt.xticks()
         plt.tight_layout()
 
 class PerfChangeSummaryPlotGenerator(PlotGenerator,
