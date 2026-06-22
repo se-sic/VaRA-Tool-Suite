@@ -12,8 +12,8 @@ def initialize_research_tools() -> None:
     # Import builtin tools to trigger automatic registration via
     # __init_subclass__
     from varats.tools.research_tools.phasar import Phasar  # noqa: PLC0415
-    from varats.tools.research_tools.szz_unleashed import (
-        SZZUnleashed,  # noqa: F401
+    from varats.tools.research_tools.szz_unleashed import (  # noqa: PLC0415,F401
+        SZZUnleashed,
     )
     from varats.tools.research_tools.vara import VaRA  # noqa: PLC0415, F401
 
