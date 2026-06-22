@@ -9,11 +9,10 @@ from click.testing import CliRunner
 
 import varats.experiments as varats_experiments
 import varats.tables as varats_tables
+from tests.helper_utils import ExternalRepoFixture, run_in_test_environment
 from varats.data.reports import discover as discover_reports
 from varats.plots import discover as discover_plots
 from varats.projects import discover as discover_projects
-
-from tests.helper_utils import ExternalRepoFixture, run_in_test_environment
 from varats.table.tables import TableGenerator
 from varats.tools import driver_external
 from varats.tools.tool_util import (
