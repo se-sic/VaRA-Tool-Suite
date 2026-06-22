@@ -6,12 +6,8 @@ __PROJECTS_DISCOVERED = False
 
 
 def initialize_projects() -> None:
-    """
-    Scan the varats projects folder and initialize all projects from the
-    found python files.
-    """
+    """Discover and initialize all projects."""
     global __PROJECTS_DISCOVERED  # noqa: PLW0603
     if not __PROJECTS_DISCOVERED:
-        # Discover and initialize all projects
         __PROJECTS__.discover()
         __PROJECTS_DISCOVERED = True

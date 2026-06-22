@@ -9,11 +9,10 @@ from click.testing import CliRunner
 
 import varats.experiments as varats_experiments
 import varats.tables as varats_tables
+from tests.helper_utils import ExternalRepoFixture, run_in_test_environment
 from varats.data.reports import discover as discover_reports
 from varats.plots import discover as discover_plots
 from varats.projects import discover as discover_projects
-
-from tests.helper_utils import ExternalRepoFixture, run_in_test_environment
 from varats.table.tables import TableGenerator
 from varats.tools import driver_external
 from varats.tools.tool_util import (
@@ -29,7 +28,6 @@ class TestExternalRepoDiscoveryComponents(unittest.TestCase):
 
     @run_in_test_environment(EXTERNAL_REPO_TEMPLATE)
     def test_external_repo_discovery_includes_all_components(self) -> None:
-        """External experiments, tables, research tools, plots, projects, and reports are discovered."""
         repo_path = Path.cwd() / "external_repo"
 
         runner = CliRunner()

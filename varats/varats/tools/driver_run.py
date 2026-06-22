@@ -44,8 +44,8 @@ __SLURM_SCRIPT_PATTERN = re.compile(r"SLURM script written to (.*\.sh)")
 
 
 def __validate_project_parameters(
-    ctx: click.Context | None,
-    param: click.Parameter | None,
+    ctx: click.Context | None,  # noqa: ARG001
+    param: click.Parameter | None,  # noqa: ARG001
     value: tuple[str, ...],
 ) -> tuple[str, ...]:
     """

@@ -71,8 +71,11 @@ def validate_external_repo(repo_path: Path) -> tuple[bool, list[str]]:
 
 def _external_plugin_modules(repo_path: Path, folder_name: str) -> list[str]:
     """
-    Dotted module paths (e.g. `projects.foo`) for all modules found in
-    `repo_path`'s `folder_name` folder.
+    Returns Dot-separated module names.
+
+    Args:
+        repo_path: Path to the external repository root
+        folder_name: Name of the folder to search for modules, e.g., "projects"
     """
     folder = repo_path / folder_name
     return [
@@ -125,7 +128,8 @@ def main() -> None:
     Main function for managing external source repositories.
 
     `vara-external` provides commands to set up external repositories
-        containing custom projects, research tools, experiments, tables, plots, and reports.
+        containing custom projects, research tools, experiments, tables, plots,
+        and reports.
     """
     initialize_cli_tool()
 
@@ -169,7 +173,8 @@ def _set_external_repository(path: str) -> None:
 
         if repo_is_registered:
             if click.confirm(
-                "The repository is already registered but does not match the template. "
+                "The repository is already registered "
+                "but does not match the template."
                 "Unregister it from the configuration?",
                 default=False,
             ):

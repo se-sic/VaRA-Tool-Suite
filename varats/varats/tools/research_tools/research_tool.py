@@ -1,7 +1,9 @@
 """
-This modules provides the base classes for research tools that allow
-developers to setup and configure their own research tool by inheriting and
-implementing the base classes ``ResearchTool`` and ``CodeBase``.
+This modules provides the base classes for research tools.
+
+It allows developers to setup and configure their own research tool by
+inheriting and implementing the base classes ``ResearchTool``
+and ``CodeBase``.
 """
 
 import abc
@@ -64,6 +66,7 @@ class Distro(Enum):
         return None
 
     def __str__(self) -> str:
+        """String representation of the distribution."""
         return str(self.value)
 
 
@@ -82,10 +85,12 @@ class Dependencies:
     """Models the dependencies for a research tool."""
 
     def __init__(self, dependencies: dict[Distro, list[str]]):
+        """Initialize the dependencies with a mapping of distros to deps."""
         self.__dependencies = dependencies
 
     @property
     def distros(self) -> list[Distro]:
+        """Distros for which dependencies are specified."""
         return list(self.__dependencies.keys())
 
     def has_dependencies_for_distro(self, distro: Distro) -> bool:
@@ -177,8 +182,9 @@ class Dependencies:
 
 class SubProject:
     """
-    Encapsulates a sub project, e.g., a library or tool, defining how it can
-    be downloaded and integrated inside a ``CodeBase``.
+    Encapsulates a sub project, e.g., a library or tool.
+
+    Defines how it can be downloaded and integrated inside a ``CodeBase``.
     """
 
     def __init__(
@@ -190,6 +196,7 @@ class SubProject:
         sub_path: str,
         is_submodule: bool = False,
     ):
+        """Initialize a sub project of a ``CodeBase``."""
         self.__name = name
         self.__parent_base_dir = parent_base_dir
         self.__url = url
@@ -228,8 +235,10 @@ class SubProject:
     @property
     def is_submodule(self) -> bool:
         """
-        Determine if this project is a submodule and shouldn't be cloned and
-        pulled automatically when a `CodeBase` is initialized or updated.
+        Determine if this project is a submodule.
+
+        Submodules shouldn't be cloned and pulled automatically when a
+        `CodeBase` is initialized or updated.
 
         Returns:
             True, if it should be automatically cloned
@@ -248,8 +257,9 @@ class SubProject:
 
     def clone(self) -> None:
         """
-        Clone the sub project into the specified folder relative to the base
-        dir of the ``CodeBase``.
+        Clone the sub project into the specified folder.
+
+        The folder is relative to the base dir of the ``CodeBase``.
         """
         print(f"Cloning {self.name} into {self.__parent_base_dir}")
         if self.__repo.worktree_path.exists():
@@ -266,8 +276,7 @@ class SubProject:
         self, branch_name: str, remote_to_check: str | None = None
     ) -> bool:
         """
-        Check if the sub project has a branch with the specified ``branch
-        name``.
+        Check if the sub project has a branch with the specified name.
 
         Args:
             branch_name: name of the branch
@@ -317,12 +326,7 @@ class SubProject:
     def checkout_new_branch(
         self, branch_name: str, remote_branch: str | None = None
     ) -> None:
-        """
-        Create and checkout out a new branch in the sub project.
-
-        Args:
-            branch_name: name of the new branch, should not exists in the repo
-        """
+        """Create and checkout out a new branch in the sub project."""
         checkout_new_branch(self.__repo, branch_name, remote_branch)
 
     def fetch(
@@ -333,8 +337,9 @@ class SubProject:
 
     def pull(self) -> None:
         """
-        Pull updates from the remote of the current branch into the sub
-        project.
+        Pull updates from the remote of the current branch.
+
+        The updates are pulled into the sub project.
         """
         pull_current_branch(self.__repo)
 
@@ -351,34 +356,36 @@ class SubProject:
         show_status(self.__repo)
 
     def __str__(self) -> str:
+        """String representation of the sub project."""
         return f"{self.name} [{self.url}:{self.remote}] {self.path}"
 
     def get_tags(self, extra_args: list[str] | None = None) -> list[str]:
         """Get the list of available git tags."""
-        tag_list = get_tags(self.__repo, extra_args)
-        return tag_list
+        return get_tags(self.__repo, extra_args)
 
 
 class CodeBase:
     """
-    A ``CodeBase`` depicts the layout of a project, specifying where the a
-    research tool lives and how different sub projects should be cloned.
+    A ``CodeBase`` depicts the layout of a project.
 
-    In addition, it allows access to the sub projects, e.g., for checkout or
-    other repository manipulations.
+    Specifies where the a research tool lives and how different sub projects
+    should be cloned. In addition, it allows access to the sub projects,
+    e.g., for checkout or other repository manipulations.
     """
 
     def __init__(self, base_dir: Path, sub_projects: list[SubProject]):
+        """Initialize a code base with its base dir and sub projects."""
         self.__sub_projects = sub_projects
         self.__base_dir = base_dir
 
     @property
     def base_dir(self) -> Path:
+        """Base directory of the code base."""
         return self.__base_dir
 
     def get_sub_project(self, name: str) -> SubProject:
         """
-        Lookup a sub project of this ``CodeBase``
+        Lookup a sub project of this ``CodeBase``.
 
         Args:
             name: of the sub project
@@ -390,8 +397,10 @@ class CodeBase:
 
     def clone(self, cb_base_dir: Path) -> None:
         """
-        Clones the full code base into the specified folder ``cb_base_dir``,
-        which marks the base folder of the code base structure.
+        Clones the full code base into the specified folder.
+
+        The folder ``cb_base_dir`` marks the base folder of the code base
+        structure.
 
         Args:
             cb_base_dir: new base dir of the code base
@@ -429,18 +438,24 @@ ResearchToolTy = type['ResearchTool[tp.Any]']
 
 class ResearchTool(abc.ABC, tp.Generic[SpecificCodeBase]):
     """
-    ResearchTool is an abstract base class for specifying research tools that
-    are set up by VaRA-TS and usable through the tool suites experiments and
-    tools.
+    Abstract base class for specifying research tools.
+
+    Research tools are set up by VaRA-TS and usable through the tool suites
+    experiments and tools.
     """
 
-    _BUILTIN_TOOL_ORDER = ["phasar", "vara", "szzunleashed"]
+    _BUILTIN_TOOL_ORDER: tp.ClassVar[list[str]] = [
+        "phasar",
+        "vara",
+        "szzunleashed",
+    ]
     """Stable ordering for built-in research tools."""
 
-    REGISTRY: dict[str, ResearchToolTy] = {}
+    REGISTRY: tp.ClassVar[dict[str, ResearchToolTy]] = {}
     """Registry for concrete research tools."""
 
     def __init_subclass__(cls, **kwargs: tp.Any) -> None:
+        """Register concrete research tool subclasses."""
         super().__init_subclass__(**kwargs)
 
         if cls is ResearchTool or inspect.isabstract(cls):
@@ -454,19 +469,23 @@ class ResearchTool(abc.ABC, tp.Generic[SpecificCodeBase]):
         supported_build_types: list[BuildType],
         code_base: SpecificCodeBase,
     ) -> None:
+        """Initialize a research tool with its code base."""
         self.__name = tool_name
         self.__supported_build_types = supported_build_types
         self.__code_base = code_base
 
     @property
     def code_base(self) -> SpecificCodeBase:
+        """Code base of the research tool."""
         return self.__code_base
 
     @property
     def name(self) -> str:
+        """Name of the research tool."""
         return self.__name
 
     def is_build_type_supported(self, build_type: BuildType) -> bool:
+        """Check whether the given build type is supported."""
         return build_type in self.__supported_build_types
 
     @classmethod
@@ -529,10 +548,11 @@ class ResearchTool(abc.ABC, tp.Generic[SpecificCodeBase]):
         version: int | None,
     ) -> None:
         """
-        Setup a research tool with it's code base. This method sets up all
-        relevant config variables, downloads repositories via the ``CodeBase``,
-        checks out the correct branches and prepares the research tool to be
-        build.
+        Setup a research tool with it's code base.
+
+        This method sets up all relevant config variables, downloads
+        repositories via the ``CodeBase``, checks out the correct branches
+        and prepares the research tool to be build.
 
         Args:
             source_folder: location to store the code base in
@@ -542,10 +562,7 @@ class ResearchTool(abc.ABC, tp.Generic[SpecificCodeBase]):
 
     @abc.abstractmethod
     def find_highest_sub_prj_version(self, sub_prj_name: str) -> int:
-        """
-        Returns the highest release version number for the specified
-        ``SubProject`` name.
-        """
+        """Returns the highest release version number for the ``SubProject``."""
 
     @abc.abstractmethod
     def is_up_to_date(self) -> bool:
@@ -563,8 +580,9 @@ class ResearchTool(abc.ABC, tp.Generic[SpecificCodeBase]):
         build_folder_suffix: str | None,
     ) -> None:
         """
-        Build/Compile the research tool in the specified ``build_type`` and
-        install it to the specified ``install_location``.
+        Build/Compile the research tool in the specified ``build_type``.
+
+        Installs it to the specified ``install_location``.
 
         Args:
             build_type: which type of build should be used, e.g., debug,
@@ -575,10 +593,7 @@ class ResearchTool(abc.ABC, tp.Generic[SpecificCodeBase]):
 
     @abc.abstractmethod
     def get_install_binaries(self) -> list[str]:
-        """
-        Returns a list of binaries to check when validating the
-        installation.
-        """
+        """Returns a list of binaries to check when validating the install."""
 
     def invalidate_install(self, install_location: Path) -> None:
         """
@@ -643,8 +658,9 @@ class ContainerInstallable(Protocol):
         self, stage_builder: 'containers.StageBuilder'
     ) -> None:
         """
-        Add layers for installing this research tool's dependencies to the given
-        container.
+        Add layers for installing this research tool's dependencies.
+
+        Added to the given container.
 
         Args:
             stage_builder: the builder object for the current container stage
@@ -664,8 +680,7 @@ class ContainerInstallable(Protocol):
         self, stage_builder: 'containers.StageBuilder'
     ) -> dict[str, list[str]]:
         """
-        Tool-specific container configuration in the form of environment
-        variables.
+        Tool-specific container configuration in the form of env variables.
 
         Args:
             stage_builder: the builder object for the current container stage

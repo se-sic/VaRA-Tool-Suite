@@ -104,7 +104,7 @@ class RepoFixture(UnitTestFixture):
 
 
 class ExternalRepoFixture(FileFixture):
-    """A git repository that is cloned into the test environment and registered."""
+    """A git repository that is cloned into test environment and registered."""
 
     def __init__(self):
         super().__init__(

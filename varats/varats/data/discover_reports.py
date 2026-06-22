@@ -7,9 +7,9 @@ __REPORTS_DISCOVERED = False
 
 
 def initialize_reports() -> None:
+    """Discovers and initializes all reports."""
     global __REPORTS_DISCOVERED  # noqa: PLW0603
     if not __REPORTS_DISCOVERED:
-        # Discover and initialize all Reports
         __REPORTS__.discover()
         __CORE_REPORTS__.discover()
         __REPORTS_DISCOVERED = True

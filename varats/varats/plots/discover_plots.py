@@ -6,8 +6,8 @@ __PLOTS_DISCOVERED = False
 
 
 def initialize_plots() -> None:
+    """Discover and initialize all Plots."""
     global __PLOTS_DISCOVERED  # noqa: PLW0603
     if not __PLOTS_DISCOVERED:
-        # Discover and initialize all plots
         __PLOTS__.discover()
         __PLOTS_DISCOVERED = True
