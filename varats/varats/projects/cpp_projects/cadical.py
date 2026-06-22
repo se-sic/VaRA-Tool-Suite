@@ -215,9 +215,10 @@ class Cadical(VProject):
             for line in output:
                 name = extract_name(line)
                 if name:
-                    if active_test is not None:
+                    if active_test is not None and test_name not in test_results:
                         # Previous test did not report a result,
                         # mark it as Unknown.
+                        print(f"New test started without result for previous test. Marking previous test ({test_name}) as UNKNOWN.")
                         test_results[test_name] = TestResult.UNKNOWN
                     active_test = line.split("'")[1]
                     test_name = f"{suite_name}::{active_test}"
@@ -225,13 +226,14 @@ class Cadical(VProject):
                 # Lines starting with results:
                 # 0 ... <ok|failed>
                 result = extract_result(line)
-                if result and active_test is not None:
+                if result is not None and active_test is not None:
                     if test_name in test_results:
                         test_results[test_name] = max(
                             test_results[test_name], result
                         )
                     else:
                         test_results[test_name] = result
+                    print(f"Recorded result for {test_name}: {test_results[test_name]}")
                     active_test = None
 
         if active_test is not None:
@@ -240,25 +242,26 @@ class Cadical(VProject):
         return test_results
 
     def _run_api_tests(self) -> dict[str, TestResult]:
-
+        print("Running API tests...")
         def extract_name(line: str) -> str | None:
             if "running API test" in line:
                 return line.split("'")[1]
             return None
 
         def extract_result(line: str) -> TestResult | None:
+            print("API: Checking line' " + line+"' for result")
             if line.startswith("# 0 ... "):
                 if "ok" in line:
                     return TestResult.PASSED
                 if "failed" in line:
                     return TestResult.FAILED
+                print("Unknown result for API test: " + line)
                 return TestResult.UNKNOWN
             return None
 
         return self._run_suite("api", extract_name, extract_result)
 
     def _run_usage_tests(self) -> dict[str, TestResult]:
-
         def extract_name(line: str) -> str | None:
             if "running usage test" in line:
                 return line.split("'")[1]
@@ -276,7 +279,7 @@ class Cadical(VProject):
         return self._run_suite("usage", extract_name, extract_result)
 
     def _run_cnf_tests(self) -> dict[str, TestResult]:
-
+        print("Running CNF tests...")
         def extract_name(line: str) -> str | None:
             if "running CNF test" in line:
                 return line.split("'")[1]
@@ -294,7 +297,7 @@ class Cadical(VProject):
         return self._run_suite("cnf", extract_name, extract_result)
 
     def _run_traces_tests(self) -> dict[str, TestResult]:
-
+        print("Running trace tests...")
         def extract_name(line: str) -> str | None:
             if "trace/run.sh" in line and "'" in line:
                 return line.split("'")[1]
@@ -312,6 +315,7 @@ class Cadical(VProject):
         return self._run_suite("trace", extract_name, extract_result)
 
     def _run_mbt_tests(self) -> dict[str, TestResult]:
+        print("Running MBT tests...")
         test_dir = Path(self.source_of_primary) / "test"
 
         with local.cwd(test_dir):

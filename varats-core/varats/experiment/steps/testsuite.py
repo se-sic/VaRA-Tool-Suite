@@ -133,7 +133,6 @@ class RunTestSuite(ProjectStep):  # type: ignore
                 f"Project {self.project.name} does not support testing."
             )
         try:
-            self.project.prepare_test_environment()
             results = self.project.run_testsuite(
                 tests_to_run=self.__tests_to_run,
                 tests_to_exclude=self.__tests_to_exclude

@@ -770,7 +770,7 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = (
             bb_ext.compiler.RunCompiler(project, self)
-            << bb_ext.run.WithTimeout()
+            #<< bb_ext.run.WithTimeout()
         )
 
         project.compile = get_default_compile_error_wrapped(

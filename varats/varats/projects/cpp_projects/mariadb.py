@@ -182,6 +182,7 @@ class MariaDB(VProject):
             test_command = test_binary[
                 "--mem",
                 "--force",
+                "--suite=unit", # Only run unit tests. 
                 "--max-test-fail=1000",  # We want to get as many results as possible, so we set a high limit for test failures
                 f"--parallel={get_number_of_jobs(bb_cfg())}",
                 f"--xml-report={test_report_path.absolute()}"]
@@ -222,7 +223,7 @@ class MariaDB(VProject):
         test_binary = local[build_dir / "mysql-test" / "mtr"]
 
         with local.cwd(build_dir):
-            test_binary = test_binary["--dry-run"]
+            test_binary = test_binary["--dry-run", "--suite=unit"]
 
             result = test_binary()
 

@@ -1,6 +1,8 @@
 """Project file for x264."""
 
 import typing
+import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
@@ -11,10 +13,13 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import ImageBase, get_base_image
-from varats.experiment.workload_util import RSBinary, ConfigParams, WorkloadCategory
+from varats.experiment.workload_util import (
+    ConfigParams,
+    RSBinary,
+    WorkloadCategory,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.patch_variation_source import PatchVariationSource
-from varats.project.sources import FeatureSource
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
@@ -23,10 +28,12 @@ from varats.project.project_util import (
     get_local_project_repo,
     verify_binaries,
 )
+from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import TestResult
 
 
 class X264(VProject):
@@ -163,3 +170,70 @@ class X264(VProject):
         x264_version_source = local.path(self.source_of_primary)
         with local.cwd(x264_version_source):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    ##############################
+    # SupportsTestSuite Protocol #
+    ##############################
+
+    __TEST_SEEDS: tp.ClassVar = [
+        0, 42, 1337, 9001, 12345, 54321, 98765, 67890,
+        4154874031, 4157556397
+    ]
+
+    def prepare_test_environment(self) -> None:
+        """Prepare the test environment for this project."""
+        self.compile()
+        x264_version_source = local.path(self.source_of_primary)
+
+        with local.cwd(x264_version_source):
+            bb.watch(make)("checkasm", "-j", get_number_of_jobs(bb_cfg()))
+
+    def build_tests(self) -> None:
+        """Build the tests for this project."""
+        x264_version_source = local.path(self.source_of_primary)
+
+        with local.cwd(x264_version_source):
+            bb.watch(make)("checkasm", "-j", get_number_of_jobs(bb_cfg()))
+
+    def run_testsuite(
+            self,
+            test_report_path: Path | None = None,
+            tests_to_run: tp.Iterable[str] | None = None,
+            tests_to_exclude: tp.Iterable[str] | None = None,
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        x264_version_source = local.path(self.source_of_primary)
+
+        test_results = {}
+
+        with local.cwd(x264_version_source):
+            checkasm_8 = local["checkasm8"]
+            checkasm_10 = local["checkasm10"]
+
+            for seed in self.__TEST_SEEDS:
+                if tests_to_run and f"checkasm8-{seed}" not in tests_to_run:
+                    continue
+
+                if tests_to_exclude and f"checkasm8-{seed}" in tests_to_exclude:
+                    continue
+
+                _, stdout, _ = bb.watch(checkasm_8)(f"--seed={seed}")
+
+                output = stdout.strip()
+                if "All tests passed Yeah :)" in output:
+                    test_results[f"checkasm8-{seed}"] = TestResult.PASSED
+                else:
+                    test_results[f"checkasm8-{seed}"] = TestResult.FAILED
+
+                _, stdout, _ = bb.watch(checkasm_10)(f"--seed={seed}")
+                output = stdout.strip()
+                if "All tests passed Yeah :)" in output:
+                    test_results[f"checkasm10-{seed}"] = TestResult.PASSED
+                else:
+                    test_results[f"checkasm10-{seed}"] = TestResult.FAILED
+
+        return test_results
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """Get the test names."""
+        return ([f"checkasm8-{seed}" for seed in self.__TEST_SEEDS] +
+                [f"checkasm10-{seed}" for seed in self.__TEST_SEEDS])
