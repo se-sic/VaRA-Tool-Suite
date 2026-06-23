@@ -169,8 +169,79 @@ def get_data_for_single_config(
     # This would be an error in our measurement setup that we should look into.
     return result_df[result_df["value"].apply(lambda x: len(x) >= 10)]
 
+def group_kruskal_wallis(df: pd.DataFrame,
+                         group_by: tp.List[str]) -> pd.DataFrame:
+    """
+    Group the dataframe by the specified columns and calculate the Kruskal-Wallis H-test for each group.
 
-def calculate_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
+    Args:
+        df: The input dataframe containing the data.
+        group_by: A list of column names to group by.
+
+    Returns:
+        A new dataframe with the Kruskal-Wallis H-test results for each group.
+    """
+
+    # Group by binary-wl, metric, and config_id, then calculate the Kruskal-Wallis H-test
+    def kruskal_wallis(group):
+        if len(group) < 2:
+            return pd.Series({"kruskal_statistic": np.nan,
+                              "kruskal_pvalue": np.nan,
+                              "effect_size": np.nan,
+                              "mean_values_relative": []})
+
+        # Extract the value_relative lists for each variation
+        data = [row["value_relative"] for _, row in group.iterrows()]
+
+        # Perform the Kruskal-Wallis H-test
+        statistic, pvalue = kruskal(*data)
+
+        # Calculate eta-squared as a measure of effect size
+        # eta^2 = (H- k + 1) / (n - k), where H is the Kruskal-Wallis statistic,
+        # k is the number of groups, and n is the total number of observations
+        eta_squared = (statistic - len(data) + 1) / (sum(len(d) for d in data) - len(data))
+
+        return pd.Series({"kruskal_statistic": statistic,
+                            "kruskal_pvalue": pvalue,
+                            "effect_size": eta_squared,
+                          "mean_values_relative": [np.mean(d) for d in data]})
+
+    def means_min_max(group):
+        if len(group) == 0:
+            return pd.Series({"min_value_relative_mean": np.nan,
+                              "max_value_relative_mean": np.nan})
+
+        lists = [vr for vr in group["value_relative"] if vr is not None]
+        if len(lists) == 0:
+            return pd.Series({"min_value_relative_mean": np.nan,
+                              "max_value_relative_mean": np.nan})
+
+        means = [np.mean(l) if len(l) > 0 else np.nan for l in lists]
+        return pd.Series({"min_value_relative_mean": np.nanmin(means),
+                          "max_value_relative_mean": np.nanmax(means)})
+
+    summary = df.groupby(group_by).apply(kruskal_wallis)
+    minmax_summary = df.groupby(group_by).apply(means_min_max)
+
+    return pd.concat([summary, minmax_summary], axis=1)
+
+
+def filter_significant_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Get the significant Kruskal-Wallis H-test results for the specified grouping.
+
+    Args:
+        df: The input dataframe containing the data.
+        p_value: The significance level for the Kruskal-Wallis test.
+        min_effect_size: The minimum effect size to consider a result significant.
+
+    Returns:
+        A filtered dataframe containing only the significant Kruskal-Wallis H-test results.
+    """
+    return df[(df["kruskal_pvalue"] < 0.05)
+              & (df["effect_size"] >= 0.06)]
+
+def calculate_kruskal_wallis_summary(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate Kruskal-Wallis H-test based on the value_relative column.
 
@@ -207,42 +278,6 @@ def calculate_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
     # Select only significant changes
     significant_df = filter_for_significant_changes(filtered_df)
 
-    # Group by binary-wl, metric, and config_id, then calculate the Kruskal-Wallis H-test
-    def kruskal_wallis(group):
-        if len(group) < 2:
-            return pd.Series({"kruskal_statistic": np.nan,
-                              "kruskal_pvalue": np.nan,
-                              "effect_size": np.nan})
-
-        # Extract the value_relative lists for each variation
-        data = [row["value_relative"] for _, row in group.iterrows()]
-
-        # Perform the Kruskal-Wallis H-test
-        statistic, pvalue = kruskal(*data)
-
-        # Calculate eta-squared as a measure of effect size
-        # eta^2 = (H- k + 1) / (n - k), where H is the Kruskal-Wallis statistic,
-        # k is the number of groups, and n is the total number of observations
-        eta_squared = (statistic - len(data) + 1) / (sum(len(d) for d in data) - len(data))
-
-        return pd.Series({"kruskal_statistic": statistic,
-                            "kruskal_pvalue": pvalue,
-                            "effect_size": eta_squared})
-
-    def means_min_max(group):
-        if len(group) == 0:
-            return pd.Series({"min_value_relative_mean": np.nan,
-                              "max_value_relative_mean": np.nan})
-
-        lists = [vr for vr in group["value_relative"] if vr is not None]
-        if len(lists) == 0:
-            return pd.Series({"min_value_relative_mean": np.nan,
-                              "max_value_relative_mean": np.nan})
-
-        means = [np.mean(l) if len(l) > 0 else np.nan for l in lists]
-        return pd.Series({"min_value_relative_mean": np.nanmin(means),
-                          "max_value_relative_mean": np.nanmax(means)})
-
     projects = df["project"].unique()
 
     data_rows = []
@@ -259,22 +294,12 @@ def calculate_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
             ["binary-wl", "metric", "config_id"])
 
         num_settings = setting_summary.ngroups
-        num_settings_total = base_data[base_data["project"]==p]["num_settings"].values[0]
+        num_settings_total = base_data[base_data["project"] == p]["num_settings"].array[0]
+        setting_results = group_kruskal_wallis(df, group_by=["binary-wl", "metric", "config_id"])
+        setting_results["mean_diff"] = setting_results["max_value_relative_mean"] - setting_results[
+            "min_value_relative_mean"]
 
-        # For each setting, collect the value_relative lists for all variations and perform the Kruskal-Wallis H-test
-        setting_results = setting_summary.apply(kruskal_wallis)
-        minmax_results = setting_summary.apply(means_min_max)
-
-        setting_results = pd.concat([setting_results, minmax_results], axis=1)
-        setting_results["mean_diff"] = setting_results["max_value_relative_mean"] - setting_results["min_value_relative_mean"]
-
-        # At least medium effect size
-        min_effect_size = 0.06
-
-        sig_settings = setting_results[
-            (setting_results["kruskal_pvalue"] < 0.05)
-            & (setting_results["effect_size"] >= min_effect_size)
-        ]
+        sig_settings = filter_significant_kruskal_wallis(setting_results)
 
         num_sig_settings = sig_settings.shape[0]
 
@@ -284,14 +309,10 @@ def calculate_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
         num_conf_alts = config_alt_summary.ngroups
         num_conf_alts_total = base_data[base_data["project"]==p]["num_config_alts"].values[0]
 
-        config_alt_results = config_alt_summary.apply(kruskal_wallis)
-        minmax_results = config_alt_summary.apply(means_min_max)
-        config_alt_results = pd.concat([config_alt_results, minmax_results], axis=1)
+        config_alt_results = group_kruskal_wallis(df, ["config_opprtunity", "variation"])
         config_alt_results["mean_diff"] = config_alt_results["max_value_relative_mean"] - config_alt_results["min_value_relative_mean"]
 
-        sig_alts = config_alt_results[(config_alt_results["kruskal_pvalue"] < 0.05)
-        & (config_alt_results["effect_size"] >= min_effect_size)
-        ]
+        sig_alts = filter_significant_kruskal_wallis(config_alt_results)
 
         num_sig_config_alts = sig_alts.shape[0]
 

@@ -2,7 +2,7 @@ import pandas as pd
 
 from varats.data.databases.hidden_configurability_database import (
     aggregate_data_for_cs,
-    calculate_kruskal_wallis,
+    calculate_kruskal_wallis_summary,
 )
 from varats.experiments.vara.hidden_configurability_experiments import (
     _PROJECT_WORKLOADS,
@@ -161,7 +161,7 @@ class HCPerfSensitivityTable(Table, table_name="hc_perf_sensitivity"):
             cs_data["project"] = cs.project_name
             full_data = pd.concat([full_data, cs_data], ignore_index=True)
 
-        kruskal_results = calculate_kruskal_wallis(full_data)
+        kruskal_results = calculate_kruskal_wallis_summary(full_data)
 
         kwargs = {}
         if table_format==TableFormat.LATEX:
