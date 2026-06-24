@@ -5,7 +5,6 @@ The patch provider enables users to query patches for project, which can be
 applied during an experiment to alter the state of the project.
 """
 
-import os
 import typing as tp
 import warnings
 from pathlib import Path
@@ -19,14 +18,15 @@ from yaml import YAMLError
 from varats.project.project_util import get_local_project_repo
 from varats.provider.provider import Provider, ProviderType
 from varats.utils.filesystem_util import lock_file
-from varats.utils.git_commands import pull_current_branch, fetch_repository
+from varats.utils.git_commands import fetch_repository, pull_current_branch
 from varats.utils.git_util import (
     CommitHash,
+    RepositoryHandle,
     ShortCommitHash,
     get_all_revisions_between,
     get_initial_commit,
-    RepositoryHandle,
 )
+from varats.utils.settings import vara_cfg
 
 
 class Patch:
@@ -38,10 +38,10 @@ class Patch:
         shortname: str,
         description: str,
         path: Path,
-        valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
-        tags: tp.Optional[tp.Set[str]] = None,
-        feature_tags: tp.Optional[tp.Set[str]] = None,
-        regression_severity: tp.Optional[int] = None
+        valid_revisions: set[CommitHash] | None = None,
+        tags: set[str] | None = None,
+        feature_tags: set[str] | None = None,
+        regression_severity: int | None = None,
     ):
         """
         Args:
@@ -58,16 +58,14 @@ class Patch:
         self.shortname: str = shortname
         self.description: str = description
         self.path: Path = path
-        self.valid_revisions: tp.Set[
-            CommitHash] = valid_revisions if valid_revisions else set()
-        self.tags: tp.Optional[tp.Set[str]] = tags
-        self.feature_tags: tp.Optional[tp.Set[str]] = feature_tags
-        self.regression_severity: tp.Optional[int] = regression_severity
+        self.valid_revisions: set[CommitHash] = valid_revisions or set()
+        self.tags: set[str] | None = tags
+        self.feature_tags: set[str] | None = feature_tags
+        self.regression_severity: int | None = regression_severity
 
     @staticmethod
     def from_yaml(yaml_path: Path) -> 'Patch':
         """Creates a Patch from a YAML file."""
-
         yaml_dict = yaml.safe_load(yaml_path.read_text())
 
         project_name = yaml_dict["project_name"]
@@ -83,18 +81,19 @@ class Patch:
 
         project_repo = get_local_project_repo(project_name)
 
-        def parse_revisions(
-            rev_dict: tp.Dict[str, tp.Any]
-        ) -> tp.Set[CommitHash]:
-            res: tp.Set[CommitHash] = set()
+        def parse_revisions(rev_dict: dict[str, tp.Any]) -> set[CommitHash]:
+            res: set[CommitHash] = set()
 
             if "single_revision" in rev_dict:
                 if isinstance(rev_dict["single_revision"], str):
                     res.add(ShortCommitHash(rev_dict["single_revision"]))
                 else:
-                    res.update([
-                        ShortCommitHash(r) for r in rev_dict["single_revision"]
-                    ])
+                    res.update(
+                        [
+                            ShortCommitHash(r)
+                            for r in rev_dict["single_revision"]
+                        ]
+                    )
 
             if "revision_range" in rev_dict:
                 rev_ranges = rev_dict["revision_range"]
@@ -107,21 +106,25 @@ class Patch:
                         end_rev = ""
                     res.update(
                         get_all_revisions_between(
-                            project_repo, rev_range["start"], end_rev,
-                            ShortCommitHash
+                            project_repo,
+                            rev_range["start"],
+                            end_rev,
+                            ShortCommitHash,
                         )
                     )
 
             return res
 
-        include_revisions: tp.Set[CommitHash]
+        include_revisions: set[CommitHash]
         if "include_revisions" in yaml_dict:
             include_revisions = parse_revisions(yaml_dict["include_revisions"])
         else:
             include_revisions = set(
                 get_all_revisions_between(
                     project_repo,
-                    get_initial_commit(project_repo).hash, "", ShortCommitHash
+                    get_initial_commit(project_repo).hash,
+                    "",
+                    ShortCommitHash,
                 )
             )
 
@@ -130,23 +133,32 @@ class Patch:
                 parse_revisions(yaml_dict["exclude_revisions"])
             )
 
-        regression_severity: tp.Optional[int]
+        regression_severity: int | None
         if "regression_severity" in yaml_dict:
             regression_severity = yaml_dict["regression_severity"]
         else:
             regression_severity = None
 
         return Patch(
-            project_name, shortname, description, path, include_revisions, tags,
-            feature_tags, regression_severity
+            project_name,
+            shortname,
+            description,
+            path,
+            include_revisions,
+            tags,
+            feature_tags,
+            regression_severity,
         )
 
     def __repr__(self) -> str:
         return str(self)
 
     def __str__(self) -> str:
-        valid_revs = [str(r) for r in self.valid_revisions
-                     ] if self.valid_revisions else []
+        valid_revs = (
+            [str(r) for r in self.valid_revisions]
+            if self.valid_revisions
+            else []
+        )
         str_representation = f"""Patch(
     ProjectName: {self.project_name}
     Shortname: {self.shortname}
@@ -168,11 +180,13 @@ class Patch:
 
 
 class PatchSet:
-    """A PatchSet is a storage container for project specific patches that can
-    easily be accessed via the tags of a patch."""
+    """
+    A PatchSet is a storage container for project specific patches that can
+    easily be accessed via the tags of a patch.
+    """
 
-    def __init__(self, patches: tp.Union[tp.Set[Patch], tp.FrozenSet[Patch]]):
-        self.__patches: tp.FrozenSet[Patch] = frozenset(patches)
+    def __init__(self, patches: set[Patch] | frozenset[Patch]):
+        self.__patches: frozenset[Patch] = frozenset(patches)
 
     def __iter__(self) -> tp.Iterator[Patch]:
         return self.__patches.__iter__()
@@ -183,7 +197,7 @@ class PatchSet:
     def __len__(self) -> int:
         return len(self.__patches)
 
-    def __getitem__(self, tags: tp.Union[str, tp.Iterable[str]]) -> 'PatchSet':
+    def __getitem__(self, tags: str | tp.Iterable[str]) -> 'PatchSet':
         """
         Overrides the bracket operator of a PatchSet.
 
@@ -214,21 +228,23 @@ class PatchSet:
         """Implementing the union of two sets."""
         return PatchSet(self.__patches.union(rhs.__patches))
 
-    def any_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet":
-        """Returns a patch set with patches containing at least one of the given
-        tags."""
+    def any_of(self, tags: str | tp.Iterable[str]) -> "PatchSet":
+        """
+        Returns a patch set with patches containing at least one of the given
+        tags.
+        """
         # Trick to handle just a single tag being passed
         if isinstance(tags, str):
             tags = [tags]
 
-        result: tp.Set[Patch] = set()
+        result: set[Patch] = set()
         for patch in self:
             if patch.tags and any(tag in patch.tags for tag in tags):
                 result.add(patch)
 
         return PatchSet(result)
 
-    def all_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet":
+    def all_of(self, tags: str | tp.Iterable[str]) -> "PatchSet":
         """
         Returns a patch set with patches containing all the given tags.
 
@@ -237,10 +253,12 @@ class PatchSet:
         return self[tags]
 
     def any_of_features(self, feature_tags: tp.Iterable[str]) -> "PatchSet":
-        """Returns a patch set with patches containing at least one of the given
-        feature tags."""
+        """
+        Returns a patch set with patches containing at least one of the given
+        feature tags.
+        """
         tag_set = set(feature_tags)
-        result: tp.Set[Patch] = set()
+        result: set[Patch] = set()
         for patch in self:
             if patch.feature_tags and patch.feature_tags.intersection(tag_set):
                 result.add(patch)
@@ -248,12 +266,14 @@ class PatchSet:
         return PatchSet(result)
 
     def all_of_features(
-        self, feature_tags: tp.Union[str, tp.Iterable[str]]
+        self, feature_tags: str | tp.Iterable[str]
     ) -> "PatchSet":
-        """Returns a patch set with patches containing all the given feature
-        tags."""
+        """
+        Returns a patch set with patches containing all the given feature
+        tags.
+        """
         tag_set = set(feature_tags)
-        result: tp.Set[Patch] = set()
+        result: set[Patch] = set()
         for patch in self:
             if patch.feature_tags and tag_set.issubset(patch.feature_tags):
                 result.add(patch)
@@ -272,51 +292,60 @@ class PatchSet:
 class PatchProvider(Provider):
     """A provider for getting patch files for a certain project."""
 
-    patches_repository = "https://github.com/se-sic/vara-project-patches.git"
-
-    patches_source = bb.source.Git(
-        remote=patches_repository,
-        local="patch-configurations",
-        refspec="origin/HEAD",
-        limit=None,
-        shallow=False
-    )
-
-    def __init__(self, project: tp.Type[Project]):
+    def __init__(self, project: type[Project]):
         super().__init__(project)
 
-        self._update_local_patches_repo()
-        repo = self._get_patches_repository()
+        # Accessing the configuration (.yml) file
+        cfg = vara_cfg()
 
-        patches_project_dir = repo.worktree_path / self.project.NAME
-
-        if not patches_project_dir.is_dir():
+        repo_cfgs = cfg["patch_provider"].value
+        if repo_cfgs is None or repo_cfgs == "":
             warnings.warn(
-                "Could not find patches directory for project "
-                f"'{self.project.NAME}'."
+                "patch_provider is not configured properly in .varats.yaml"
             )
 
-        self.__patches: tp.Set[Patch] = set()
+        patches_sources: list[bb.source.Git] = []
+        for repo_cfg in repo_cfgs:
+            remote_cfg = repo_cfg.get("remote")
+            local_cfg = repo_cfg.get("local")
+            refspec_cfg = repo_cfg.get("refspec")
+            patches_sources.append(
+                bb.source.Git(
+                    remote=remote_cfg,
+                    local=local_cfg,
+                    refspec=refspec_cfg,
+                    limit=None,
+                    shallow=False,
+                )
+            )
 
-        # Update repository to have all upstream changes
-        project_repo = get_local_project_repo(self.project.NAME)
-        fetch_repository(project_repo)
+        for patch_source in patches_sources:
+            self._update_local_patches_repo(patch_source)
+            repo = self._get_patches_repository(patch_source)
+            patches_project_dir = repo.worktree_path / self.project.NAME
 
-        for root, _, files in os.walk(patches_project_dir):
-            for filename in files:
-                if not filename.endswith(".info"):
-                    continue
+            if not patches_project_dir.is_dir():
+                warnings.warn(
+                    "Could not find patches directory for project "
+                    f"'{self.project.NAME}'."
+                )
 
-                info_path = Path(os.path.join(root, filename))
+            self.__patches: set[Patch] = set()
+
+            # Update repository to have all upstream changes
+            project_repo = get_local_project_repo(self.project.NAME)
+            fetch_repository(project_repo)
+
+            for info_path in patches_project_dir.rglob("*.info"):
                 try:
                     current_patch = Patch.from_yaml(info_path)
                     self.__patches.add(current_patch)
                 except YAMLError:
                     warnings.warn(
-                        f"Unable to parse patch info in: '{filename}'"
+                        f"Unable to parse patch info in: `{info_path}`"
                     )
 
-    def get_by_shortname(self, shortname: str) -> tp.Optional[Patch]:
+    def get_by_shortname(self, shortname: str) -> Patch | None:
         """
         Returns a patch with a specific shortname, if such a patch exists.
 
@@ -330,13 +359,13 @@ class PatchProvider(Provider):
 
     def get_patches_for_revision(self, revision: CommitHash) -> PatchSet:
         """Returns all patches that are valid for the given revision."""
-        return PatchSet({
-            p for p in self.__patches if revision in p.valid_revisions
-        })
+        return PatchSet(
+            {p for p in self.__patches if revision in p.valid_revisions}
+        )
 
     @classmethod
     def create_provider_for_project(
-        cls: tp.Type[ProviderType], project: tp.Type[Project]
+        cls: type[ProviderType], project: type[Project]
     ) -> 'PatchProvider':
         """
         Creates a provider instance for the given project.
@@ -352,7 +381,7 @@ class PatchProvider(Provider):
 
     @classmethod
     def create_default_provider(
-        cls: tp.Type[ProviderType], project: tp.Type[Project]
+        cls: type[ProviderType], project: type[Project]
     ) -> 'PatchProvider':
         """
         Creates a default provider instance that can be used with any project.
@@ -365,15 +394,15 @@ class PatchProvider(Provider):
         )
 
     @classmethod
-    def _get_patches_repository(cls) -> RepositoryHandle:
-        return RepositoryHandle(
-            Path(target_prefix()) / cls.patches_source.local
-        )
+    def _get_patches_repository(cls, patch_source) -> RepositoryHandle:
+        return RepositoryHandle(Path(target_prefix()) / patch_source.local)
 
     @classmethod
-    def _update_local_patches_repo(cls) -> None:
-        lock_path = Path(target_prefix()) / "patch_provider.lock"
+    def _update_local_patches_repo(cls, patch_source) -> None:
+        lock_path = (
+            Path(target_prefix()) / patch_source.local / "patch_provider.lock"
+        )
 
         with lock_file(lock_path):
-            cls.patches_source.fetch()
-            pull_current_branch(cls._get_patches_repository())
+            patch_source.fetch()
+            pull_current_branch(cls._get_patches_repository(patch_source))
