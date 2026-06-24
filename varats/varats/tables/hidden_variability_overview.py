@@ -34,7 +34,7 @@ from varats.ts_utils.click_param_types import (
     create_multi_case_study_choice,
     create_single_case_study_choice,
 )
-from varats.utils.git_util import calc_repo_loc
+from varats.utils.git_util import calc_repo_loc, RepositoryHandle
 from varats.utils.testsuite_utils import TestResult
 
 
@@ -235,6 +235,27 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
                 project_repo = get_local_project_repo(cs.project_name)
                 locs = calc_repo_loc(project_repo, cs.revisions[0].hash)
 
+                if cs.project_name == "DunePerfRegression":
+                    # For DunePerfRegression, we need to add the LOC for all the submodules as well
+                    dune_submodules = [
+                        "dune-alugrid",
+                        "dune-common",
+                        "dune-functions",
+                        "dune-geometry",
+                        "dune-grid",
+                        "dune-istl",
+                        "dune-localfunctions",
+                        "dune-multidomaingrid",
+                        "dune-pdelab",
+                        "dune-typetree",
+                        "dune-uggrid"
+                    ]
+
+                    for module in dune_submodules:
+                        sm_repo = RepositoryHandle(project_repo.worktree_path / module)
+                        print(f"{calc_repo_loc(sm_repo, 'HEAD')} LOC for {module}")
+                        locs += calc_repo_loc(sm_repo, "HEAD")
+
                 num_configs = len(cs.get_config_ids_for_revision(cs.revisions[0]))
                 if num_configs == 0:
                     # Just the default configuration
@@ -272,7 +293,7 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
 
         df = result_df.reset_index(drop=True)
         # Sort by domain first, then by project name
-        df.sort_values(by=["Domain", "Project", "|CO|"], inplace=True)
+        df.sort_values(by=["Domain", "Project"], inplace=True)
 
         kwargs = {}
         style = df.style.hide(axis="index")

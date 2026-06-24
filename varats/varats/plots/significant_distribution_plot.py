@@ -150,19 +150,117 @@ class SignificantAlternativesSharePlot(
             )
 
         df = pd.DataFrame.from_records(table_rows)
+        
+
+        domain_mapping = {
+            project.project_cls.NAME: str(project.project_cls.DOMAIN)
+            for project in get_loaded_paper_config().get_all_case_studies()
+        }
+        df["domain"] = df["project"].apply(lambda x: domain_mapping.get(x, "other"))
 
         # Cache DF
         cache_dataframe("HC-SIG-PLOT", "ALL", df)
 
         return df
 
-    def plot(self, view_mode: bool) -> None:
+    def _add_axis_formatting(self, ax: plt.Axes) -> None:
+
+        # Hide legend
+        plt.legend([], [], frameon=False)
+        # Cut off y at 0,1
+        plt.xlim(0, 1)
+        plt.ylabel("")
+        plt.xlabel("")
+
+        # Percent formatter for y axis
+        plt.gca().xaxis.set_major_formatter(PercentFormatter(1.0))
+
+        # Move y-axis to the right
+        plt.gca().yaxis.set_label_position("right")
+        plt.gca().yaxis.tick_right()
+
+        # Remove ticks for y-axis,
+        # Instead draw the domain name in the middle of the violin plot
+        #tick_names = [item.get_text() for item in ax.get_yticklabels()]
+        #ax.set_yticklabels([])
+        #for i, tick_name in enumerate(tick_names):
+        #    ax.text(
+        #        0.5,
+        #        i+0.525,
+        #        tick_name,
+        #        transform=ax.get_yaxis_transform(),
+        #        ha="center",
+        #        va="center",
+        #        fontsize=6
+        #    )
+
+        # remove y-ticks
+        #ax.tick_params(axis='y', which='both', length=0)
+
+        # Sligthly extend y-axis of plt to the bottom to make space for domain label
+        #ax.margins(y=0.025)
+        # Change font size of y-ticks
+        ax.tick_params(axis='y', labelsize=5, which='both', length=0)
+        # Rotate y-tick labels by 90 degrees and on the right side of the axis
+        ax.set_yticklabels(ax.get_yticklabels(), rotation=90, va="center")
+        # Move closer to the axis
+        ax.yaxis.set_tick_params(pad=2)
+
+        # Change font size of x-ticks
+        ax.tick_params(axis='x', labelsize=6)
+
+    def _add_quartile_lines(self, ax: plt.Axes, q1: float, q2: float, q3: float) -> None:
+        for q in [q1, q3]:
+            ax.axvline(
+                q,
+                color="red",
+                linestyle=":",
+                alpha=0.5,
+                zorder=0,
+                lw=0.75
+            )
+        ax.axvline(
+            q2,
+            color="red",
+            linestyle="--",
+            alpha=0.5,
+            zorder=0,
+            lw=0.75
+        )
+
+        # Add labels for the quartiles
+        # Add them on the left side of the axis, centered on the quartile lines, with a small offset to the left
+        for q, label in zip([q1, q2, q3], ["Q1 (All)", "Median (All)", "Q3 (All)"]):
+            plt.text(
+                q,
+                -0.55,
+                label,
+                color="red",
+                fontsize=5,
+                ha="center",
+                va="bottom",
+                alpha=0.5
+            )
+
+    def _plot_violin_vstack(self) -> None:
         # Load the data
         data = self.load_data()
 
         if data.empty:
             print("No data to plot.")
             return
+
+        def _add_dummy_row(df, domain: str, side: str) -> pd.DataFrame:
+            dummy_row = {
+                "project": "dummy_project",
+                "binary-wl": "dummy_binary_wl",
+                "metric": "dummy_metric",
+                "config_opportunity": "dummy_config_opportunity",
+                "share": -1,
+                "domain": domain,
+                "side": side
+            }
+            return pd.concat([df, pd.DataFrame.from_records([dummy_row])], ignore_index=True)
 
         # Multiple violin plots
         # We want one overall violin plot with a left half violin
@@ -173,28 +271,16 @@ class SignificantAlternativesSharePlot(
         #   - Include a side column that is either "left" for the overall plot or "right" for the domain plots
         # We then use violinplot with x="domain", y="share", hue="side"
             # Add group column for multiple plots
-        domain_mapping = {
-            project.project_cls.NAME: str(project.project_cls.DOMAIN)
-            for project in get_loaded_paper_config().get_all_case_studies()}
-        data["domain"] = data["project"].apply(lambda x: domain_mapping.get(x, "other"))
-        data["side"] = "right"
+        data["side"] = "right2"
 
         # Add one dummy entry per domain for the right side
         for domain in data["domain"].unique():
-            dummy_row = {
-                "project": "dummy_project",
-                "binary-wl": "dummy_binary_wl",
-                "metric": "dummy_metric",
-                "config_opportunity": "dummy_config_opportunity",
-                "share": 0,
-                "domain": domain,
-                "side": "left"
-            }
-            data = pd.concat([data, pd.DataFrame.from_records([dummy_row])], ignore_index=True)
+            data = _add_dummy_row(data, domain, "left1")
+            data = _add_dummy_row(data, domain, "left2")
 
         all_data = data.copy()
         all_data["domain"] = "All"
-        all_data["side"] = "left"
+        all_data["side"] = "right1"
 
         vals = all_data["share"].values
 
@@ -202,58 +288,33 @@ class SignificantAlternativesSharePlot(
 
         data = pd.concat([data, all_data], ignore_index=True)
 
-        dummy_row = {
-            "project": "dummy_project",
-            "binary-wl": "dummy_binary_wl",
-            "metric": "dummy_metric",
-            "config_opportunity": "dummy_config_opportunity",
-            "share": 0,
-            "domain": "All",
-            "side": "right"
-        }
-        data = pd.concat([data, pd.DataFrame.from_records([dummy_row])], ignore_index=True)
+        data = _add_dummy_row(data, "All", "right2")
+        data = _add_dummy_row(data, "All", "left1")
+        data = _add_dummy_row(data, "All", "left2")
 
         # Set figure width based on number of domains
-        plt.figure(figsize=(len(data["domain"].unique()) * 2, 4))
+        plt.figure(figsize=(5, len(data["domain"].unique()) * 0.6))
 
         ax = sns.violinplot(data=data,
-                       x="domain",
-                       y="share",
+                       x="share",
+                       y="domain",
                        hue="side",
                        split=True,
                        inner="quart",
                        bw_method=0.2,
                        order=sorted(data["domain"].unique().tolist()),
-                       hue_order=["left", "right"],
-                       width=0.8,
-                       dodge=False)
+                       hue_order=["right1", "left1","right2", "left2"],
+                       palette={"left1":"lightgray", "right1":sns.color_palette()[0], "left2":"lightgray", "right2":sns.color_palette()[1]},
+                       width=0.9,
+                       dodge=False,
+                            density_norm="width",
+                       orient="h")
 
-        for q in [q1, q3]:
-            ax.axhline(
-                q,
-                color="red",
-                linestyle=":",
-                alpha=0.5,
-                zorder=0
-            )
-        ax.axhline(
-            q2,
-            color="red",
-            linestyle="--",
-            alpha=0.5,
-            zorder=0
-        )
+        self._add_quartile_lines(ax, q1, q2, q3)
+        self._add_axis_formatting(ax)
 
-        # Hide legend
-        plt.legend([], [], frameon=False)
-        # Cut off y at 0,1
-        plt.ylim(0, 1)
-        plt.ylabel("")
-        plt.xlabel("")
-
-        # Percent formatter for y axis
-        plt.gca().yaxis.set_major_formatter(PercentFormatter(1.0))
-
+    def plot(self, view_mode: bool) -> None:
+        self._plot_violin_vstack()
 
 class SignificantAlternativesSharePlotGenerator(
     PlotGenerator,

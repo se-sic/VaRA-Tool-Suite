@@ -76,7 +76,7 @@ class PerfChangeSummaryPlot(Plot, plot_name="hc-perf-change-summary"):
         plot_data = _load_data_for_case_studies(case_studies)
 
         # Create box plot
-        sns.boxplot(x="project", y="value_relative_mean", data=plot_data)
+        sns.boxplot(x="project", y="value_relative_mean", data=plot_data, color="orange")
 
         # Add percent formatter to y-axis
         plt.gca().yaxis.set_major_formatter(
@@ -85,6 +85,10 @@ class PerfChangeSummaryPlot(Plot, plot_name="hc-perf-change-summary"):
 
         plt.title("")
         plt.ylabel("Relative Performance Change (%)")
+        # Y-Label right side of the plot
+        plt.gca().yaxis.set_label_position("right")
+        # Y-ticks right side of the plot
+        plt.gca().yaxis.tick_right()
         plt.xlabel("")
         plt.xticks()
         plt.tight_layout()

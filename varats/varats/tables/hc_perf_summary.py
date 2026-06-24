@@ -16,6 +16,7 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.tables.hc_latex_table_constants import reformat_project_column
 
 
 def _extract_significance_data_for_subset(
@@ -294,7 +295,7 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
                 # Add dummy row with N/A values for all metrics
                 table_rows.append({
                     "Name": cs.project_name,
-                    "|O|": None,
+                    #"|O|": None,
                     "|A|": None,
                     "|S|": None,
                     "|P|": None,
@@ -314,7 +315,7 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
 
             new_row = {
                 "Name": cs.project_name,
-                "|O|": num_opportunities,
+                #"|O|": num_opportunities,
                 "|A|": 0,
                 "|S|": num_settings,
                 "|P|": len(cs_data),
@@ -352,9 +353,8 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
 
             table_rows.append(new_row)
 
-        df = pd.DataFrame(table_rows).set_index("Name")
-
-        df = df.sort_index()
+        df = pd.DataFrame(table_rows)
+        df = df.sort_values(by="Name")
 
         # Convert Range column to percentages
         # Prepend + sign to positive numbers for better readability
@@ -369,17 +369,22 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
 
         kwargs = {}
         if table_format == TableFormat.LATEX:
+            reformat_project_column(df, column_name="Name")
+            df = df.set_index("Name")
+
             df = df.rename(columns={
-                "|O|": r"$|\symOpportunities_{\symProject}|$",
+                #"|O|": r"$|\symOpportunities_{\symProject}|$",
                 "|A|": r"$|\symAlternatives_{\symProject}|$",
                 "|S|": r"$|\symSettings_{\symProject}|$",
                 "|I|": r"\symNumSig{}",
                 "|I+|": r"\symNumSigPos{}",
                 "|I-|": r"$\symNumSigNeg{}$",
+                "|P|": r"$|\symMeasurements{}{}{\symProject}|$",
             },
-            index={
-                                 "Name": r"\textsc{\symProject}"
-            })
+            index={"Name": ""})
+
+            # Escape percent signs in the Range column for LaTeX
+            df["Range"] = df["Range"].apply(lambda x: x.replace("%", r"\%") if isinstance(x, str) else x)
 
             #df["Project"] = df["Project"].apply(lambda x: f"\\textsc{{{x}}}")
             #df = reformat_project_column(df, column_name="Name")
