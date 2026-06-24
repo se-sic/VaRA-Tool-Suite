@@ -11,6 +11,7 @@ from scipy.stats import mannwhitneyu, ttest_ind, kruskal
 
 from varats.data.cache_helper import cache_dataframe, load_cached_df_or_none
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
+from varats.data.reports.testsuite_report import MPTestReport
 from varats.experiments.base.run_workloads import RunPatchedWorkloads
 from varats.experiments.hidden_config.benchbase_experiments import (
     BenchbaseHiddenConfig,
@@ -32,6 +33,7 @@ from varats.projects.cpp_projects.duckdb import DuckDBMPReport, DuckDBBenchmarkA
 from varats.projects.cpp_projects.libzmq import LibZMQMPReport, LibZMQWLAggregate
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
+from varats.utils.testsuite_utils import TestResult
 
 CACHE_DATA_ID = "hc_database"
 
@@ -220,7 +222,7 @@ def group_kruskal_wallis(df: pd.DataFrame,
         return pd.Series({"min_value_relative_mean": np.nanmin(means),
                           "max_value_relative_mean": np.nanmax(means)})
 
-    summary = df.groupby(group_by).apply(kruskal_wallis)
+    summary = df[df["config_opportunity"]!="__baseline__"].groupby(group_by).apply(kruskal_wallis)
     minmax_summary = df.groupby(group_by).apply(means_min_max)
 
     return pd.concat([summary, minmax_summary], axis=1)
@@ -295,7 +297,7 @@ def calculate_kruskal_wallis_summary(df: pd.DataFrame) -> pd.DataFrame:
 
         num_settings = setting_summary.ngroups
         num_settings_total = base_data[base_data["project"] == p]["num_settings"].array[0]
-        setting_results = group_kruskal_wallis(df, group_by=["binary-wl", "metric", "config_id"])
+        setting_results = group_kruskal_wallis(project_df, group_by=["binary-wl", "metric", "config_id"])
         setting_results["mean_diff"] = setting_results["max_value_relative_mean"] - setting_results[
             "min_value_relative_mean"]
 
@@ -309,7 +311,7 @@ def calculate_kruskal_wallis_summary(df: pd.DataFrame) -> pd.DataFrame:
         num_conf_alts = config_alt_summary.ngroups
         num_conf_alts_total = base_data[base_data["project"]==p]["num_config_alts"].values[0]
 
-        config_alt_results = group_kruskal_wallis(df, ["config_opprtunity", "variation"])
+        config_alt_results = group_kruskal_wallis(project_df, ["config_opportunity", "variation"])
         config_alt_results["mean_diff"] = config_alt_results["max_value_relative_mean"] - config_alt_results["min_value_relative_mean"]
 
         sig_alts = filter_significant_kruskal_wallis(config_alt_results)
@@ -334,27 +336,70 @@ def calculate_kruskal_wallis_summary(df: pd.DataFrame) -> pd.DataFrame:
 
 def _add_testsuite_info(
     df: pd.DataFrame,
-    cs: CaseStudy,
-    config_id: tp.Optional[int] = None
+    cs: CaseStudy
 ) -> pd.DataFrame:
     result_files = get_processed_revisions_files(
         cs.project_name,
         TestPatchVariations,
         TestPatchVariations.report_spec().main_report,
         get_case_study_file_name_filter(cs),
-        config_id=config_id,
         only_newest=False,
     )
 
-    if len(result_files) != 1:
-        print(
-            f"Expected exactly one result file for TestPatchVariations, but found {len(result_files)} for {cs.project_name} ({config_id=})"
-        )
-        return df
+    def _is_equivalent(base_results, patched_results) -> bool:
+        for test_name, base_status in base_results.items():
+            if test_name not in patched_results:
+                # Not sure how that would happen, but ignore
+                continue
 
-    report: TestPatchVariations = MPTextReport(result_files[0].full_path())
-    ...
-    #TODO: Implement this function to add testsuite information to the DataFrame based on the report
+            patched_status = patched_results[test_name]
+
+            # We are mostly interested in cases where the base test passed,
+            # but the patched test failed in some way
+            if base_status == TestResult.PASSED and patched_status in {
+                TestResult.FAILED, TestResult.TIMEOUT, TestResult.UNKNOWN
+            }:
+                return False
+
+        return True
+
+    if len(result_files) != 1:
+        print(f"More than one result for {cs.project_name}. Using the first one.")
+
+    report: MPTestReport = MPTestReport(result_files[0].full_path())
+
+    __TEST_TO_IGNORE: tp.Dict[str, tp.List[str]] = {
+        "libzmq": ["(empty).test_hwm", "(empty).test_hwm_pubsub"],
+        "brotli": [],
+        "libvpx": [],
+        "FastDownward": [],
+        "DunePerfRegression": []
+    }
+    def _cleanup(results: tp.Dict[str, TestResult]) -> tp.Dict[str, TestResult]:
+        if cs.project_name in __TEST_TO_IGNORE:
+            for test_name in __TEST_TO_IGNORE[cs.project_name]:
+                if test_name in results:
+                    results.pop(test_name)
+
+        return results
+
+    base_report = report.get_baseline_report()
+    base_results = _cleanup(base_report.results)
+
+    df["testsuite_equivalent"] = None
+
+    for patch_name in report.get_patch_names():
+        patched_report = report.get_report_for_patch(patch_name)
+        patched_results = _cleanup(patched_report.results)
+
+        opportunity, variation = extract_config_point(patched_report.filename.filename)
+
+        # Add a column for the testsuite result
+        df.loc[
+            (df["config_opportunity"] == opportunity) &
+            (df["variation"] == variation),
+            "testsuite_equivalent"
+        ] = _is_equivalent(base_results, patched_results)
 
     return df
 
@@ -833,7 +878,28 @@ def aggregate_data_for_cs(
 
     result_df = add_significance_values(result_df)
 
-    return result_df
+    if cs.project_name not in ["libzmq"]:
+        result_df = _add_testsuite_info(result_df, cs)
+    else:
+        print(f"Could not add testsuite information for {cs.project_name}. Filling with None.")
+        result_df["testsuite_equivalent"] = True
+
+    # DEBUG: Print the number of rows where testsuite_equivalent is False
+    num_false = result_df[result_df["testsuite_equivalent"] == False].shape[0]
+    print(f"Number of rows where testsuite_equivalent is False: {num_false}")
+
+    num_none = result_df[(result_df["testsuite_equivalent"].isna()) & (result_df["config_opportunity"] != "__baseline__")].shape[0]
+    print(f"Number of none-baseline rows where testsuite_equivalent is None: {num_none}")
+
+    num_true = result_df[result_df["testsuite_equivalent"] == True].shape[0]
+    print(f"Number of rows where testsuite_equivalent is True: {num_true}")
+
+    # Filter out non-baseline rows where testsuite_equivalent is None
+    # This indicates a failure in the testsuite run which leads to no results being available for comparison.
+    result_df = result_df[~((result_df["testsuite_equivalent"].isna()) & (result_df["config_opportunity"] != "__baseline__"))]
+
+    # Only return rows where testsuite_equivalent is True or None (not False)
+    return result_df[result_df["testsuite_equivalent"].isin([True, None])]
 
 
 def create_config_opportunities_value_map(
