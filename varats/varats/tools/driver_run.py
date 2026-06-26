@@ -233,6 +233,7 @@ def _get_environment_variables(
         ]
 
     env = {k: str(to_yaml(v)) for k, v in bb_cfg().to_env_dict().items()}
+    env["PYTHONPATH"] = ":".join(sys.path)
     if white_list:
         env |= {
             k: str(to_yaml(v))

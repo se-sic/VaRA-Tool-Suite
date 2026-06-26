@@ -32,7 +32,7 @@ jobs:
       run: |
         echo $BB_TMP_DIR
         mkdir -p benchbuild
-        coverage run -p -m pytest varats varats-core tests
+        coverage run -p -m pytest varats varats-core tests --ignore=tests/TEST_INPUTS
         rm -rf benchbuild
 
     - name: Combine Coverage
