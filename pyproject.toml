@@ -201,6 +201,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*" = ["D"]
+"varats/varats/projects/**/*" = ["RUF012"]
 
 [tool.ruff.lint.pydocstyle]
 # Use Google-style docstrings.
