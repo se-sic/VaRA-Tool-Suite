@@ -46,6 +46,7 @@ class Fmt(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash,
     ) -> list[ProjectBinaryWrapper]:
+        """Returns a list of binaries for the given revision."""
         binary_map = RevisionBinaryMap(get_local_project_repo(Fmt.NAME))
 
         binary_map.specify_binary('build/libfmt.a', BinaryType.STATIC_LIBRARY)
@@ -53,6 +54,7 @@ class Fmt(VProject):
         return binary_map[revision]
 
     def run_tests(self) -> None:
+        """Run the tests for the project."""
         pass
 
     def compile(self) -> None:
