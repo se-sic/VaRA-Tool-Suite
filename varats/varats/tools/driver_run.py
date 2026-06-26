@@ -21,7 +21,6 @@ from benchbuild.utils.settings import to_yaml
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
 
-from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension
@@ -35,6 +34,9 @@ from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg, vara_cfg
 
 if tp.TYPE_CHECKING:
+    from varats.paper.case_study import CaseStudy
+
+if tp.TYPE_CHECKING:
     # pylint: disable=unused-import
     from varats.experiment.experiment_util import VersionExperiment
 
@@ -45,8 +47,8 @@ __INTERACTIVE_ARG_STR = "--interactive"
 
 
 def __validate_project_parameters(
-    ctx: click.Context | None,
-    param: click.Parameter | None,
+    ctx: click.Context | None,  # noqa: ARG001
+    param: click.Parameter | None,  # noqa: ARG001
     value: tuple[str, ...],
 ) -> tuple[str, ...]:
     """
@@ -333,7 +335,7 @@ def __render_slurm_script_template(
     )
     template = env.get_template("slurm_container.sh.inc")
 
-    with open(output_path, 'w') as slurm2:
+    with Path.open(output_path, 'w') as slurm2:
         slurm2.write(
             template.render(vara_config=[f"export {x}" for x in env_vars])
         )
