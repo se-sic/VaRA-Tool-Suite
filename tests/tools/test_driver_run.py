@@ -79,7 +79,7 @@ class TestDriverRun(unittest.TestCase):
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     @mock.patch("varats.tools.driver_run.sbatch")
-    def test_bb_run_slurm_and_container(self, mock_sbatch) -> None:
+    def test_bb_run_slurm_and_container(self, mock_sbatch) -> None:  # noqa: ARG002
         runner = CliRunner()
         vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
         # needed so we see the paper config

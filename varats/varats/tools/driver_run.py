@@ -13,6 +13,7 @@ import sys
 import typing as tp
 from pathlib import Path
 from subprocess import PIPE
+from typing import TYPE_CHECKING
 
 import click
 import jinja2
@@ -21,7 +22,9 @@ from benchbuild.utils.settings import to_yaml
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
 
-from varats.paper.case_study import CaseStudy
+if TYPE_CHECKING:
+    from varats.paper.case_study import CaseStudy
+
 from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension
@@ -286,7 +289,7 @@ def __render_slurm_script_template(
     )
     template = env.get_template("slurm_container.sh.inc")
 
-    with open(output_path, 'w') as slurm2:
+    with Path.open(output_path, 'w') as slurm2:
         slurm2.write(
             template.render(vara_config=[f"export {x}" for x in env_vars])
         )

@@ -7,7 +7,6 @@ modifiable via environment variable.
 
 import sys
 import typing as tp
-from os import path
 from pathlib import Path
 
 import benchbuild.utils.settings as s
@@ -355,7 +354,7 @@ def save_config() -> None:
     else:
         config_file = str(vara_cfg()["config_file"])
 
-    vara_cfg()["config_file"] = path.abspath(config_file)
+    vara_cfg()["config_file"] = str(Path(config_file).resolve())
     create_missing_folders()
     vara_cfg().store(LocalPath(config_file))
 
