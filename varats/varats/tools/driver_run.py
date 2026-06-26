@@ -13,7 +13,6 @@ import sys
 import typing as tp
 from pathlib import Path
 from subprocess import PIPE
-from typing import TYPE_CHECKING
 
 import click
 import jinja2
@@ -21,9 +20,6 @@ from benchbuild.utils.cmd import benchbuild, sbatch
 from benchbuild.utils.settings import to_yaml
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
-
-if TYPE_CHECKING:
-    from varats.paper.case_study import CaseStudy
 
 from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
@@ -38,8 +34,8 @@ from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg, vara_cfg
 
 if tp.TYPE_CHECKING:
-    # pylint: disable=unused-import
     from varats.experiment.experiment_util import VersionExperiment
+    from varats.paper.case_study import CaseStudy
 
 LOG = logging.Logger(__name__)
 
