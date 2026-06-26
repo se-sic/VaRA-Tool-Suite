@@ -63,6 +63,7 @@ VaRA-TS Docs
 
    vara-ts/pipeline-overview
    vara-ts/vara-buildsetup
+   vara-ts/vara-external
    vara-ts-api/tools.rst
    vara-ts/benchbuild
    vara-ts/slurm
