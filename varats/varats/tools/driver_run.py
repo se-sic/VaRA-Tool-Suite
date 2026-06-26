@@ -4,6 +4,7 @@ Driver module for `vara-container`.
 This module handles command-line parsing and maps the commands to tool suite
 internal functionality.
 """
+
 import getpass
 import itertools
 import logging
@@ -20,32 +21,33 @@ from benchbuild.utils.settings import to_yaml
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
 
-from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension
 from varats.ts_utils.cli_util import initialize_cli_tool, tee
 from varats.ts_utils.click_param_types import (
-    create_multi_experiment_type_choice,
     EnumChoice,
+    create_multi_experiment_type_choice,
 )
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg, vara_cfg
 
 if tp.TYPE_CHECKING:
-    # pylint: disable=unused-import
     from varats.experiment.experiment_util import VersionExperiment
+    from varats.paper.case_study import CaseStudy
 
 LOG = logging.Logger(__name__)
 
 __SLURM_SCRIPT_PATTERN = re.compile(r"SLURM script written to (.*\.sh)")
+__INTERACTIVE_ARG_STR = "--interactive"
 
 
 def __validate_project_parameters(
-    ctx: tp.Optional[click.Context], param: tp.Optional[click.Parameter],
-    value: tp.Tuple[str, ...]
-) -> tp.Tuple[str, ...]:
+    ctx: click.Context | None,  # noqa: ARG001
+    param: click.Parameter | None,  # noqa: ARG001
+    value: tuple[str, ...],
+) -> tuple[str, ...]:
     """
     Sanity-check project/version specification.
 
@@ -59,8 +61,8 @@ def __validate_project_parameters(
         project = split_input[0]
         version = split_input[1] if len(split_input) > 1 else None
 
-        projects: tp.Set[str] = set()
-        case_studies: tp.List[CaseStudy] = []
+        projects: set[str] = set()
+        case_studies: list[CaseStudy] = []
         try:
             paper_config = get_paper_config()
             case_studies = paper_config.get_all_case_studies()
@@ -100,7 +102,7 @@ def __validate_project_parameters(
     "--experiment",
     type=create_multi_experiment_type_choice(),
     required=True,
-    help="The experiment to run."
+    help="The experiment to run.",
 )
 @click.option("-p", "--pretend", is_flag=True, help="Do not run experiments.")
 @click.option(
@@ -108,14 +110,14 @@ def __validate_project_parameters(
     "--white-list",
     type=EnumChoice(FileStatusExtension, case_sensitive=False),
     multiple=True,
-    help="Override the file status whitelist."
+    help="Override the file status whitelist.",
 )
 @click.option(
     "-bl",
     "--black-list",
     type=EnumChoice(FileStatusExtension, case_sensitive=False),
     multiple=True,
-    help="Override the file status blacklist."
+    help="Override the file status blacklist.",
 )
 @click.argument("projects", nargs=-1, callback=__validate_project_parameters)
 def main(
@@ -124,11 +126,11 @@ def main(
     submit: bool,
     container: bool,
     debug: bool,
-    experiment: tp.List[tp.Type['VersionExperiment']],
-    projects: tp.List[str],
+    experiment: list[type['VersionExperiment']],
+    projects: list[str],
     pretend: bool,
-    white_list: tp.List[FileStatusExtension],
-    black_list: tp.List[FileStatusExtension],
+    white_list: list[FileStatusExtension],
+    black_list: list[FileStatusExtension],
 ) -> None:
     """
     Run benchbuild experiments.
@@ -137,18 +139,8 @@ def main(
     restrict this to only certain projects or even revisions using BenchBuild-
     style project selectors: <project>[@<revision>]
     """
-    # pylint: disable=too-many-branches
     initialize_cli_tool()
     initialize_projects()
-
-    bb_command_args: tp.List[str] = ["--force-watch-unbuffered"]
-    bb_extra_args: tp.List[str] = []
-
-    if sys.stdout.isatty():
-        bb_command_args.append("--force-tty")
-
-    if verbose:
-        bb_command_args.append("-" + ("v" * verbose))
 
     if pretend:
         click.echo("Running in pretend mode. No experiments will be executed.")
@@ -156,9 +148,40 @@ def main(
         slurm = False
         container = False
 
-    if slurm:
-        bb_command_args.append("slurm")
+    bb_command_args = _build_bb_command_args(container, pretend, slurm, verbose)
 
+    bb_extra_args = _build_bb_extra_args(container, debug, slurm)
+
+    if not projects:
+        projects = list(
+            {
+                cs.project_name
+                for cs in get_paper_config().get_all_case_studies()
+            }
+        )
+
+    bb_args = list(
+        itertools.chain(
+            bb_command_args,
+            *[["-E", e.NAME] for e in experiment],
+            projects,
+            bb_extra_args,
+        )
+    )
+
+    if __INTERACTIVE_ARG_STR in bb_args:
+        _run_benchbuild_interactive(bb_args)
+    else:
+        env = _get_environment_variables(black_list, white_list)
+        stdout = _run_benchbuild_non_interactive(bb_args, env)
+        if slurm:
+            _handle_slurm_output(stdout, submit)
+
+
+def _build_bb_extra_args(
+    container: bool, debug: bool, slurm: bool
+) -> list[str]:
+    bb_extra_args: list[str] = []
     if container:
         if slurm:
             __prepare_slurm_for_container()
@@ -166,10 +189,39 @@ def main(
             if bb_cfg()["container"]["import"].value:
                 bb_extra_args.append("--import")
         else:
-            bb_command_args.append("container")
             if debug:
                 bb_extra_args.append("--debug")
-                bb_extra_args.append("--interactive")
+                bb_extra_args.append(__INTERACTIVE_ARG_STR)
+    return bb_extra_args
+
+
+def _build_bb_command_args(
+    container: bool, pretend: bool, slurm: bool, verbose: int
+) -> list[str]:
+    bb_command_args: list[str] = ["--force-watch-unbuffered"]
+    if sys.stdout.isatty():
+        bb_command_args.append("--force-tty")
+
+    if verbose:
+        bb_command_args.append("-" + ("v" * verbose))
+
+    if slurm:
+        bb_command_args.append("slurm")
+    else:
+        if container:
+            bb_command_args.append("container")
+
+        bb_command_args.append("run")
+
+    if pretend:
+        bb_command_args.append("-p")
+    return bb_command_args
+
+
+def _get_environment_variables(
+    white_list: list[FileStatusExtension],
+    black_list: list[FileStatusExtension],
+) -> dict[str, str]:
 
     if white_list:
         vara_cfg()["experiment"]["file_status_whitelist"] = [
@@ -180,36 +232,42 @@ def main(
             x.nice_name() for x in black_list
         ]
 
-    if not slurm:
-        bb_command_args.append("run")
-
-    if pretend:
-        bb_command_args.append("-p")
-
-    if not projects:
-        projects = list({
-            cs.project_name for cs in get_paper_config().get_all_case_studies()
-        })
-
-    bb_args = list(
-        itertools.chain(
-            bb_command_args, *[["-E", e.NAME] for e in experiment], projects,
-            bb_extra_args
-        )
-    )
-
     env = {k: str(to_yaml(v)) for k, v in bb_cfg().to_env_dict().items()}
     if white_list:
         env |= {
-            k: str(to_yaml(v)) for k, v in vara_cfg()["experiment"]
-            ["file_status_whitelist"].to_env_dict().items()
+            k: str(to_yaml(v))
+            for k, v in vara_cfg()["experiment"]["file_status_whitelist"]
+            .to_env_dict()
+            .items()
         }
     if black_list:
         env |= {
-            k: str(to_yaml(v)) for k, v in vara_cfg()["experiment"]
-            ["file_status_blacklist"].to_env_dict().items()
+            k: str(to_yaml(v))
+            for k, v in vara_cfg()["experiment"]["file_status_blacklist"]
+            .to_env_dict()
+            .items()
         }
+    return env
 
+
+def _run_benchbuild_interactive(bb_args: list[str]) -> None:
+    """Run benchbuild in interactive foreground mode."""
+    with local.cwd(vara_cfg()["benchbuild_root"].value):
+        try:
+            benchbuild[bb_args].run_fg()
+        except ProcessExecutionError:
+            sys.exit(1)
+
+
+def _run_benchbuild_non_interactive(
+    bb_args: list[str], env: dict[str, str]
+) -> str:
+    """
+    Run benchbuild in background mode.
+
+    Returns:
+        stdout from benchbuild execution
+    """
     with local.cwd(vara_cfg()["benchbuild_root"].value):
         try:
             with benchbuild[bb_args].bgrun(
@@ -217,6 +275,7 @@ def main(
             ) as bb_proc:
                 try:
                     _, stdout, _ = tee(bb_proc)
+                    return stdout
                 except KeyboardInterrupt:
                     # wait for BB to complete when Ctrl-C is pressed
                     retcode, _, _ = tee(bb_proc)
@@ -224,31 +283,30 @@ def main(
         except ProcessExecutionError:
             sys.exit(1)
 
-    if slurm:
-        match = __SLURM_SCRIPT_PATTERN.search(stdout)
-        if match:
-            slurm_script = match.group(1)
-            if submit:
-                click.echo(
-                    f"Submitting slurm script via sbatch: {slurm_script}"
-                )
-                sbatch(slurm_script)
-            else:
-                click.echo(
-                    f"Run the following command to submit the slurm:\n"
-                    f"sbatch {slurm_script}"
-                )
+
+def _handle_slurm_output(stdout: str, submit: bool) -> None:
+    """Handle slurm script output and submission."""
+    if match := __SLURM_SCRIPT_PATTERN.search(stdout):
+        slurm_script = match.group(1)
+        if submit:
+            click.echo(f"Submitting slurm script via sbatch: {slurm_script}")
+            sbatch(slurm_script)
         else:
-            click.echo("Could not find slurm script.")
-            sys.exit(1)
+            click.echo(
+                f"Run the following command to submit the slurm:\n"
+                f"sbatch {slurm_script}"
+            )
+    else:
+        click.echo("Could not find slurm script.")
+        sys.exit(1)
 
 
 def __prepare_slurm_for_container() -> None:
     """Prepare the benchbuild slurm config for container use."""
     node_dir = f"/tmp/{getpass.getuser()}"
-    template_path = Path(
-        str(vara_cfg()["benchbuild_root"])
-    ) / "slurm_container.sh.inc"
+    template_path = (
+        Path(str(vara_cfg()["benchbuild_root"])) / "slurm_container.sh.inc"
+    )
     bb_cfg()["jobs"] = 0
     bb_cfg()["slurm"]["template"] = str(template_path)
     bb_cfg()["slurm"]["node_dir"] = node_dir
@@ -256,16 +314,17 @@ def __prepare_slurm_for_container() -> None:
     bb_cfg()["slurm"]["container_runroot"] = f"{node_dir}/containers/run"
 
     __render_slurm_script_template(
-        template_path, [
+        template_path,
+        [
             repr(vara_cfg()["paper_config"]["folder"]),
             repr(vara_cfg()["paper_config"]["current_config"]),
-            repr(vara_cfg()["container"]["research_tool"])
-        ]
+            repr(vara_cfg()["container"]["research_tool"]),
+        ],
     )
 
 
 def __render_slurm_script_template(
-    output_path: Path, env_vars: tp.List[str]
+    output_path: Path, env_vars: list[str]
 ) -> None:
     loader = jinja2.PackageLoader('varats.tools', 'templates')
     env = jinja2.Environment(
@@ -273,7 +332,7 @@ def __render_slurm_script_template(
     )
     template = env.get_template("slurm_container.sh.inc")
 
-    with open(output_path, 'w') as slurm2:
+    with Path.open(output_path, 'w') as slurm2:
         slurm2.write(
             template.render(vara_config=[f"export {x}" for x in env_vars])
         )
