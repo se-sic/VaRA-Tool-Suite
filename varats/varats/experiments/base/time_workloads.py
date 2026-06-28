@@ -68,7 +68,7 @@ class TimeProjectWorkloads(OutputFolderStep):
 
                 with cleanup(prj_command):
                     try:
-                        run_cmd(retcode=self.__binary.valid_exit_codes)
+                        bb.watch(run_cmd)(retcode=self.__binary.valid_exit_codes)
                     except ProcessExecutionError as e:
                         print(f"{e.stdout=}")
                         print(f"{e.stderr=}")

@@ -95,14 +95,16 @@ class LibZQMBenchmarkPlot(Plot, plot_name="libzmq_benchmark"):
                     message_data['throughput_mb'],
                     label=f'{int(hwm)} (Default)',
                     marker='*',
-                    zorder=10
+                    zorder=10,
+                    s=125
                 )
                 continue
             plt.scatter(
                 message_data['message_size'],
                 message_data['throughput_mb'],
                 label=f'{int(hwm)}',
-                zorder=1
+                zorder=1,
+                s=125
             )
 
             # Print relative improvement compared to baseline
@@ -118,7 +120,7 @@ class LibZQMBenchmarkPlot(Plot, plot_name="libzmq_benchmark"):
         plt.ylabel('Throughput (MB/s)')
         plt.xscale('log', base=2)
         plt.yscale('log', base=10)
-        plt.legend(title="default_hwm",alignment="left")
+        plt.legend(title="Configuration Alternative",alignment="left")
         plt.xticks([2**i for i in range(10, 20)])
 
 

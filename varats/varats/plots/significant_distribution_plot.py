@@ -1,4 +1,5 @@
 import typing as tp
+from enum import Enum
 
 import numpy as np
 import pandas as pd
@@ -150,13 +151,6 @@ class SignificantAlternativesSharePlot(
             )
 
         df = pd.DataFrame.from_records(table_rows)
-        
-
-        domain_mapping = {
-            project.project_cls.NAME: str(project.project_cls.DOMAIN)
-            for project in get_loaded_paper_config().get_all_case_studies()
-        }
-        df["domain"] = df["project"].apply(lambda x: domain_mapping.get(x, "other"))
 
         # Cache DF
         cache_dataframe("HC-SIG-PLOT", "ALL", df)
@@ -250,6 +244,12 @@ class SignificantAlternativesSharePlot(
             print("No data to plot.")
             return
 
+        domain_mapping = {
+            project.project_cls.NAME: str(project.project_cls.DOMAIN)
+            for project in get_loaded_paper_config().get_all_case_studies()
+        }
+        data["domain"] = data["project"].apply(lambda x: domain_mapping.get(x, "other"))
+
         def _add_dummy_row(df, domain: str, side: str) -> pd.DataFrame:
             dummy_row = {
                 "project": "dummy_project",
@@ -293,7 +293,7 @@ class SignificantAlternativesSharePlot(
         data = _add_dummy_row(data, "All", "left2")
 
         # Set figure width based on number of domains
-        plt.figure(figsize=(5, len(data["domain"].unique()) * 0.6))
+        plt.figure(figsize=(5, len(data["domain"].unique()) * 1.2))
 
         ax = sns.violinplot(data=data,
                        x="share",
@@ -313,8 +313,113 @@ class SignificantAlternativesSharePlot(
         self._add_quartile_lines(ax, q1, q2, q3)
         self._add_axis_formatting(ax)
 
+    def _plot_sven(self):
+        # Load the data
+        data = self.load_data()
+
+        if data.empty:
+            print("No data to plot.")
+            return
+
+        domain_mapping = {
+            project.project_cls.NAME: str(project.project_cls.DOMAIN)
+            for project in get_loaded_paper_config().get_all_case_studies()
+        }
+        data["domain"] = data["project"].apply(lambda x: domain_mapping.get(x, "other"))
+
+        all_data = data.copy()
+        all_data["domain"] = "All"
+
+        class Variant(Enum):
+            SingleColumn = 1
+            DoubleColumn = 2
+            Funky = 3
+
+        variant = Variant(3)
+
+        match variant:
+            case Variant.DoubleColumn:
+                fig = plt.figure(figsize=(10, 2))
+                # Variant B: Double-column mode. All domains as 2x2 on the left, then three domains per row on the right
+                grid_spec = fig.add_gridspec(nrows=2, ncols=5)
+                all_axis = fig.add_subplot(grid_spec[0:2, 0:2])
+                domain_axes = [fig.add_subplot(grid_spec[i // 3, 2 + (i % 3)]) for i in range(len(data["domain"].unique()))]
+            case Variant.Funky:
+                # A bit of a funky grid:
+                #
+                # A  A  A  D1
+                # A  A  A  D2
+                # D3 D4 D5 D6
+                #
+                # Where A is the all domains plot and D1-D6 are the domain plots
+                fig = plt.figure(figsize=(8, 4.5))
+
+                grid_spec = fig.add_gridspec(nrows=3, ncols=4, wspace=0.2)
+                all_axis = fig.add_subplot(grid_spec[0:2, 0:3])
+
+                domain_axes = [fig.add_subplot(grid_spec[0, 3]), fig.add_subplot(grid_spec[1, 3]), fig.add_subplot(grid_spec[2, 0]), fig.add_subplot(grid_spec[2, 1]), fig.add_subplot(grid_spec[2, 2]), fig.add_subplot(grid_spec[2, 3])]
+            case Variant.SingleColumn:
+                fig = plt.figure()
+                # Variant A: All domains at top, then three domains per row below
+                grid_spec = fig.add_gridspec(nrows=3, ncols=3)
+                all_axis = fig.add_subplot(grid_spec[0, :])
+                domain_axes = [fig.add_subplot(grid_spec[1 + (i // 3), i % 3]) for i in range(len(data["domain"].unique()))]
+
+        def _format_axis(ax: plt.Axes) -> None:
+            # Hide legend
+            ax.legend([], [], frameon=False)
+            # Cut off x at 0,1
+            ax.set_xlim(0,1)
+            ax.set_ylabel("")
+            ax.set_xlabel("")
+
+            # Percent formatter for y axis
+            ax.xaxis.set_major_formatter(PercentFormatter(1.0))
+            # Move xticks closer to the axis
+            ax.xaxis.set_tick_params(pad=2)
+
+            # Format xticks
+            ax.tick_params(axis='x', labelsize=8)
+            ax.tick_params(axis='y', which='both', length=0)
+
+
+        sns.violinplot(data=data,
+                       x="share",
+                       split=True,
+                       inner="quart",
+                       bw_method=0.2,
+                       width=0.9,
+                       dodge=False,
+                       density_norm="width",
+                       orient="h",
+                       ax=all_axis)
+
+        all_axis.set_title("All Domains", fontsize=16, y=1.0, pad=-18)
+
+        _format_axis(all_axis)
+
+        for i, domain in enumerate(data["domain"].unique()):
+            domain_axis = domain_axes[i]
+
+            sns.violinplot(data=data[data["domain"] == domain],
+                           x="share",
+                           split=True,
+                           inner="quart",
+                           bw_method=0.2,
+                           width=0.9,
+                           dodge=False,
+                           density_norm="width",
+                           orient="h",
+                           ax=domain_axis,
+                           color=sns.color_palette()[1])
+            _format_axis(domain_axis)
+
+            domain_axis.set_title(domain, fontsize=11, y=1.0, pad=-13)
+
+
+
     def plot(self, view_mode: bool) -> None:
-        self._plot_violin_vstack()
+        self._plot_sven()
 
 class SignificantAlternativesSharePlotGenerator(
     PlotGenerator,

@@ -299,7 +299,7 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
         style = df.style.hide(axis="index")
         if table_format == TableFormat.LATEX:
             # Format LOC with thousands separator
-            df["LOC"] = df["LOC"].apply(lambda x: f"{x:,}")
+            df["LOC"] = df["LOC"].apply(lambda x: f"{x:,}".replace(",", r"\,"))
 
             # Wrap project names in \textsc{}
             df = reformat_project_column(df, column_name="Project")

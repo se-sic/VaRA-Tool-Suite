@@ -78,6 +78,9 @@ class PerfChangeSummaryPlot(Plot, plot_name="hc-perf-change-summary"):
         # Create box plot
         sns.boxplot(x="project", y="value_relative_mean", data=plot_data, color="orange")
 
+        # light gray dashed horizontal line at y=0
+        plt.axhline(y=0, color='lightgray', alpha=0.6, linestyle='--')
+
         # Add percent formatter to y-axis
         plt.gca().yaxis.set_major_formatter(
             PercentFormatter(decimals=0,xmax=1)
@@ -91,6 +94,12 @@ class PerfChangeSummaryPlot(Plot, plot_name="hc-perf-change-summary"):
         plt.gca().yaxis.tick_right()
         plt.xlabel("")
         plt.xticks()
+
+        # Increase font size of ticks
+        plt.xticks(fontsize=11.5)
+        plt.yticks(fontsize=11.5)
+        # Increase font size of y-label
+        plt.gca().yaxis.label.set_size(14)
         plt.tight_layout()
 
 class PerfChangeSummaryPlotGenerator(PlotGenerator,

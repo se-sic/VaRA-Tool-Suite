@@ -261,7 +261,6 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
     performance impacts of the configuration opportunity.
     We report, for each subject system:
     - The name of the subject system
-    - The number of configuration opportunities (|O|)
     - The total number of alternatives across all opportunitites (|A|)
     - The number of settings considered (|S|)
     - The total number of significant performance impacts (|I|)
@@ -356,40 +355,42 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
         df = pd.DataFrame(table_rows)
         df = df.sort_values(by="Name")
 
-        # Convert Range column to percentages
-        # Prepend + sign to positive numbers for better readability
-        def format_range(
-            range_tuple: tuple[float | str, float | str]
-        ) -> str:
-            if range_tuple[0] == "N/A" or range_tuple[1] == "N/A":
-                return "N/A"
-            return f"({range_tuple[0]:+.2%}, {range_tuple[1]:+.2%})"
-
-        df["Range"] = df["Range"].apply(format_range)
-
         kwargs = {}
         if table_format == TableFormat.LATEX:
             reformat_project_column(df, column_name="Name")
             df = df.set_index("Name")
 
+            def format_range(
+                    range_tuple: tuple[float | str, float | str]
+            ) -> str:
+                if range_tuple[0] == "N/A" or range_tuple[1] == "N/A":
+                    return "N/A"
+                return f"{range_tuple[0]:+.2%} -- {range_tuple[1]:+.2%}"
+
+            # Escape percent signs in the Range column for LaTeX
+            df["Range"] = (df["Range"].apply(format_range)
+                           .apply(lambda x: x.replace("%", r"\%") if isinstance(x, str) else x))
+
+            # Reformat number columns to have half spaces for 1000s
+            for col in ["|A|", "|S|", "|P|", "|I|", "|I+|", "|I-|"]:
+                df[col] = df[col].apply(
+                    lambda x: f"{x:,}".replace(",", r"\,") if isinstance(x, int) else x
+                )
+
             df = df.rename(columns={
                 #"|O|": r"$|\symOpportunities_{\symProject}|$",
                 "|A|": r"$|\symAlternatives_{\symProject}|$",
                 "|S|": r"$|\symSettings_{\symProject}|$",
-                "|I|": r"\symNumSig{}",
-                "|I+|": r"\symNumSigPos{}",
-                "|I-|": r"$\symNumSigNeg{}$",
+                "|I|": r"%|\symNumSig{}|%",
+                "|I+|": r"%|\symNumSigPos{}|%",
+                "|I-|": r"$|\symNumSigNeg{}|$",
                 "|P|": r"$|\symMeasurements{}{}{\symProject}|$",
+                "Range": "Impact Range"
             },
             index={"Name": ""})
 
-            # Escape percent signs in the Range column for LaTeX
-            df["Range"] = df["Range"].apply(lambda x: x.replace("%", r"\%") if isinstance(x, str) else x)
-
-            #df["Project"] = df["Project"].apply(lambda x: f"\\textsc{{{x}}}")
-            #df = reformat_project_column(df, column_name="Name")
-
             kwargs["hrules"] = True
+            kwargs["column_format"] = "lrrrrrrr"
             kwargs[
                 "caption"
             ] = (r"Summary of our findings for \RQref{1}."
@@ -402,6 +403,17 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
                  r"we report the minimum and maximum mean performance change "
                  r"across all significant changes.")
             kwargs["label"] = "tab:rq1_summary"
+        else:
+            # Convert Range column to percentages
+            # Prepend + sign to positive numbers for better readability
+            def format_range(
+                    range_tuple: tuple[float | str, float | str]
+            ) -> str:
+                if range_tuple[0] == "N/A" or range_tuple[1] == "N/A":
+                    return "N/A"
+                return f"({range_tuple[0]:+.2%}, {range_tuple[1]:+.2%})"
+
+            df["Range"] = df["Range"].apply(format_range)
 
         return dataframe_to_table(df, table_format, wrap_table=wrap_table, **kwargs)
 
