@@ -5,10 +5,8 @@ All settings are stored in a simple dictionary. Each setting should be
 modifiable via environment variable.
 """
 
-import os
 import sys
 import typing as tp
-from os import makedirs, path
 from pathlib import Path
 
 import benchbuild.utils.settings as s
@@ -34,19 +32,19 @@ def create_new_varats_config() -> s.Configuration:
             },
             "benchbuild_root": {
                 "desc": "Root folder to run BenchBuild in",
-                "default": os.getcwd() + "/benchbuild",
+                "default": str(Path.cwd() / "benchbuild"),
             },
             "data_cache": {
                 "desc": "Local data cache to store preprocessed files.",
-                "default": os.getcwd() + "/data_cache",
+                "default": str(Path.cwd() / "data_cache"),
             },
             "result_dir": {
                 "desc": "Result folder for collected results",
-                "default": os.getcwd() + "/results",
+                "default": str(Path.cwd() / "results"),
             },
             "external_source_repositories": {
-                "desc": "List of external repositories from where we load extra "
-                "projects/experiments/tables/plots.",
+                "desc": "List of external repositories from where we load "
+                "extra projects/experiments/tables/plots.",
                 "default": [],
             },
         },
@@ -126,7 +124,7 @@ def create_new_varats_config() -> s.Configuration:
     cfg["paper_config"] = {
         "folder": {
             "desc": "Folder with paper configs.",
-            "default": os.getcwd() + "/paper_configs",
+            "default": str(Path.cwd() / "paper_configs"),
         },
         "current_config": {
             "desc": "Paper config file to load.",
@@ -162,13 +160,13 @@ def create_new_varats_config() -> s.Configuration:
         },
         "file_status_blacklist": {
             "default": ['Success', 'Blocked'],
-            "desc": "Do not include revision with these file status for benchbuild "
-            "processing",
+            "desc": "Do not include revision "
+            "with these file status for benchbuild processing",
         },
         "file_status_whitelist": {
             "default": [],
-            "desc": "Only include revision with these file status for benchbuild "
-            "processing",
+            "desc": "Only include revision with these file status"
+            " for benchbuild processing",
         },
         "random_order": {
             "default": False,
@@ -187,21 +185,21 @@ def create_new_varats_config() -> s.Configuration:
     cfg['plots'] = {
         "plot_dir": {
             "desc": "Folder for generated plots",
-            "default": os.getcwd() + "/plots",
+            "default": str(Path.cwd() / "plots"),
         },
     }
 
     cfg['tables'] = {
         "table_dir": {
             "desc": "Folder for generated tables",
-            "default": os.getcwd() + "/tables",
+            "default": str(Path.cwd() / "tables"),
         },
     }
 
     cfg['artefacts'] = {
         "artefacts_dir": {
             "desc": "Folder for generated artefacts",
-            "default": os.getcwd() + "/artefacts",
+            "default": str(Path.cwd() / "artefacts"),
         },
     }
 
@@ -224,7 +222,7 @@ _BB_CFG: s.Configuration | None = None
 
 def vara_cfg() -> s.Configuration:
     """Get the current vara config."""
-    global _CFG  # pylint: disable=global-statement
+    global _CFG  # noqa: PLW0603
     if not _CFG:
         _CFG = create_new_varats_config()
         s.setup_config(
@@ -248,9 +246,7 @@ def add_vara_experiment_options(
         "result": {
             "default": "missingPath/annotatedResults",
             "desc": "Path to store already annotated projects.",
-            "value": os.path.join(
-                str(vara_cfg()["benchbuild_root"]), "BC_files"
-            ),
+            "value": str(Path(str(vara_cfg()["benchbuild_root"])) / "BC_files"),
         },
     }
 
@@ -263,9 +259,9 @@ def __is_benchbuild_process() -> bool:
 
 def bb_cfg() -> s.Configuration:
     """Get the current benchbuild config."""
-    global _BB_CFG  # pylint: disable=global-statement
+    global _BB_CFG  # noqa: PLW0603
     if not _BB_CFG:
-        from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
+        from benchbuild.settings import CFG as BB_CFG  # noqa: PLC0415
 
         add_vara_experiment_options(BB_CFG, vara_cfg())
         bb_root = str(vara_cfg()["benchbuild_root"])
@@ -311,9 +307,9 @@ def create_missing_folders() -> None:
         if (
             config_node.has_value()
             and config_node.value is not None
-            and not path.isdir(config_node.value)
+            and not Path(config_node.value).is_dir()
         ):
-            makedirs(config_node.value, exist_ok=True)
+            Path(config_node.value).mkdir(parents=True, exist_ok=True)
 
     create_missing_folder_for_cfg("benchbuild_root")
     create_missing_folder_for_cfg("result_dir")
@@ -335,9 +331,9 @@ def create_missing_bb_folders() -> None:
         if (
             config_node.has_value()
             and config_node.value is not None
-            and not path.isdir(str(config_node.value))
+            and not Path(str(config_node.value)).is_dir()
         ):
-            makedirs(str(config_node.value), exist_ok=True)
+            Path(str(config_node.value)).mkdir(parents=True, exist_ok=True)
 
     create_missing_folder_for_cfg("outfile", bb_cfg()["varats"])
     create_missing_folder_for_cfg("result", bb_cfg()["varats"])
@@ -358,7 +354,7 @@ def save_config() -> None:
     else:
         config_file = str(vara_cfg()["config_file"])
 
-    vara_cfg()["config_file"] = path.abspath(config_file)
+    vara_cfg()["config_file"] = str(Path(config_file).resolve())
     create_missing_folders()
     vara_cfg().store(LocalPath(config_file))
 
@@ -378,8 +374,9 @@ def save_bb_config(benchbuild_cfg: s.Configuration | None = None) -> None:
 
 def get_varats_base_folder() -> Path:
     """
-    Returns the path to the tool suite base folder, i.e., the folder that
-    contains the config file.
+    Returns the path to the Tool Suite Base Folder.
+
+    Base Folder is the folder that contains the config file.
 
     Returns:
         path to base folder

@@ -21,7 +21,6 @@ from benchbuild.utils.settings import to_yaml
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
 
-from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension
@@ -35,17 +34,18 @@ from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg, vara_cfg
 
 if tp.TYPE_CHECKING:
-    # pylint: disable=unused-import
     from varats.experiment.experiment_util import VersionExperiment
+    from varats.paper.case_study import CaseStudy
 
 LOG = logging.Logger(__name__)
 
 __SLURM_SCRIPT_PATTERN = re.compile(r"SLURM script written to (.*\.sh)")
+__INTERACTIVE_ARG_STR = "--interactive"
 
 
 def __validate_project_parameters(
-    ctx: click.Context | None,
-    param: click.Parameter | None,
+    ctx: click.Context | None,  # noqa: ARG001
+    param: click.Parameter | None,  # noqa: ARG001
     value: tuple[str, ...],
 ) -> tuple[str, ...]:
     """
@@ -139,18 +139,8 @@ def main(
     restrict this to only certain projects or even revisions using BenchBuild-
     style project selectors: <project>[@<revision>]
     """
-    # pylint: disable=too-many-branches
     initialize_cli_tool()
     initialize_projects()
-
-    bb_command_args: list[str] = ["--force-watch-unbuffered"]
-    bb_extra_args: list[str] = []
-
-    if sys.stdout.isatty():
-        bb_command_args.append("--force-tty")
-
-    if verbose:
-        bb_command_args.append("-" + ("v" * verbose))
 
     if pretend:
         click.echo("Running in pretend mode. No experiments will be executed.")
@@ -158,35 +148,9 @@ def main(
         slurm = False
         container = False
 
-    if slurm:
-        bb_command_args.append("slurm")
+    bb_command_args = _build_bb_command_args(container, pretend, slurm, verbose)
 
-    if container:
-        if slurm:
-            __prepare_slurm_for_container()
-            bb_extra_args = ["--", "container", "run"]
-            if bb_cfg()["container"]["import"].value:
-                bb_extra_args.append("--import")
-        else:
-            bb_command_args.append("container")
-            if debug:
-                bb_extra_args.append("--debug")
-                bb_extra_args.append("--interactive")
-
-    if white_list:
-        vara_cfg()["experiment"]["file_status_whitelist"] = [
-            x.nice_name() for x in white_list
-        ]
-    if black_list:
-        vara_cfg()["experiment"]["file_status_blacklist"] = [
-            x.nice_name() for x in black_list
-        ]
-
-    if not slurm:
-        bb_command_args.append("run")
-
-    if pretend:
-        bb_command_args.append("-p")
+    bb_extra_args = _build_bb_extra_args(container, debug, slurm)
 
     if not projects:
         projects = list(
@@ -205,6 +169,69 @@ def main(
         )
     )
 
+    if __INTERACTIVE_ARG_STR in bb_args:
+        _run_benchbuild_interactive(bb_args)
+    else:
+        env = _get_environment_variables(black_list, white_list)
+        stdout = _run_benchbuild_non_interactive(bb_args, env)
+        if slurm:
+            _handle_slurm_output(stdout, submit)
+
+
+def _build_bb_extra_args(
+    container: bool, debug: bool, slurm: bool
+) -> list[str]:
+    bb_extra_args: list[str] = []
+    if container:
+        if slurm:
+            __prepare_slurm_for_container()
+            bb_extra_args = ["--", "container", "run"]
+            if bb_cfg()["container"]["import"].value:
+                bb_extra_args.append("--import")
+        else:
+            if debug:
+                bb_extra_args.append("--debug")
+                bb_extra_args.append(__INTERACTIVE_ARG_STR)
+    return bb_extra_args
+
+
+def _build_bb_command_args(
+    container: bool, pretend: bool, slurm: bool, verbose: int
+) -> list[str]:
+    bb_command_args: list[str] = ["--force-watch-unbuffered"]
+    if sys.stdout.isatty():
+        bb_command_args.append("--force-tty")
+
+    if verbose:
+        bb_command_args.append("-" + ("v" * verbose))
+
+    if slurm:
+        bb_command_args.append("slurm")
+    else:
+        if container:
+            bb_command_args.append("container")
+
+        bb_command_args.append("run")
+
+    if pretend:
+        bb_command_args.append("-p")
+    return bb_command_args
+
+
+def _get_environment_variables(
+    white_list: list[FileStatusExtension],
+    black_list: list[FileStatusExtension],
+) -> dict[str, str]:
+
+    if white_list:
+        vara_cfg()["experiment"]["file_status_whitelist"] = [
+            x.nice_name() for x in white_list
+        ]
+    if black_list:
+        vara_cfg()["experiment"]["file_status_blacklist"] = [
+            x.nice_name() for x in black_list
+        ]
+
     env = {k: str(to_yaml(v)) for k, v in bb_cfg().to_env_dict().items()}
     env["PYTHONPATH"] = ":".join(sys.path)
     if white_list:
@@ -221,7 +248,27 @@ def main(
             .to_env_dict()
             .items()
         }
+    return env
 
+
+def _run_benchbuild_interactive(bb_args: list[str]) -> None:
+    """Run benchbuild in interactive foreground mode."""
+    with local.cwd(vara_cfg()["benchbuild_root"].value):
+        try:
+            benchbuild[bb_args].run_fg()
+        except ProcessExecutionError:
+            sys.exit(1)
+
+
+def _run_benchbuild_non_interactive(
+    bb_args: list[str], env: dict[str, str]
+) -> str:
+    """
+    Run benchbuild in background mode.
+
+    Returns:
+        stdout from benchbuild execution
+    """
     with local.cwd(vara_cfg()["benchbuild_root"].value):
         try:
             with benchbuild[bb_args].bgrun(
@@ -229,6 +276,7 @@ def main(
             ) as bb_proc:
                 try:
                     _, stdout, _ = tee(bb_proc)
+                    return stdout
                 except KeyboardInterrupt:
                     # wait for BB to complete when Ctrl-C is pressed
                     retcode, _, _ = tee(bb_proc)
@@ -236,23 +284,22 @@ def main(
         except ProcessExecutionError:
             sys.exit(1)
 
-    if slurm:
-        match = __SLURM_SCRIPT_PATTERN.search(stdout)
-        if match:
-            slurm_script = match.group(1)
-            if submit:
-                click.echo(
-                    f"Submitting slurm script via sbatch: {slurm_script}"
-                )
-                sbatch(slurm_script)
-            else:
-                click.echo(
-                    f"Run the following command to submit the slurm:\n"
-                    f"sbatch {slurm_script}"
-                )
+
+def _handle_slurm_output(stdout: str, submit: bool) -> None:
+    """Handle slurm script output and submission."""
+    if match := __SLURM_SCRIPT_PATTERN.search(stdout):
+        slurm_script = match.group(1)
+        if submit:
+            click.echo(f"Submitting slurm script via sbatch: {slurm_script}")
+            sbatch(slurm_script)
         else:
-            click.echo("Could not find slurm script.")
-            sys.exit(1)
+            click.echo(
+                f"Run the following command to submit the slurm:\n"
+                f"sbatch {slurm_script}"
+            )
+    else:
+        click.echo("Could not find slurm script.")
+        sys.exit(1)
 
 
 def __prepare_slurm_for_container() -> None:
@@ -286,7 +333,7 @@ def __render_slurm_script_template(
     )
     template = env.get_template("slurm_container.sh.inc")
 
-    with open(output_path, 'w') as slurm2:
+    with Path.open(output_path, 'w') as slurm2:
         slurm2.write(
             template.render(vara_config=[f"export {x}" for x in env_vars])
         )

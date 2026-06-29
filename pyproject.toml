@@ -119,7 +119,7 @@ markers = [
 
 [tool.ruff]
 line-length = 80
-exclude = ["CVS", "gui", "filtertree_data.py", ".eggs", "docs/source/conf.py",]
+exclude = ["CVS", "gui", "filtertree_data.py", ".eggs", "docs/source/conf.py", "tests/TEST_INPUTS/external_repo_template/*"]
 indent-width = 4
 
 [tool.ruff.lint]
@@ -201,6 +201,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*" = ["D"]
+"varats/varats/projects/**/*" = ["RUF012"]
 
 [tool.ruff.lint.pydocstyle]
 # Use Google-style docstrings.

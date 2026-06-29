@@ -25,8 +25,7 @@ def get_research_tool_type(name: str) -> ResearchToolTy:
     Returns: the research tool type corresponding to ``name``
     """
     initialize_research_tools()
-    tool_type = ResearchTool.get_tool_type(name)
-    return tp.cast("ResearchToolTy", tool_type)
+    return ResearchTool.get_tool_type(name)
 
 
 def get_research_tool(
@@ -61,7 +60,7 @@ def get_research_tool(
 
 
 def get_supported_research_tool_names() -> list[str]:
-    """Returns a list of all supported research tools, including external ones."""
+    """Returns list of all supported research tools including external ones."""
     initialize_research_tools()
     return ResearchTool.get_registered_tool_names()
 
@@ -70,8 +69,9 @@ def configuration_lookup_error_handler(
     func: tp.Callable[..., None],
 ) -> tp.Callable[..., None]:
     """
-    Wrapper for drivers to catch internal Exceptions and provide a helpful
-    message to the user.
+    Wrapper for drivers.
+
+    It catches internal Exceptions and provides a helpful message to the user.
     """
 
     @wraps(func)

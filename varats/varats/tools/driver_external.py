@@ -7,12 +7,13 @@ tables, plots, and reports.
 """
 
 import logging
+import pkgutil
 from pathlib import Path
 
 import click
 
 from varats.ts_utils.cli_util import initialize_cli_tool
-from varats.utils.settings import save_config, vara_cfg
+from varats.utils.settings import bb_cfg, save_bb_config, save_config, vara_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -26,6 +27,14 @@ TEMPLATE_FOLDERS = [
 ]
 # Template repository reference
 TEMPLATE_REPO = "https://github.com/se-sic/varats-oot-template/tree/test-oot"
+
+# Folders whose contents are imported by a benchbuild subprocess (via
+# `bb_cfg()["plugins"][<plugin_key>]`) rather than only by the varats CLI
+# process itself, and therefore need to be registered with benchbuild too.
+_BB_PLUGIN_FOLDERS = {
+    "projects": "projects",
+    "experiments": "experiments",
+}
 
 
 def validate_external_repo(repo_path: Path) -> tuple[bool, list[str]]:
@@ -60,20 +69,57 @@ def validate_external_repo(repo_path: Path) -> tuple[bool, list[str]]:
     return is_valid, missing_folders
 
 
+def _external_plugin_modules(repo_path: Path, folder_name: str) -> list[str]:
+    """
+    Returns Dot-separated module names.
+
+    Args:
+        repo_path: Path to the external repository root
+        folder_name: Name of the folder to search for modules, e.g., "projects"
+    """
+    folder = repo_path / folder_name
+    return [
+        f"{folder_name}.{module_name}"
+        for _, module_name, _ in pkgutil.iter_modules([str(folder)])
+    ]
+
+
 def register_external_repository(repo_path: Path) -> None:
     """Add repo_path to config and save. Raises on failure."""
     current_repos = vara_cfg()['external_source_repositories'].value
     current_repos.append(str(repo_path))
     vara_cfg()['external_source_repositories'] = current_repos
+
+    for folder_name, plugin_key in _BB_PLUGIN_FOLDERS.items():
+        plugin_conf = bb_cfg()["plugins"][plugin_key]
+        plugin_conf.value[:] = list(
+            set(plugin_conf.value)
+            | set(_external_plugin_modules(repo_path, folder_name))
+        )
+
     save_config()
+    save_bb_config()
 
 
 def unregister_external_repository(repo_path: Path) -> None:
     """Add repo_path to config and save. Raises on failure."""
-    current_repos = vara_cfg()['external_source_repositories'].value
+    current_repos = vara_cfg()['external_source_repositories'].value[:]
     current_repos.remove(str(repo_path))
     vara_cfg()['external_source_repositories'] = current_repos
+
+    for folder_name, plugin_key in _BB_PLUGIN_FOLDERS.items():
+        plugin_conf = bb_cfg()["plugins"][plugin_key]
+        modules_to_remove = set(
+            _external_plugin_modules(repo_path, folder_name)
+        )
+        plugin_conf.value[:] = [
+            module_name
+            for module_name in plugin_conf.value
+            if module_name not in modules_to_remove
+        ]
+
     save_config()
+    save_bb_config()
 
 
 @click.group("vara-external")
@@ -82,7 +128,8 @@ def main() -> None:
     Main function for managing external source repositories.
 
     `vara-external` provides commands to set up external repositories
-        containing custom projects, research tools, experiments, tables, plots, and reports.
+        containing custom projects, research tools, experiments, tables, plots,
+        and reports.
     """
     initialize_cli_tool()
 
@@ -126,7 +173,8 @@ def _set_external_repository(path: str) -> None:
 
         if repo_is_registered:
             if click.confirm(
-                "The repository is already registered but does not match the template. "
+                "The repository is already registered "
+                "but does not match the template."
                 "Unregister it from the configuration?",
                 default=False,
             ):

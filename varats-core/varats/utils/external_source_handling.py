@@ -16,10 +16,12 @@ LOG = logging.getLogger(__name__)
 
 
 def relative_module_folder(project_folder: Path, module_folder: Path) -> Path:
+    """Calculate relative module folder for given project and module folder."""
     return module_folder.absolute().relative_to(project_folder.absolute())
 
 
 def convert_path_to_module_path(path: Path) -> str:
+    """Convert a file system path to a Python module path."""
     return str(path).replace('/', '.')
 
 
