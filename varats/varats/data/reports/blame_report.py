@@ -437,6 +437,12 @@ class BlameReport(BaseReport, shorthand="BR", file_type="yaml"):
                     "that might not be supported in the future."
                 )
 
+            if version_header.version == 5:
+                LOG.warning(
+                    "You are using an outdated blame report format "
+                    "that doesn't support control-flow Analysis."
+                )
+
             self.__meta_data = BlameReportMetaData \
                 .create_blame_report_meta_data(next(documents))
 
