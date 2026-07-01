@@ -17,6 +17,7 @@ from yaml import YAMLError
 
 from varats.project.project_util import get_local_project_repo
 from varats.provider.provider import Provider, ProviderType
+from varats.utils.benchbuild_util import temporary_tmp_dir
 from varats.utils.filesystem_util import lock_file
 from varats.utils.git_commands import fetch_repository, pull_current_branch
 from varats.utils.git_util import (
@@ -44,6 +45,8 @@ class Patch:
         regression_severity: int | None = None,
     ):
         """
+        Initialize a patch class.
+
         Args:
             project_name: Project name that this patch belongs to
             shortname: Short name to uniquely identify a patch
@@ -51,8 +54,10 @@ class Patch:
             path: Path to the patch file
             valid_revisions: List of revisions that the patch is applicable to
             tags: Tags of the patch
-            feature_tags: Feature specific tags of a patch (Used for PatchConfiguration)
-            regression_severity: Regression severity in milliseconds (If applicable)
+            feature_tags: Feature specific tags of a patch
+                          (Used for PatchConfiguration)
+            regression_severity: Regression severity in milliseconds
+                                 (If applicable)
         """
         self.project_name: str = project_name
         self.shortname: str = shortname
@@ -100,10 +105,7 @@ class Patch:
                 if not isinstance(rev_ranges, list):
                     rev_ranges = [rev_ranges]
                 for rev_range in rev_ranges:
-                    if "end" in rev_range:
-                        end_rev = rev_range["end"]
-                    else:
-                        end_rev = ""
+                    end_rev = rev_range.get("end", "")
                     res.update(
                         get_all_revisions_between(
                             project_repo,
@@ -151,15 +153,17 @@ class Patch:
         )
 
     def __repr__(self) -> str:
+        """Return raw string representation of the patch."""
         return str(self)
 
     def __str__(self) -> str:
+        """Return a string representation of the patch."""
         valid_revs = (
             [str(r) for r in self.valid_revisions]
             if self.valid_revisions
             else []
         )
-        str_representation = f"""Patch(
+        return f"""Patch(
     ProjectName: {self.project_name}
     Shortname: {self.shortname}
     Path: {self.path}
@@ -167,9 +171,8 @@ class Patch:
 )
 """
 
-        return str_representation
-
     def __hash__(self) -> int:
+        """Return hash from the patch."""
         hash_args = [self.shortname, self.path]
         if self.tags:
             hash_args += tuple(self.tags)
@@ -181,20 +184,26 @@ class Patch:
 
 class PatchSet:
     """
+    PatchSet class.
+
     A PatchSet is a storage container for project specific patches that can
     easily be accessed via the tags of a patch.
     """
 
     def __init__(self, patches: set[Patch] | frozenset[Patch]):
+        """Initialize a PatchSet with a set of patches."""
         self.__patches: frozenset[Patch] = frozenset(patches)
 
     def __iter__(self) -> tp.Iterator[Patch]:
+        """Return Iterator for the PatchSet."""
         return self.__patches.__iter__()
 
     def __contains__(self, value: tp.Any) -> bool:
+        """Checks existence of given value inside the PatchSet."""
         return self.__patches.__contains__(value)
 
     def __len__(self) -> int:
+        """Return the number of patches in the PatchSet."""
         return len(self.__patches)
 
     def __getitem__(self, tags: str | tp.Iterable[str]) -> 'PatchSet':
@@ -203,7 +212,7 @@ class PatchSet:
 
         Returns a PatchSet, such that all patches include all the tags given
         """
-        # TODO: Discuss if we really want this. Currently this is an "all_of"
+        # to do: Discuss if we really want this. Currently this is an "all_of"
         # access We could consider to remove the bracket operator and only
         # provide the all_of/any_of accessors as it would be clearer what the
         # exact behavior is
@@ -222,6 +231,7 @@ class PatchSet:
         return PatchSet(res_set)
 
     def __and__(self, rhs: "PatchSet") -> "PatchSet":
+        """Return the intersection between this and given PatchSet."""
         return PatchSet(self.__patches.intersection(rhs.__patches))
 
     def __or__(self, rhs: "PatchSet") -> "PatchSet":
@@ -230,6 +240,8 @@ class PatchSet:
 
     def any_of(self, tags: str | tp.Iterable[str]) -> "PatchSet":
         """
+        any_of.
+
         Returns a patch set with patches containing at least one of the given
         tags.
         """
@@ -254,6 +266,8 @@ class PatchSet:
 
     def any_of_features(self, feature_tags: tp.Iterable[str]) -> "PatchSet":
         """
+        any_of_features.
+
         Returns a patch set with patches containing at least one of the given
         feature tags.
         """
@@ -269,6 +283,8 @@ class PatchSet:
         self, feature_tags: str | tp.Iterable[str]
     ) -> "PatchSet":
         """
+        all_of_features.
+
         Returns a patch set with patches containing all the given feature
         tags.
         """
@@ -281,9 +297,11 @@ class PatchSet:
         return PatchSet(result)
 
     def __hash__(self) -> int:
+        """Return the hash of the PatchSet."""
         return hash(self.__patches)
 
     def __repr__(self) -> str:
+        """Return string representation of the PatchSet."""
         repr_str = ", ".join([f"{k.shortname}" for k in self.__patches])
 
         return f"PatchSet({{{repr_str}}})"
@@ -293,18 +311,18 @@ class PatchProvider(Provider):
     """A provider for getting patch files for a certain project."""
 
     def __init__(self, project: type[Project]):
+        """Initialize a patch provider for a given project."""
         super().__init__(project)
 
         # Accessing the configuration (.yml) file
         cfg = vara_cfg()
 
-        repo_cfgs = cfg["patch_provider"].value
-        if repo_cfgs is None or repo_cfgs == "":
-            warnings.warn(
-                "patch_provider is not configured properly in .varats.yaml"
-            )
+        repo_cfgs = cfg["patch_provider"]["repositories"].value
+        local_cfgs = cfg["patch_provider"]["local_folders"].value or []
 
         patches_sources: list[bb.source.Git] = []
+
+        # Just adding the repository form the list to the patches_sources
         for repo_cfg in repo_cfgs:
             remote_cfg = repo_cfg.get("remote")
             local_cfg = repo_cfg.get("local")
@@ -319,16 +337,34 @@ class PatchProvider(Provider):
                 )
             )
 
-        for patch_source in patches_sources:
-            self._update_local_patches_repo(patch_source)
-            repo = self._get_patches_repository(patch_source)
-            patches_project_dir = repo.worktree_path / self.project.NAME
-
-            if not patches_project_dir.is_dir():
-                warnings.warn(
-                    "Could not find patches directory for project "
-                    f"'{self.project.NAME}'."
+        for local in local_cfgs:
+            remote_cfg = local
+            local_cfg = local.str().split("/").join("_")
+            refspec_cfg = "origin/HEAD"
+            patches_sources.append(
+                bb.source.Git(
+                    remote=remote_cfg,
+                    local=local_cfg,
+                    refspec=refspec_cfg,
+                    limit=None,
+                    shallow=False,
                 )
+            )
+
+        # Here for each patch_source, we want for each project we look inside
+        # each projects, there can and not be a subfolder for some patch, we
+        # then want to add each of this patch to self.__patches
+        for patch_source in patches_sources:
+            with temporary_tmp_dir():
+                self._update_local_patches_repo(patch_source)
+                repo = self._get_patches_repository(patch_source)
+                patches_project_dir = repo.worktree_path / self.project.NAME
+
+                if not patches_project_dir.is_dir():
+                    warnings.warn(
+                        "Could not find patches directory for project "
+                        f"'{self.project.NAME}'."
+                    )
 
             self.__patches: set[Patch] = set()
 
@@ -389,9 +425,7 @@ class PatchProvider(Provider):
         Returns:
             a default provider instance
         """
-        raise AssertionError(
-            "All usages should be covered by the project specific provider."
-        )
+        return PatchProvider(project)
 
     @classmethod
     def _get_patches_repository(cls, patch_source) -> RepositoryHandle:
@@ -399,9 +433,7 @@ class PatchProvider(Provider):
 
     @classmethod
     def _update_local_patches_repo(cls, patch_source) -> None:
-        lock_path = (
-            Path(target_prefix()) / patch_source.local / "patch_provider.lock"
-        )
+        lock_path = Path(target_prefix()) / (str(patch_source.local) + ".lock")
 
         with lock_file(lock_path):
             patch_source.fetch()
