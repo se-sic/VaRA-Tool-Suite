@@ -1,24 +1,22 @@
 """Project file for curl."""
-import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make
-from benchbuild.utils.revision_ranges import block_revisions, GoodBadSubgraph
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.containers.containers import get_base_image, ImageBase
+from varats.containers.containers import ImageBase, get_base_image
 from varats.paper.paper_config import (
     PaperConfigSpecificGit,
     project_filter_generator,
 )
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    ProjectBinaryWrapper,
     BinaryType,
-    verify_binaries,
-    get_local_project_repo,
+    ProjectBinaryWrapper,
     RevisionBinaryMap,
+    get_local_project_repo,
+    verify_binaries,
 )
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
@@ -43,7 +41,7 @@ class WGet(VProject):
             local="wget",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
+            shallow=False,
         ),
         bb.source.GitSubmodule(
             remote="https://github.com/coreutils/gnulib.git",
@@ -51,19 +49,25 @@ class WGet(VProject):
             refspec="origin/HEAD",
             limit=None,
             shallow=False,
-            version_filter=project_filter_generator("wget")
+            version_filter=project_filter_generator("wget"),
         ),
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'automake', 'libtool',
-        'autoconf-archive', 'libgnutls28-dev'
+        'apt',
+        'install',
+        '-y',
+        'autoconf',
+        'automake',
+        'libtool',
+        'autoconf-archive',
+        'libgnutls28-dev',
     )
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List[ProjectBinaryWrapper]:
+        revision: ShortCommitHash,
+    ) -> list[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_repo(WGet.NAME))
 
         binary_map.specify_binary('src/wget', BinaryType.EXECUTABLE)
@@ -93,5 +97,5 @@ class WGet(VProject):
             verify_binaries(self)
 
     @classmethod
-    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
+    def get_cve_product_info(cls) -> list[tuple[str, str]]:
         return [("wget", "wget"), ("gnu", "wget")]
