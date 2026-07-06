@@ -343,16 +343,22 @@ class BlameReportMetaData():
     generate this :class:`BlameReport`."""
 
     def __init__(
-        self, num_functions: int, num_instructions: int,
+        self, analysis_type: str, num_functions: int, num_instructions: int,
         num_phasar_empty_tracked_vars: tp.Optional[int],
         num_phasar_total_tracked_vars: tp.Optional[int],
         bta_wall_time: tp.Optional[float]
     ) -> None:
+        self.__analysis_type = analysis_type
         self.__number_of_functions_in_module = num_functions
         self.__number_of_instructions_in_module = num_instructions
         self.__num_phasar_empty_tracked_vars = num_phasar_empty_tracked_vars
         self.__num_phasar_total_tracked_vars = num_phasar_total_tracked_vars
         self.__bta_wall_time = bta_wall_time
+
+    @property
+    def analysis_type(self) -> str:
+        """Type of the analysis that was performed."""
+        return self.__analysis_type
 
     @property
     def num_functions(self) -> int:
@@ -385,6 +391,7 @@ class BlameReportMetaData():
     ) -> 'BlameReportMetaData':
         """Creates :class:`BlameReportMetaData` from the corresponding yaml
         document."""
+        analysis_type = str(raw_document['analysis-type'])
         num_functions = int(raw_document['funcs-in-module'])
         num_instructions = int(raw_document['insts-in-module'])
         num_phasar_empty_tracked_vars = int(
@@ -400,7 +407,7 @@ class BlameReportMetaData():
         ) if "bta-walltime-seconds" in raw_document else None
 
         return BlameReportMetaData(
-            num_functions, num_instructions, num_phasar_empty_tracked_vars,
+            analysis_type, num_functions, num_instructions, num_phasar_empty_tracked_vars,
             num_phasar_total_tracked_vars, bta_wall_time
         )
 
