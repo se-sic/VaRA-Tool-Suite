@@ -68,7 +68,7 @@ class BlameReportGeneration(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "--enable-new-pm=0", "-vara-BD", "-vara-BR",
+                "--passes=vara-BR",
                 "-vara-init-commits", "-vara-rewriteMD",
                 "-vara-git-mappings=" + ",".join([
                     f'{repo_name}:{repo.repo_path}' for repo_name, repo in
