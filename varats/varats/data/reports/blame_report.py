@@ -391,7 +391,9 @@ class BlameReportMetaData():
     ) -> 'BlameReportMetaData':
         """Creates :class:`BlameReportMetaData` from the corresponding yaml
         document."""
-        analysis_type = str(raw_document['analysis-type'])
+        analysis_type = AnalysisType.from_string(
+            raw_document.get('analysis-type', "DF-PHASAR")
+        )
         num_functions = int(raw_document['funcs-in-module'])
         num_instructions = int(raw_document['insts-in-module'])
         num_phasar_empty_tracked_vars = int(
@@ -424,6 +426,22 @@ class BlameTaintScope(Enum):
             "REGION": BlameTaintScope.REGION,
             "COMMIT_IN_FUNCTION": BlameTaintScope.COMMIT_IN_FUNCTION,
             "COMMIT": BlameTaintScope.COMMIT,
+        }[value]
+
+class AnalysisType(Enum):
+    """The type of the analysis that was performed."""
+    DF_ANALYSIS = 0
+    CF_DIRECT_ANALYSIS = 1
+    CF_COLLECTIVE_ANALYSIS = 2
+    DF_VARA = 3
+
+    @staticmethod
+    def from_string(value: str) -> 'AnalysisType':
+        return {
+            "DF-PHASAR": AnalysisType.DF_ANALYSIS,
+            "CF-DIRECT": AnalysisType.CF_DIRECT_ANALYSIS,
+            "CF-COLLECTIVE": AnalysisType.CF_COLLECTIVE_ANALYSIS,
+            "DF-VARA": AnalysisType.DF_VARA,
         }[value]
 
 
