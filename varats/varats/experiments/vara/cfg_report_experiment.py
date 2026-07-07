@@ -103,6 +103,7 @@ class CFBlameReportExperiment(VersionExperiment, shorthand="CFBR"):
 
     REPORT_SPEC = ReportSpecification(BR)
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
+    ANALYSIS_TYPE = AnalysisType.CF_DIRECT_ANALYSIS
 
     def actions_for_project(
         self, project: VProject
@@ -121,8 +122,6 @@ class CFBlameReportExperiment(VersionExperiment, shorthand="CFBR"):
             BCFileExtensions.BLAME,
         ]
 
-        BE.setup_basic_blame_experiment(self, project, BR)
-
         analysis_actions = BE.generate_basic_blame_experiment_actions(
             project,
             bc_file_extensions,
@@ -133,7 +132,7 @@ class CFBlameReportExperiment(VersionExperiment, shorthand="CFBR"):
 
         analysis_actions.append(
             CFBlameReportGeneration(
-                project, self.get_handle(), AnalysisType.CF_DIRECT_ANALYSIS
+                project, self.get_handle(), self.ANALYSIS_TYPE
             )
         )
 
@@ -141,4 +140,17 @@ class CFBlameReportExperiment(VersionExperiment, shorthand="CFBR"):
 
         return analysis_actions
 
+class CFDirectReportExperiment(CFBlameReportExperiment, shorthand="CFDR"):
+    """Generates a blame report with region scoped taints."""
 
+    NAME = "GenerateBlameReportRegion"
+    ANALYSIS_TYPE = AnalysisType.CF_DIRECT_ANALYSIS
+
+
+class CFCollectiveReportExperiment(
+    CFBlameReportExperiment, shorthand="CFCR"
+):
+    """Generates a blame report with commit-in-function scoped taints."""
+
+    NAME = "GenerateBlameReportCommitInFunction"
+    ANALYSIS_TYPE = AnalysisType.CF_COLLECTIVE_ANALYSIS
