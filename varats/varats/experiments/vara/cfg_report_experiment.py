@@ -143,7 +143,7 @@ class CFBlameReportExperiment(VersionExperiment, shorthand="CFBR"):
 class CFDirectReportExperiment(CFBlameReportExperiment, shorthand="CFDR"):
     """Generates a blame report with region scoped taints."""
 
-    NAME = "GenerateBlameReportRegion"
+    NAME = "GenerateBlameReportCFDirect"
     ANALYSIS_TYPE = AnalysisType.CF_DIRECT_ANALYSIS
 
 
@@ -152,5 +152,5 @@ class CFCollectiveReportExperiment(
 ):
     """Generates a blame report with commit-in-function scoped taints."""
 
-    NAME = "GenerateBlameReportCommitInFunction"
+    NAME = "GenerateBlameReportCFCollective"
     ANALYSIS_TYPE = AnalysisType.CF_COLLECTIVE_ANALYSIS
