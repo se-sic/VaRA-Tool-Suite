@@ -122,6 +122,8 @@ class CFBlameReportExperiment(VersionExperiment, shorthand="CFBR"):
             BCFileExtensions.BLAME,
         ]
 
+        BE.setup_basic_blame_experiment(self, project, BR)
+
         analysis_actions = BE.generate_basic_blame_experiment_actions(
             project,
             bc_file_extensions,
