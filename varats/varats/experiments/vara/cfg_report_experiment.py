@@ -104,7 +104,7 @@ class CFBlameReportExperiment(VersionExperiment, shorthand="CFBR"):
 
     REPORT_SPEC = ReportSpecification(BR)
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
-    ANALYSIS_TYPE = AnalysisType.CF_DIRECT_ANALYSIS
+    ANALYSIS_TYPE = AnalysisType.CF_COLLECTIVE_ANALYSIS
 
     def actions_for_project(
         self, project: VProject
