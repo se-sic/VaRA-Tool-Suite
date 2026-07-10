@@ -430,10 +430,10 @@ class BlameTaintScope(Enum):
 
 class AnalysisType(Enum):
     """The type of the analysis that was performed."""
-    DF_ANALYSIS = 0
-    CF_DIRECT_ANALYSIS = 1
-    CF_COLLECTIVE_ANALYSIS = 2
-    DF_VARA = 3
+    DF_ANALYSIS = "DF-PHASAR"
+    CF_DIRECT_ANALYSIS = "CF-DIRECT"
+    CF_COLLECTIVE_ANALYSIS = "CF-COLLECTIVE"
+    DF_VARA = "DF-VARA"
 
     @staticmethod
     def from_string(value: str) -> 'AnalysisType':
