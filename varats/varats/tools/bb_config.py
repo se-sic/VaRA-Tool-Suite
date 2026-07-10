@@ -3,14 +3,15 @@ This module handles the configuration of Benchbuild.
 
 It can automatically create different preconfigured configs for BB.
 """
+
 import os.path
 from copy import deepcopy
 
 from benchbuild.utils import settings as s
 
 from varats.tools.tool_util import (
-    get_supported_research_tool_names,
     get_research_tool_type,
+    get_supported_research_tool_names,
 )
 from varats.utils.settings import add_vara_experiment_options
 
@@ -18,8 +19,10 @@ from varats.utils.settings import add_vara_experiment_options
 def update_projects(
     bb_cfg: s.Configuration, include_test_projects: bool = False
 ) -> None:
-    """Update the projects entry in the benchbuild config to contain our
-    projects."""
+    """
+    Update the projects entry in the benchbuild config to contain our
+    projects.
+    """
     projects_conf = bb_cfg["plugins"]["projects"]
     # If we want later to use default BB projects
     # projects_conf.value[:] = [ x for x in projects_conf.value
@@ -63,9 +66,11 @@ def update_projects(
         'varats.projects.c_projects.picosat',
         'varats.projects.c_projects.qemu',
         'varats.projects.c_projects.redis',
+        'varats.projects.c_projects.sqlite',
         'varats.projects.c_projects.tig',
         'varats.projects.c_projects.tmux',
         'varats.projects.c_projects.vim',
+        'varats.projects.c_projects.wget',
         'varats.projects.c_projects.x264',
         'varats.projects.c_projects.xz',
         'varats.projects.c_projects.yara',
@@ -80,11 +85,12 @@ def update_projects(
         'varats.projects.cpp_projects.ect',
         'varats.projects.cpp_projects.lepton',
         'varats.projects.cpp_projects.hyteg',
-        'varats.projects.cpp_projects.dune'
+        'varats.projects.cpp_projects.dune',
     ]
     projects_conf.value[:] += [
-        'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
-        '.two_libs_one_project_interaction_discrete_libs_single_project'
+        'varats.projects.cpp_projects.doxygen',
+        'varats.projects.cpp_projects'
+        '.two_libs_one_project_interaction_discrete_libs_single_project',
     ]
     if include_test_projects:
         projects_conf.value[:] += [
@@ -98,6 +104,7 @@ def update_projects(
             'varats.projects.test_projects.test_suite',
             'varats.projects.perf_tests.feature_perf_cs_collection',
             'varats.projects.perf_tests.feature_perf_regression',
+            'varats.projects.test_projects.architecture_test_repo',
         ]
 
 
@@ -112,6 +119,8 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.phasar.ide_linear_constant_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',
         'varats.experiments.szz.szz_unleashed_experiment',
+        'varats.experiments.vara.architecture_report_experiment',
+        'varats.experiments.vara.architecture_interactions_experiment',
         'varats.experiments.vara.agg_region_interaction_perf_runner',
         'varats.experiments.vara.blame_ast_experiment',
         'varats.experiments.vara.blame_report_experiment',
@@ -124,6 +133,7 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.vara.feature_perf_precision',
         'varats.experiments.vara.feature_tracing_stats',
         'varats.experiments.vara.feature_instrumentation_points',
+        'varats.experiments.vara.feature_architecture_taint_report_experiment',
         'varats.experiments.vara.instrumentation_verifier',
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.phasar_fta',
@@ -141,18 +151,20 @@ def update_env(bb_cfg: s.Configuration) -> None:
         path = []
     bb_cfg["env"] = old_env | {
         "PATH": [
-            str(tool_type.install_location() / "bin") for tool_type in [
+            str(tool_type.install_location() / "bin")
+            for tool_type in [
                 get_research_tool_type(tool_name)
                 for tool_name in get_supported_research_tool_names()
-            ] if tool_type.has_install_location() and
-            str(tool_type.install_location() / "bin") not in path
-        ] + path
+            ]
+            if tool_type.has_install_location()
+            and str(tool_type.install_location() / "bin") not in path
+        ]
+        + path
     }
 
 
 def create_new_bb_config(
-    varats_cfg: s.Configuration,
-    include_test_projects: bool = False
+    varats_cfg: s.Configuration, include_test_projects: bool = False
 ) -> s.Configuration:
     """
     Create a new default bb config.
@@ -168,6 +180,7 @@ def create_new_bb_config(
         a new default bb config object
     """
     from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
+
     new_bb_cfg = deepcopy(BB_CFG)
 
     # Projects for VaRA
@@ -190,7 +203,7 @@ def create_new_bb_config(
         [f"{varats_cfg['benchbuild_root']}/BC_files", "/varats_root/BC_files"],
         [
             varats_cfg["paper_config"]["folder"].value,
-            "/varats_root/paper_configs"
+            "/varats_root/paper_configs",
         ],
     ]
 
