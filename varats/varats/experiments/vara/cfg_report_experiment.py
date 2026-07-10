@@ -69,6 +69,7 @@ class CFBlameReportGeneration(actions.ProjectStep):  # type: ignore
             opt_params = [
                 "--passes=vara-CFG-Analyses", "-vara-init-commits",
                 f"-vara-analysis-type={self.__analysis_type.value}",
+                f"-vara-blame-taint-scope=REGION"
                 "-vara-git-mappings=" + ",".join([
                     f'{repo_name}:{repo.repo_path}' for repo_name, repo in
                     get_local_project_repos(self.project.name).items()
