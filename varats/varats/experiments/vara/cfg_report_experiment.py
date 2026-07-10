@@ -67,7 +67,7 @@ class CFBlameReportGeneration(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "--passes=vara-CFG-Analyses", "-vara-init-commits",
+                "--passes=vara-rewriteMD,vara-CFG-Analyses", "-vara-init-commits",
                 f"-vara-analysis-type={self.__analysis_type.value}",
                 f"-vara-blame-taint-scope=REGION",
                 "-vara-git-mappings=" + ",".join([
@@ -104,7 +104,7 @@ class CFBlameReportExperiment(VersionExperiment, shorthand="CFBR"):
 
     REPORT_SPEC = ReportSpecification(BR)
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
-    ANALYSIS_TYPE = AnalysisType.CF_COLLECTIVE_ANALYSIS
+    ANALYSIS_TYPE = AnalysisType.CF_DIRECT_ANALYSIS
 
     def actions_for_project(
         self, project: VProject
