@@ -452,6 +452,11 @@ class Baseline(Profiler):
         ) < req_diff:
             return False
 
+        # Discard faster new times, as we look for regressions
+        if np.mean(new_time.measurements_wall_clock_time) < \
+                np.mean(old_time.measurements_wall_clock_time):
+            return False
+
         return self.default_regression_check(
             old_time.measurements_wall_clock_time,
             new_time.measurements_wall_clock_time
