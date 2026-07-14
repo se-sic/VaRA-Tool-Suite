@@ -113,20 +113,6 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
         Furthermore, the table depicts for each profiler the relative amount of regressions that were detected.
         """
 
-            # color map
-            ryg_map = plt.get_cmap('RdYlGn')
-            ryg_map = cmap_map(lambda x: x / 1.2 + 0.2, ryg_map)
-
-            style.background_gradient(
-                cmap=ryg_map,
-                subset=[(s, f"\\rotatebox{{90}}{{{p.name}}}")
-                        for p in self.PROFILERS
-                        for s in self.SEVERITIES
-                        if p.name != "Base"],
-                vmin=-1.0,
-                vmax=1.0
-            )
-
             # Conversion for categories and multi-row
             def cs_category_grouping(cs_name: str) -> str:
                 if cs_name.startswith("SynthSA"):
@@ -176,13 +162,43 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             df = add_multirow_column(df)
             df.drop(columns=[('   ', 'Category')], inplace=True)
 
+            style = df.style
+            # color map
+            ryg_map = plt.get_cmap('RdYlGn')
+            ryg_map = cmap_map(lambda x: x / 1.2 + 0.2, ryg_map)
+
+            style.background_gradient(
+                cmap=ryg_map,
+                subset=[(s, f"\\rotatebox{{90}}{{{p.name}}}")
+                        for p in self.PROFILERS
+                        for s in self.SEVERITIES
+                        if p.name != "Base"],
+                vmin=-1.0,
+                vmax=1.0
+            )
+
+            # 2 decimal precision for profiler recall/precision columns
             style.format(
                 precision=2,
                 subset=[(s, f"\\rotatebox{{90}}{{{p.name}}}")
                         for p in self.PROFILERS
                         for s in self.SEVERITIES]
             )
+
+            # Integer formatting for the "# Regressions" column
+            style.format(
+                precision=0, subset=[('', f'{symb_regressed_configs}')]
+            )
             style.hide()
+
+            # Ensure for the precision/recall columns that positive values are prepended with a '+' sign
+            style.format(
+                lambda x: f"+{x:.2f}" if x > 0 else f"{x:.2f}",
+                subset=[(s, f"\\rotatebox{{90}}{{{p.name}}}")
+                        for p in self.PROFILERS
+                        for s in self.SEVERITIES
+                        if p.name != "Base"]
+            )
 
         def add_extras(doc: Document) -> None:
             doc.packages.append(Package("amsmath"))
@@ -198,7 +214,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             **kwargs
         )
 
-    def __get_affectable_patches(self, project, config_id: int):
+    def __get_affectable_patches(self, project: CaseStudy, config_id: int):
         reports = get_processed_revisions_files(
             project.project_name,
             TEFFeatureIdentifier,
@@ -209,7 +225,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
         if len(reports) != 1:
             print(
-                f"Expected exactly one TEFFeatureIdentifierReport for project '{project}' and config_id '{config_id}', but found {len(reports)}."
+                f"Expected exactly one TEFFeatureIdentifierReport for project '{project.project_name}' and config_id '{config_id}', but found {len(reports)}."
             )
             return []
 
@@ -220,7 +236,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
         for p_name, regions, _ in patches:
             if len(regions) == 1:
                 print(
-                    f"Detected  __VARA__DETECT__ region without any other region. {project=}/{config_id=}/{p_name=}"
+                    f"Detected __VARA__DETECT__ region without any other region. {project.project_name}/{config_id=}/{p_name=}"
                 )
 
         patch_names = [patch[0].removesuffix("detect") for patch in patches]
@@ -412,13 +428,11 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
         table_rows = []
 
         for idx1, case_study in enumerate(case_studies):
+            if case_study.project_name != "DunePerfRegression":
+                continue
             print(
                 f"Processing case study '{case_study.project_name}' ({idx1+1}/{len(case_studies)})"
             )
-            if case_study.project_name == "DunePerfRegression":
-                print(f"Skipping case study '{case_study.project_name}'.")
-                continue
-                pass
             rev = case_study.revisions[0]
             project_name = case_study.project_name
 
@@ -472,6 +486,10 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                 ]
 
                 for patch_name in patch_names:
+                    # DEBUG: Ignore ug patches
+                    if "ug_grid" in patch_name:
+                        continue
+
                     # TODO: Only consider patches that actually can introduce a regression
                     # TODO: Discuss with Florian: Determine that from the TEFFeatureIdentifierReport or through manual labelling?
                     severity_regex = r".*(1|10|100|1000)(ms)?$"
@@ -488,13 +506,17 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                     severity = f"{patch_severity}ms"
 
                     abs_cut_off = 100
+                    rel_cut_off = 0.01
+
                     if patch_severity < 1000:
+                        # 100 ms
                         abs_cut_off = 10
-                    if patch_severity < 100:
+                    elif patch_severity < 100:
+                        # 10ms and 1ms
                         abs_cut_off = 1
-                        rel_cut_off = 0.0
                     else:
-                        rel_cut_off = 0.01
+                        # 1000ms
+                        pass
 
                     for p in profilers:
                         total_num_patches[f"{p.name}_{severity}"] += 1
@@ -510,6 +532,10 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                             if p.is_regression(path, patch_name):
                                 regressed_num_regressions[f"{p.name}_{severity}"
                                                          ] += 1
+                            else:
+                                print(
+                                    f"Profiler {p.name} did not detect regression for {project_name}/{config_id}/{patch_name}"
+                                )
                         except IncompleteJSONError as e:
                             print(
                                 f"Error in parsing. Case Study={project_name}, Config_id={config_id}, patch_name={patch_name}, profiler={p.name}"
@@ -559,7 +585,7 @@ class FeaturePerfSensitivityTableGenerator(
 ):
     """Generator for FeaturePerfSensitivityTable."""
 
-    def generate(self) -> tp.List['varats.table.table.Table']:
+    def generate(self) -> tp.List[Table]:
         return [
             FeaturePerfSensitivityTable(self.table_config, **self.table_kwargs)
         ]
