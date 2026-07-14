@@ -214,7 +214,8 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             **kwargs
         )
 
-    def __get_affectable_patches(self, project: CaseStudy, config_id: int):
+    @staticmethod
+    def __get_affectable_patches(project: CaseStudy, config_id: int):
         reports = get_processed_revisions_files(
             project.project_name,
             TEFFeatureIdentifier,
@@ -243,184 +244,6 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
         return list(set(patch_names))
 
-    def __get_affectable_patches_manual(
-        self, case_study: CaseStudy, config_id: int
-    ):
-        patch_provider = PatchProvider.get_provider_for_project(
-            case_study.project_cls
-        )
-
-        patches = patch_provider.get_patches_for_revision(
-            case_study.revisions[0].to_short_commit_hash()
-        )
-        patches = patches["perf_prec"]
-        patches = patches.none_of("region_identifier")
-
-        # Identify feature tags for current configuration
-        config_map = load_configuration_map_for_case_study(
-            get_paper_config(), case_study, PatchConfiguration
-        )
-        config = config_map.get_configuration(config_id)
-        feature_tags = {opt.value for opt in config.options()}
-
-        patches = patches.any_of_features(feature_tags)
-
-        patch_names = [p.shortname.removesuffix("regression") for p in patches]
-
-        # TODO: Remove suffixes from shortnames if necessary
-
-        return list(set(patch_names))
-
-    def __by_severity_alternative(self):
-        print("NEW METHOD")
-        profilers = self.PROFILERS
-        case_studies = get_loaded_paper_config().get_all_case_studies()
-
-        table_rows = []
-        num_regressions: tp.Dict[str, int] = {}
-
-        for cs_idx, case_study in enumerate(case_studies):
-            print(
-                f"Processing cs '{case_study.project_name}' ({cs_idx+1}/{len(case_studies)})"
-            )
-
-            rev = case_study.revisions[0]
-            project_name = case_study.project_name
-            config_ids = case_study.get_config_ids_for_revision(rev)
-
-            regressions_gt: tp.Dict[str, tp.Dict[int, bool]] = {}
-
-            num_regressions[project_name] = sum(
-                len(map_to_positive_config_ids(regressions_gt[s]))
-                for s in regressions_gt
-            )
-
-            # Step 1: Collect GT data from 1000ms patches
-            patches = get_patch_names(case_study)
-
-            gt_patches = [p for p in patches if "1000" in p]
-
-            for patch_name in gt_patches:
-                patch_id = patch_name.removesuffix("ms").removesuffix("1000")
-
-                patch_gt = get_regressing_config_ids_gt(
-                    project_name, case_study, rev, patch_name
-                )
-                if patch_gt is None:
-                    print(
-                        f"Could not load GT data for {project_name} and {patch_id}"
-                    )
-                    continue
-                regressions_gt[patch_id] = patch_gt
-
-            # Now that all GT data is loaded, we check the actual detected regressions for each patch
-            for patch_name in patches:
-                severity_regex = r".*(1|10|100|1000)(ms)?$"
-
-                match = re.search(severity_regex, patch_name)
-                if match:
-                    patch_severity = int(match.group(1))
-                else:
-                    print(
-                        f"Could not extract severity from patch name '{patch_name}' for project '{case_study.project_name}'"
-                    )
-                    continue
-
-                patch_id = patch_name.removesuffix("ms").rstrip(
-                    "0"
-                ).removesuffix("1")
-
-                abs_cut_off = 100
-                if patch_severity < 1000:
-                    abs_cut_off = 10
-                if patch_severity < 100:
-                    abs_cut_off = 1
-                    rel_cut_off = 0.0
-                else:
-                    rel_cut_off = 0.01
-
-                for profiler in profilers:
-                    new_row: tp.Dict[str, tp.Any] = {
-                        "CaseStudy":
-                            project_name,
-                        "Patch":
-                            patch_id,
-                        "Severity":
-                            patch_severity,
-                        "Configs":
-                            len(config_ids),
-                        "RegressedConfigs":
-                            len(regressions_gt[patch_id])
-                            if patch_id in regressions_gt else -1
-                    }
-
-                    profiler.set_absolute_cut_off(abs_cut_off)
-                    profiler.set_relative_cut_off(rel_cut_off)
-
-                    #                    if profiler.name == "Base":
-                    #                        profiler.report_type = MPRTimeReportAggregate
-
-                    regressions_actual = compute_profiler_predictions(
-                        profiler, project_name, case_study, config_ids,
-                        patch_name
-                    )
-
-                    if regressions_actual and patch_id in regressions_gt:
-                        ground_truth = regressions_gt[patch_id]
-
-                        results = ConfusionMatrix(
-                            map_to_positive_config_ids(ground_truth),
-                            map_to_negative_config_ids(ground_truth),
-                            map_to_positive_config_ids(regressions_actual),
-                            map_to_negative_config_ids(regressions_actual)
-                        )
-
-                        new_row['precision'] = results.precision()
-                        new_row['recall'] = results.recall()
-                        new_row['f1_score'] = results.f1_score()
-                        new_row['Profiler'] = profiler.name
-                        new_row['fp_ids'] = results.getFPs()
-                        new_row['fn_ids'] = results.getFNs()
-                    else:
-                        print(
-                            f"Error calculating precision/recall for {project_name=}/{patch_name=}/{profiler.name=}"
-                        )
-                        new_row['precision'] = np.nan
-                        new_row['recall'] = np.nan
-                        new_row['f1_score'] = np.nan
-                        new_row['Profiler'] = profiler.name
-                        new_row['fp_ids'] = []
-                        new_row['fn_ids'] = []
-
-                    table_rows.append(new_row)
-
-        raw_df = pd.DataFrame.from_records(table_rows)
-        pd.set_option('display.max_columns', None)
-        print(f"{raw_df=}")
-
-        table_rows = []
-        for cs in case_studies:
-            new_row = {
-                "CaseStudy": cs.project_name,
-                "# Regressions": num_regressions[cs.project_name]
-            }
-            for severity in [1, 10, 100, 1000]:
-                for profiler in profilers:
-                    df = raw_df[(raw_df["CaseStudy"] == cs.project_name) &
-                                (raw_df["Severity"] == severity) &
-                                (raw_df["Profiler"] == profiler.name)]
-
-                    print(f"{df=}")
-
-                    new_row[f"{profiler.name}_{severity}ms"] = df["precision"
-                                                                 ].mean()
-                    new_row[f"{profiler.name}_{severity}_recall"] = df["recall"
-                                                                      ].mean()
-
-            table_rows.append(new_row)
-
-        return table_rows
-
     def __by_severity(self):
         profilers = self.PROFILERS
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -444,6 +267,9 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                 print(
                     f"Processing config '{config_id}' ({idx2+1}/{len(config_ids)})"
                 )
+                if config_id >= 25:
+                    print(f"Skipping config '{config_id}'")
+                    continue
                 report_paths = {}
 
                 # Load reports once in the beginning
