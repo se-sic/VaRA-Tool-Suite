@@ -215,6 +215,18 @@ class Profiler():
                         f"({np.mean(old_values)}us lost)"
                     )
 
+        # Cover cases where features only exist in the new PIM
+        for feature, new_values in current_pim.items():
+            if feature not in baseline_pim:
+                old_values = [0] * len(new_values)
+                if not self._is_feature_relevant(old_values, new_values):
+                    continue
+
+                is_regression = is_regression or \
+                    self._is_significantly_different(
+                        old_values, new_values
+                    )
+
         return is_regression
 
     def _sum_pim_regression_check(
