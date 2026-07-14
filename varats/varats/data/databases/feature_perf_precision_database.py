@@ -952,6 +952,7 @@ def _precise_pim_feature_regression_check(
     baseline_pim: tp.DefaultDict[str, tp.List[int]],
     current_pim: tp.DefaultDict[str, tp.List[int]],
     profiler: Profiler,
+    patch_name: str = ""
 ) -> tp.DefaultDict[str, bool]:
     is_regression = {}
 
@@ -978,7 +979,7 @@ def _precise_pim_feature_regression_check(
         else:
             if np.mean(old_values) > profiler.absolute_cut_off:
                 print(
-                    f"Could not find feature {feature} in new trace. "
+                    f"{profiler.name}: Could not find feature {feature} in new trace for patch {patch_name}. "
                     f"({np.mean(old_values)}us lost)"
                 )
             is_regression[feature] = False
@@ -1033,7 +1034,7 @@ def get_feature_regressions_xray(
         )
 
     return _precise_pim_feature_regression_check(
-        old_acc_pim, new_acc_pim, profiler
+        old_acc_pim, new_acc_pim, profiler, patch_name
     ), (old_acc_pim, new_acc_pim)
 
 
@@ -1068,7 +1069,7 @@ def get_feature_regressions_pim(
         )
 
     results = _precise_pim_feature_regression_check(
-        old_acc_pim, new_acc_pim, profiler
+        old_acc_pim, new_acc_pim, profiler, patch_name
     )
 
     return results, (old_acc_pim, new_acc_pim)
@@ -1108,7 +1109,7 @@ def get_feature_regressions_ebpf(
         )
 
     return _precise_pim_feature_regression_check(
-        old_acc_pim, new_acc_pim, profiler
+        old_acc_pim, new_acc_pim, profiler, patch_name
     ), (old_acc_pim, new_acc_pim)
 
 
@@ -1187,6 +1188,10 @@ def load_precision_whitebox_data(
             )
 
             for patch in ground_truth_report.patch_names:
+                #DEBUG: Ignore ug_grid patches
+                if "ug_grid" in patch:
+                    continue
+
                 relevant_patch = patch.removesuffix("detect") + "1000ms"
                 for profiler in profilers:
                     report_file, rpf = profiler_report_files[profiler]
