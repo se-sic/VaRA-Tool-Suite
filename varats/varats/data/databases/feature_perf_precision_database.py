@@ -185,7 +185,7 @@ class Profiler():
 
     def _precise_pim_regression_check(
         self, baseline_pim: tp.DefaultDict[str, tp.List[int]],
-        current_pim: tp.DefaultDict[str, tp.List[int]]
+        current_pim: tp.DefaultDict[str, tp.List[int]], patch_name: str
     ) -> bool:
         """Compute if there was a regression in one of the feature terms of the
         model between the current and the baseline, using a Mann-Whitney U
@@ -208,6 +208,14 @@ class Profiler():
                 is_regression = is_regression or \
                     self._is_significantly_different(
                         old_values, new_values
+                    )
+
+                feature_regresses = self._is_significantly_different(
+                    old_values, new_values
+                )
+                if feature_regresses:
+                    print(
+                        f"{self.name}: Found regression for feature {feature} for patch {patch_name}."
                     )
             else:
                 if np.mean(old_values) > self.absolute_cut_off:
@@ -272,11 +280,13 @@ class Profiler():
 
     def pim_regression_check(
         self, baseline_pim: tp.DefaultDict[str, tp.List[int]],
-        current_pim: tp.DefaultDict[str, tp.List[int]]
+        current_pim: tp.DefaultDict[str, tp.List[int]], patch_name: str
     ) -> bool:
         """Compares two pims and determines if there was a regression between
         the baseline and current."""
-        return self._precise_pim_regression_check(baseline_pim, current_pim)
+        return self._precise_pim_regression_check(
+            baseline_pim, current_pim, patch_name
+        )
 
     def default_regression_check(
         self, old_values: tp.Sequence[tp.Union[float, int]],
@@ -325,7 +335,7 @@ class VXray(Profiler):
             for feature, value in pim.items():
                 new_acc_pim[feature].append(value)
 
-        return self.pim_regression_check(old_acc_pim, new_acc_pim)
+        return self.pim_regression_check(old_acc_pim, new_acc_pim, patch_name)
 
 
 class PIMTracer(Profiler):
@@ -378,7 +388,7 @@ class PIMTracer(Profiler):
 
         new_acc_pim = self.__aggregate_pim_data(opt_mr.reports())
 
-        return self.pim_regression_check(old_acc_pim, new_acc_pim)
+        return self.pim_regression_check(old_acc_pim, new_acc_pim, patch_name)
 
 
 class EbpfTraceTEF(Profiler):
@@ -415,7 +425,7 @@ class EbpfTraceTEF(Profiler):
             for feature, value in pim.items():
                 new_acc_pim[feature].append(value)
 
-        return self.pim_regression_check(old_acc_pim, new_acc_pim)
+        return self.pim_regression_check(old_acc_pim, new_acc_pim, patch_name)
 
 
 class Baseline(Profiler):
@@ -1311,6 +1321,19 @@ def load_precision_whitebox_data(
                     new_row["FN"] = results.getFNs()
                     new_row["old_pim"] = pims[0]
                     new_row["new_pim"] = pims[1]
+
+                    # For false positives, report the mean difference between old and new pim values
+                    fp_mean_diffs = {}
+                    fp_original_runtimes = {}
+                    for fp in results.getFPs():
+                        if fp in pims[0] and fp in pims[1]:
+                            old_mean = np.mean(pims[0][fp])
+                            new_mean = np.mean(pims[1][fp])
+                            fp_mean_diffs[fp] = new_mean - old_mean
+                            fp_original_runtimes[fp] = old_mean
+
+                    new_row["fp_mean_diffs"] = fp_mean_diffs
+                    new_row["fp_original_runtimes"] = fp_original_runtimes
 
                     table_rows.append(new_row)
 
