@@ -1,6 +1,7 @@
 """Shared data aggregation function for analyzing feature performance."""
 import abc
 import logging
+import re
 import traceback
 import typing as tp
 from collections import defaultdict
@@ -724,6 +725,17 @@ class OverheadData:
         )
 
 
+def extract_severity_from_patch_name(patch_name: str) -> int | None:
+    severity_regex = r".*(1|10|100|1000)(ms)?$"
+
+    if (match := re.search(severity_regex, patch_name)):
+        patch_severity = int(match.group(1))
+    else:
+        return None
+
+    return patch_severity
+
+
 def load_precision_data(
     case_studies: tp.List[CaseStudy], profilers: tp.List[Profiler]
 ) -> pd.DataFrame:
@@ -732,6 +744,20 @@ def load_precision_data(
     table_rows_plot = []
     for case_study in case_studies:
         for patch_name in get_patch_names(case_study):
+
+            # TEMP: Ignore ug_grid patches
+            if "ug_grid" in patch_name:
+                continue
+
+            # Extract severity
+            patch_severity = extract_severity_from_patch_name(patch_name)
+            if patch_severity != 1000 and patch_severity is not None:
+                # We only consider patches with 1000 ms severity, or patches without severity (Real-World patches)
+                print(
+                    f"Skipping patch {patch_name} with severity {patch_severity}"
+                )
+                continue
+
             rev = case_study.revisions[0]
             project_name = case_study.project_name
 
@@ -954,38 +980,40 @@ def _precise_pim_feature_regression_check(
     profiler: Profiler,
     patch_name: str = ""
 ) -> tp.DefaultDict[str, bool]:
-    is_regression = {}
+    is_regression = defaultdict(bool)
 
-    for feature, old_values in baseline_pim.items():
-        if feature in current_pim:
-            if feature == "Base":
-                # The regression should be identified in actual feature code
-                is_regression[feature] = False
-                continue
+    all_features = set(baseline_pim.keys()).union(set(current_pim.keys()))
 
+    for feature in all_features:
+        is_regression[feature] = False
+
+        if feature == "Base":
+            # The regression should be identified in actual feature code
+            continue
+
+        if feature in baseline_pim and feature in current_pim:
+            old_values = baseline_pim[feature]
+            new_values = current_pim[feature]
+        elif feature in baseline_pim:
+            print(
+                f"{profiler.name}: Could not find feature {feature} in new trace for patch {patch_name}. "
+                f"({np.mean(old_values)}us lost)"
+            )
+            continue
+        else:
+            print(
+                f"{profiler.name}: Could not find feature {feature} in baseline trace for patch {patch_name}."
+                f"Assuming old values are 0."
+            )
+            old_values = [0] * len(current_pim[feature])
             new_values = current_pim[feature]
 
-            # Skip features that seem not to be relevant for regressions testing
-            if not profiler._is_feature_relevant(old_values, new_values):
-                is_regression[feature] = False
-                continue
+        # Skip features that seem not to be relevant for regressions testing
+        if not profiler._is_feature_relevant(old_values, new_values):
+            continue
 
-            ttest_res = ttest_ind(old_values, new_values)
-
-            if ttest_res.pvalue < 0.05:
-                is_regression[feature] = True
-            else:
-                is_regression[feature] = False
-        else:
-            if np.mean(old_values) > profiler.absolute_cut_off:
-                print(
-                    f"{profiler.name}: Could not find feature {feature} in new trace for patch {patch_name}. "
-                    f"({np.mean(old_values)}us lost)"
-                )
-            is_regression[feature] = False
-            # TODO: how to handle this?
-            # raise NotImplementedError()
-            # is_regression = True
+        ttest_res = ttest_ind(old_values, new_values)
+        is_regression[feature] = bool(ttest_res.pvalue < 0.05)
 
     return is_regression
 
@@ -1126,22 +1154,22 @@ def load_precision_whitebox_data(
     table_rows = []
 
     for cs in case_studies:
-        if cs.project_name == "DunePerfRegression":
-            print(f"Skipping {cs.project_name}...")
-            continue
-
         print(f"Processing case study {cs.project_name}...")
         rev = cs.revisions[0]
 
         # Set profiler cutoff
         relative_cutoff = 0.01
-        if cs.project_name in ["DunePerfRegression"]:
+
+        if cs.project_name == "DunePerfRegression":
             relative_cutoff = 0.05
 
         for profiler in profilers:
             profiler.set_relative_cut_off(relative_cutoff)
 
         for config_id in cs.get_config_ids_for_revision(rev):
+            if config_id >= 25:
+                # Temporary ignore new configs as ground truth data may not be reliable yet
+                continue
             print(f"Processing config id {config_id}...")
             # Load ground truth data
             ground_truth_report_files = get_processed_revisions_files(
@@ -1231,6 +1259,14 @@ def load_precision_whitebox_data(
                     regressed_features_gt = get_regressed_features_gt(
                         all_features, ground_truth_report, [relevant_patch]
                     )
+
+                    # Skip all cases, were the baseline did not identify any regressions
+                    # This distorts the data otherwise
+                    if not any(regressed_features_gt.values()):
+                        print(
+                            f"{profiler.name}: No regressions identified in ground truth for {cs.project_name=}, {config_id=}, {patch=}"
+                        )
+                        continue
 
                     regressed_features_predicted, pims = _PROFILER_FEATURE_REGRESSIONS[
                         profiler.name](rpf, relevant_patch, profiler)

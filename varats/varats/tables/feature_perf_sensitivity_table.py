@@ -21,6 +21,7 @@ from varats.data.databases.feature_perf_precision_database import (
     VXray,
     PIMTracer,
     EbpfTraceTEF,
+    extract_severity_from_patch_name,
 )
 from varats.data.metrics import ConfusionMatrix
 from varats.data.reports.tef_feature_identifier_report import (
@@ -193,7 +194,8 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
             # Ensure for the precision/recall columns that positive values are prepended with a '+' sign
             style.format(
-                lambda x: f"+{x:.2f}" if x > 0 else f"{x:.2f}",
+                lambda x: f"+{x:.2f}" if x > 0 else f"{x:.2f}"
+                if x < 0 else f"±{x:.2f}",
                 subset=[(s, f"\\rotatebox{{90}}{{{p.name}}}")
                         for p in self.PROFILERS
                         for s in self.SEVERITIES
@@ -251,8 +253,6 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
         table_rows = []
 
         for idx1, case_study in enumerate(case_studies):
-            if case_study.project_name != "DunePerfRegression":
-                continue
             print(
                 f"Processing case study '{case_study.project_name}' ({idx1+1}/{len(case_studies)})"
             )
@@ -316,14 +316,11 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                     if "ug_grid" in patch_name:
                         continue
 
-                    # TODO: Only consider patches that actually can introduce a regression
-                    # TODO: Discuss with Florian: Determine that from the TEFFeatureIdentifierReport or through manual labelling?
-                    severity_regex = r".*(1|10|100|1000)(ms)?$"
+                    patch_severity = extract_severity_from_patch_name(
+                        patch_name
+                    )
 
-                    match = re.search(severity_regex, patch_name)
-                    if match:
-                        patch_severity = int(match.group(1))
-                    else:
+                    if patch_severity is None:
                         print(
                             f"Could not extract severity from patch name '{patch_name}' for project '{case_study.project_name}' (config_id={config_id})"
                         )
@@ -340,6 +337,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                     elif patch_severity < 100:
                         # 10ms and 1ms
                         abs_cut_off = 1
+                        rel_cut_off = 0.0
                     else:
                         # 1000ms
                         pass
