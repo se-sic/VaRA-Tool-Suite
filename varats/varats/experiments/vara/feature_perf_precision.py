@@ -7,12 +7,14 @@ from abc import abstractmethod
 from pathlib import Path
 from time import sleep
 
+import attr
 import benchbuild.extensions as bb_ext
 from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils import actions
 from benchbuild.utils.actions import StepResult
 from benchbuild.utils.cmd import time, cp, sudo, bpftrace
+from benchbuild.utils.requirements import SlurmRequirement
 from plumbum import local, BG
 from plumbum.commands.modifiers import Future
 
@@ -955,6 +957,27 @@ def setup_actions_for_vara_overhead_experiment(
     return analysis_actions
 
 
+@attr.s
+class SlurmCPUsPerTask(SlurmRequirement):
+    """
+    Limit the number of CPUs per task for the slurm job.
+
+    We use this for single core overhead measurements.
+    """
+    cpus: int = attr.ib()
+
+    def to_slurm_cli_opt(self) -> str:
+        return f"--cpus-per-task={self.cpus}"
+
+    @classmethod
+    def merge_requirements(
+        cls, lhs_option: 'SlurmCPUsPerTask', rhs_option: 'SlurmCPUsPerTask'
+    ) -> 'SlurmCPUsPerTask':
+        """Merge two SlurmCPUsPerTask requirements by taking the minimum of the
+        two."""
+        return SlurmCPUsPerTask(min(lhs_option.cpus, rhs_option.cpus))
+
+
 class TEFProfileOverheadRunner(FeatureExperiment, shorthand="TEFo"):
     """Test runner for feature performance."""
 
@@ -975,6 +998,18 @@ class TEFProfileOverheadRunner(FeatureExperiment, shorthand="TEFo"):
         return setup_actions_for_vara_overhead_experiment(
             self, project, FeatureInstrType.TEF, RunGenTracedWorkloadsOverhead
         )
+
+
+class TEFProfileOverheadRunnerSingleCore(
+    TEFProfileOverheadRunner, shorthand="TEFoS"
+):
+    """Single core version of the TEF profile overhead runner."""
+
+    NAME = "RunTEFProfilerOS"
+
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
+
+    REQUIREMENTS = [SlurmCPUsPerTask(1)]
 
 
 class PIMProfileOverheadRunner(FeatureExperiment, shorthand="PIMo"):
@@ -1000,6 +1035,18 @@ class PIMProfileOverheadRunner(FeatureExperiment, shorthand="PIMo"):
         )
 
 
+class PIMProfileOverheadRunnerSingleCore(
+    PIMProfileOverheadRunner, shorthand="PIMoS"
+):
+    """Single core version of the PIM profile overhead runner."""
+
+    NAME = "RunPIMProfilerOS"
+
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
+
+    REQUIREMENTS = [SlurmCPUsPerTask(1)]
+
+
 class EbpfTraceTEFOverheadRunner(FeatureExperiment, shorthand="ETEFo"):
     """Test runner for feature performance."""
 
@@ -1023,6 +1070,18 @@ class EbpfTraceTEFOverheadRunner(FeatureExperiment, shorthand="ETEFo"):
             self, project, FeatureInstrType.USDT_RAW,
             RunBPFTracedWorkloadsOverhead
         )
+
+
+class EbpfTraceTEFOverheadRunnerSingleCore(
+    EbpfTraceTEFOverheadRunner, shorthand="ETEFoS"
+):
+    """Single core version of the EBPF trace TEF overhead runner."""
+
+    NAME = "RunEBPFTraceTEFProfilerOS"
+
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
+
+    REQUIREMENTS = [SlurmCPUsPerTask(1)]
 
 
 class BccTraceTEFOverheadRunner(FeatureExperiment, shorthand="BCCo"):
@@ -1117,6 +1176,18 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
         return setup_actions_for_vara_overhead_experiment(
             self, project, FeatureInstrType.NONE, RunBlackBoxBaselineOverhead
         )
+
+
+class BlackBoxOverheadBaselineSingleCore(
+    BlackBoxOverheadBaseline, shorthand="BBBaseOS"
+):
+    """Single core version of the black box overhead baseline."""
+
+    NAME = "GenBBBaselineOS"
+
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
+
+    REQUIREMENTS = [SlurmCPUsPerTask(1)]
 
 
 ################################################################################
