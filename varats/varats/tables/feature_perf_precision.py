@@ -326,18 +326,26 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
         overhead_df = load_overhead_data(case_studies, profilers)
         overhead_df = overhead_df[[
             "CaseStudy", "Profiler", "time", "memory", "overhead_time",
-            "overhead_memory"
+            "overhead_memory", "time_single_core", "memory_single_core",
+            "overhead_time_single_core", "overhead_memory_single_core"
         ]]
-        overhead_df['overhead_time_rel'] = overhead_df['time'] / (
-            overhead_df['time'] - overhead_df['overhead_time']
-        ) * 100 - 100
 
-        overhead_df['overhead_memory_rel'] = overhead_df['memory'] / (
-            overhead_df['memory'] - overhead_df['overhead_memory']
-        ) * 100 - 100
+        for metric in ["time", "memory"]:
+            for cores in ["", "_single_core"]:
+                overhead_df[f"overhead_{metric}{cores}_rel"
+                           ] = overhead_df[f"{metric}{cores}"] / (
+                               overhead_df[f"{metric}{cores}"] -
+                               overhead_df[f"overhead_{metric}{cores}"]
+                           ) * 100 - 100
+
         overhead_df['overhead_memory_rel'].replace([np.inf, -np.inf],
                                                    np.nan,
                                                    inplace=True)
+        overhead_df['overhead_memory_single_core_rel'].replace([
+            np.inf, -np.inf
+        ],
+                                                               np.nan,
+                                                               inplace=True)
 
         # Merge with precision data
         merged_df = pd.merge(
@@ -351,21 +359,36 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             )
             merged_df = merged_df.groupby(['CaseStudy', "Profiler"],
                                           as_index=False).agg({
-                                              'precision': 'mean',
-                                              'recall': 'mean',
-                                              'overhead_time': 'mean',
-                                              'overhead_time_rel': 'mean',
-                                              'overhead_memory_rel': 'mean',
-                                              'overhead_memory': 'mean'
+                                              'precision':
+                                                  'mean',
+                                              'recall':
+                                                  'mean',
+                                              'overhead_time':
+                                                  'mean',
+                                              'overhead_time_rel':
+                                                  'mean',
+                                              'overhead_memory_rel':
+                                                  'mean',
+                                              'overhead_memory':
+                                                  'mean',
+                                              'overhead_time_single_core':
+                                                  'mean',
+                                              'overhead_time_single_core_rel':
+                                                  'mean',
+                                              'overhead_memory_single_core':
+                                                  'mean',
+                                              'overhead_memory_single_core_rel':
+                                                  'mean',
                                           })
 
+        columns = [
+            'precision', 'recall', 'overhead_time_rel',
+            'overhead_time_single_core_rel', 'overhead_memory_rel',
+            'overhead_memory'
+        ]
+
         pivot_df = merged_df.pivot(
-            index='CaseStudy',
-            columns='Profiler',
-            values=[
-                'precision', 'recall', 'overhead_time_rel',
-                'overhead_memory_rel', 'overhead_memory'
-            ]
+            index='CaseStudy', columns='Profiler', values=columns
         )
 
         pivot_df = pivot_df.swaplevel(0, 1, 1).sort_index(axis=1)

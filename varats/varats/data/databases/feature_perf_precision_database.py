@@ -127,6 +127,13 @@ class Profiler():
             raise ValueError("Cut off must be between 0 and 1")
         self.__relative_cut_off = cut_off
 
+    def set_overhead_experiment(
+        self, overhead_experiment: tp.Type[FeatureExperiment]
+    ) -> None:
+        """Sets the experiment used to produce overhead data that this profilers
+        produced when collecting information."""
+        self.__overhead_experiment = overhead_experiment
+
     def _is_significantly_different(
         self, old_values: tp.Sequence[tp.Union[float, int]],
         new_values: tp.Sequence[tp.Union[float, int]]
@@ -431,10 +438,13 @@ class EbpfTraceTEF(Profiler):
 class Baseline(Profiler):
     """Profiler mapper implementation for the black-box baseline."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        experiment=fpp.BlackBoxBaselineRunner,
+        overhead_experiment=fpp.BlackBoxOverheadBaseline
+    ) -> None:
         super().__init__(
-            "Base", fpp.BlackBoxBaselineRunner, fpp.BlackBoxOverheadBaseline,
-            fpp.MPRTimeReportAggregate
+            "Base", experiment, overhead_experiment, fpp.MPRTimeReportAggregate
         )
 
     def is_regression(
@@ -513,7 +523,8 @@ def get_regressing_config_ids_gt(
             fpp.BlackBoxBaselineRunner,
             fpp.MPRTimeReportAggregate,
             get_case_study_file_name_filter(case_study),
-            config_id=config_id
+            config_id=config_id,
+            only_newest=True
         )
         if len(report_files) > 1:
             raise AssertionError("Should only be one")
@@ -755,8 +766,10 @@ def load_precision_data(
     for case_study in case_studies:
         for patch_name in get_patch_names(case_study):
 
-            # TEMP: Ignore ug_grid patches
+            # TEMP: Ignore certain patches
             if "ug_grid" in patch_name:
+                continue
+            if "_maker_" in patch_name:
                 continue
 
             # Extract severity
@@ -807,6 +820,8 @@ def load_precision_data(
                     new_row['Profiler'] = profiler.name
                     new_row['fp_ids'] = results.getFPs()
                     new_row['fn_ids'] = results.getFNs()
+                    new_row['p_ids'] = map_to_positive_config_ids(ground_truth)
+                    new_row['n_ids'] = map_to_negative_config_ids(ground_truth)
                 else:
                     new_row['precision'] = np.nan
                     new_row['recall'] = np.nan
@@ -814,6 +829,8 @@ def load_precision_data(
                     new_row['Profiler'] = profiler.name
                     new_row['fp_ids'] = []
                     new_row['fn_ids'] = []
+                    new_row['p_ids'] = []
+                    new_row['n_ids'] = []
 
                 table_rows_plot.append(new_row)
 
@@ -827,6 +844,20 @@ def load_overhead_data(
     overhead metrics that where introduced by the different profilers."""
     table_rows = []
 
+    sc_profilers = profilers.copy()
+
+    for p in sc_profilers:
+        if p.name == "Base":
+            p.set_overhead_experiment(fpp.BlackBoxOverheadBaselineSingleCore)
+        elif p.name == "WXray":
+            p.set_overhead_experiment(fpp.TEFProfileOverheadRunnerSingleCore)
+        elif p.name == "eBPFTrace":
+            p.set_overhead_experiment(fpp.EbpfTraceTEFOverheadRunnerSingleCore)
+        else:
+            print(
+                f"Warning: Profiler {p.name} does not have a single-core overhead experiment, using default overhead experiment instead."
+            )
+
     for case_study in case_studies:
         rev = case_study.revisions[0]
         project_name = case_study.project_name
@@ -834,26 +865,31 @@ def load_overhead_data(
         overhead_ground_truth = OverheadData.compute_overhead_data(
             Baseline(), case_study, rev
         )
-        if not overhead_ground_truth:
+
+        overhead_gt_single_core = OverheadData.compute_overhead_data(
+            Baseline(
+                overhead_experiment=fpp.BlackBoxOverheadBaselineSingleCore
+            ), case_study, rev
+        )
+
+        if not overhead_ground_truth and not overhead_gt_single_core:
             print(
                 f"No baseline data for {case_study.project_name}, generating dummy data"
             )
-            table_rows.extend([{
+            new_row = {
                 'CaseStudy': project_name,
-                'Profiler': p,
-                'time': np.nan,
-                'memory': np.nan,
-                'major_page_faults': np.nan,
-                'minor_page_faults': np.nan,
-                'fs_inputs': np.nan,
-                'fs_outputs': np.nan,
-                'overhead_time': np.nan,
-                'overhead_memory': np.nan,
-                'overhead_major_page_faults': np.nan,
-                'overhead_minor_page_faults': np.nan,
-                'overhead_fs_inputs': np.nan,
-                'overhead_fs_outputs': np.nan
-            } for p in ["Base"] + [profiler.name for profiler in profilers]])
+            }
+            for k in [
+                'time', 'memory', 'major_page_faults', 'minor_page_faults',
+                'fs_inputs', 'fs_outputs'
+            ]:
+                new_row[k] = np.nan
+                new_row[f'{k}_single_core'] = np.nan
+                new_row[f'overhead_{k}'] = np.nan
+                new_row[f'overhead_{k}_single_core'] = np.nan
+            for profiler in profilers:
+                new_row['Profiler'] = profiler.name
+                table_rows.append(new_row.copy())
             continue
 
         new_row = {
@@ -870,85 +906,126 @@ def load_overhead_data(
             'overhead_major_page_faults': 0,
             'overhead_minor_page_faults': 0,
             'overhead_fs_inputs': 0,
-            'overhead_fs_outputs': 0
+            'overhead_fs_outputs': 0,
+            'overhead_time_single_core': 0,
+            'overhead_memory_single_core': 0,
+            'overhead_major_page_faults_single_core': 0,
+            'overhead_minor_page_faults_single_core': 0,
+            'overhead_fs_inputs_single_core': 0,
+            'overhead_fs_outputs_single_core': 0
         }
 
         table_rows.append(new_row)
 
-        for profiler in profilers:
+        def _get_profiler_overhead(
+            profiler: Profiler,
+            overhead_gt: OverheadData,
+            key_suffix: str = ""
+        ):
+            if key_suffix and not key_suffix.startswith("_"):
+                key_suffix = "_" + key_suffix
+
             profiler_overhead = OverheadData.compute_overhead_data(
                 profiler, case_study, rev
             )
 
-            new_row = {'CaseStudy': project_name, 'Profiler': profiler.name}
+            result: dict[str, float | int | str] = {}
 
             if profiler_overhead:
-                time_diff = profiler_overhead.config_wise_time_diff(
-                    overhead_ground_truth
-                )
+                time_diff = profiler_overhead.config_wise_time_diff(overhead_gt)
                 memory_diff = profiler_overhead.config_wise_memory_diff(
-                    overhead_ground_truth
+                    overhead_gt
                 )
                 major_page_faults_diff = \
                     profiler_overhead.config_wise_major_page_faults_diff(
-                        overhead_ground_truth
+                        overhead_gt
                     )
                 minor_page_faults_diff = \
                     profiler_overhead.config_wise_minor_page_faults_diff(
-                        overhead_ground_truth
+                        overhead_gt
                     )
                 fs_inputs_diff = profiler_overhead.config_wise_fs_inputs_diff(
-                    overhead_ground_truth
+                    overhead_gt
                 )
                 fs_outputs_diff = profiler_overhead.config_wise_fs_outputs_diff(
-                    overhead_ground_truth
+                    overhead_gt
                 )
 
-                new_row['time'] = profiler_overhead.mean_time()
-                new_row['overhead_time'] = np.mean(list(time_diff.values()))
+                result[f'time{key_suffix}'] = profiler_overhead.mean_time()
+                result[f'overhead_time{key_suffix}'] = np.mean(
+                    list(time_diff.values())
+                ).astype(float)
 
-                new_row['memory'] = profiler_overhead.mean_memory()
-                new_row['overhead_memory'] = np.mean(list(memory_diff.values()))
+                result[f'memory{key_suffix}'] = profiler_overhead.mean_memory()
+                result[f'overhead_memory{key_suffix}'] = np.mean(
+                    list(memory_diff.values())
+                ).astype(float)
 
-                new_row['major_page_faults'
-                       ] = profiler_overhead.mean_major_page_faults()
-                new_row['overhead_major_page_faults'] = np.mean(
+                result[f'major_page_faults{key_suffix}'
+                      ] = profiler_overhead.mean_major_page_faults()
+                result[f'overhead_major_page_faults{key_suffix}'] = np.mean(
                     list(major_page_faults_diff.values())
-                )
+                ).astype(float)
 
-                new_row['minor_page_faults'
-                       ] = profiler_overhead.mean_minor_page_faults()
-                new_row['overhead_minor_page_faults'] = np.mean(
+                result[f'minor_page_faults{key_suffix}'
+                      ] = profiler_overhead.mean_minor_page_faults()
+                result[f'overhead_minor_page_faults{key_suffix}'] = np.mean(
                     list(minor_page_faults_diff.values())
-                )
+                ).astype(float)
 
-                new_row['fs_inputs'] = profiler_overhead.mean_fs_inputs()
-                new_row['overhead_fs_inputs'] = np.mean(
+                result[f'fs_inputs{key_suffix}'
+                      ] = profiler_overhead.mean_fs_inputs()
+                result[f'overhead_fs_inputs{key_suffix}'] = np.mean(
                     list(fs_inputs_diff.values())
-                )
+                ).astype(float)
 
-                new_row['fs_outputs'] = profiler_overhead.mean_fs_outputs()
-                new_row['overhead_fs_outputs'] = np.mean(
+                result[f'fs_outputs{key_suffix}'
+                      ] = profiler_overhead.mean_fs_outputs()
+                result[f'overhead_fs_outputs{key_suffix}'] = np.mean(
                     list(fs_outputs_diff.values())
+                ).astype(float)
+            else:
+                for k in [
+                    'time', 'memory', 'major_page_faults', 'minor_page_faults',
+                    'fs_inputs', 'fs_outputs'
+                ]:
+                    result[f'{k}{key_suffix}'] = np.nan
+
+            return result
+
+        for profiler, sc_profiler in zip(profilers, sc_profilers):
+            new_row: dict[str, float | int | str] = {
+                'CaseStudy': project_name,
+                'Profiler': profiler.name
+            }
+
+            if overhead_ground_truth:
+                new_row.update(
+                    _get_profiler_overhead(profiler, overhead_ground_truth)
                 )
             else:
-                new_row['time'] = np.nan
-                new_row['overhead_time'] = np.nan
+                for k in [
+                    'time', 'memory', 'major_page_faults', 'minor_page_faults',
+                    'fs_inputs', 'fs_outputs'
+                ]:
+                    new_row[k] = np.nan
+                    new_row[f'overhead_{k}'] = np.nan
 
-                new_row['memory'] = np.nan
-                new_row['overhead_memory'] = np.nan
-
-                new_row['major_page_faults'] = np.nan
-                new_row['overhead_major_page_faults'] = np.nan
-
-                new_row['minor_page_faults'] = np.nan
-                new_row['overhead_minor_page_faults'] = np.nan
-
-                new_row['fs_inputs'] = np.nan
-                new_row['overhead_fs_inputs'] = np.nan
-
-                new_row['fs_outputs'] = np.nan
-                new_row['overhead_fs_outputs'] = np.nan
+            if overhead_gt_single_core:
+                new_row.update(
+                    _get_profiler_overhead(
+                        sc_profiler,
+                        overhead_gt_single_core,
+                        key_suffix="single_core"
+                    )
+                )
+            else:
+                for k in [
+                    'time', 'memory', 'major_page_faults', 'minor_page_faults',
+                    'fs_inputs', 'fs_outputs'
+                ]:
+                    new_row[f'{k}_single_core'] = np.nan
+                    new_row[f'overhead_{k}_single_core'] = np.nan
 
             table_rows.append(new_row)
 
