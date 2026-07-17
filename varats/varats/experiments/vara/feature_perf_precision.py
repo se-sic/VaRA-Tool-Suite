@@ -687,6 +687,204 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
         )
 
 
+def setup_actions_for_walrus_sanity_experiment(
+    experiment: FeatureExperiment,
+    project: VProject,
+    instr_type: FeatureInstrType,
+    analysis_step: tp.Type[AnalysisProjectStepBaseTy],
+    report_type=MultiPatchReport,
+    num_reps: int = 10,
+) -> tp.MutableSequence[actions.Step]:
+    """Sets up actions for a given perf precision experiment."""
+
+    project.cflags += experiment.get_vara_feature_cflags(project)
+
+    threshold = get_threshold(project)
+    project.cflags += experiment.get_vara_tracing_cflags(
+        instr_type,
+        project=project,
+        save_temps=True,
+        instruction_threshold=threshold
+    )
+
+    project.cflags += get_extra_cflags(project)
+
+    project.ldflags += experiment.get_vara_tracing_ldflags()
+
+    # Add the required runtime extensions to the project(s).
+    project.runtime_extension = (
+        bb_ext.run.RuntimeExtension(project, experiment) <<
+        bb_ext.time.RunWithTime()
+    )
+
+    # Add the required compiler extensions to the project(s).
+    project.compiler_extension = (
+        bb_ext.compiler.RunCompiler(project, experiment) <<
+        WithUnlimitedStackSize()
+    )
+
+    # Add own error handler to compile step.
+    project.compile = get_default_compile_error_wrapped(
+        experiment.get_handle(), project, experiment.REPORT_SPEC.main_report
+    )
+
+    # TODO: change to multiple binaries
+    binary = select_project_binaries(project)[0]
+    if binary.type != BinaryType.EXECUTABLE:
+        raise AssertionError("Experiment only works with executables.")
+
+    result_filepath = create_new_success_result_filepath(
+        experiment.get_handle(),
+        experiment.get_handle().report_spec().main_report,
+        project,
+        binary,
+        get_current_config_id(project),
+    )
+
+    patch_steps = []
+
+    def __add_patch_steps(rep: int) -> None:
+        patch_steps.append(ReCompile(project))
+        dummy_patch_name = f"dummy_{rep}"
+        patch_steps.append(
+            analysis_step(
+                project,
+                binary,
+                file_name=
+                f"patched_{len(dummy_patch_name)}_{dummy_patch_name}_rep_measurements",
+                reps=10
+            )
+        )
+
+    for i in range(num_reps):
+        __add_patch_steps(i)
+
+    analysis_actions = get_config_patch_steps(project)
+
+    analysis_actions.append(actions.Compile(project))
+    analysis_actions.append(
+        ZippedExperimentSteps(
+            result_filepath,
+            [
+                analysis_step(
+                    project,
+                    binary,
+                    file_name=report_type.
+                    create_baseline_report_name("rep_measurements"),
+                )
+            ] + patch_steps,
+        )
+    )
+    analysis_actions.append(actions.Clean(project))
+
+    return analysis_actions
+
+
+class BlackBoxSanityRunner(FeatureExperiment, shorthand="BBSan"):
+    """Test runner for feature performance."""
+
+    NAME = "GenBBSanity"
+
+    REPORT_SPEC = ReportSpecification(MPRTimeReportAggregate)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+
+        return setup_actions_for_walrus_sanity_experiment(
+            self,
+            project,
+            FeatureInstrType.NONE,
+            RunBlackBoxBaseline,
+            MPRTimeReportAggregate,
+        )
+
+
+class TEFProfileRunnerSanity(FeatureExperiment, shorthand="TEFSan"):
+    """Test runner for feature performance."""
+    NAME = "TEFProfilerSan"
+
+    REPORT_SPEC = ReportSpecification(MPRTEFAggregate)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+
+        return setup_actions_for_walrus_sanity_experiment(
+            self,
+            project,
+            FeatureInstrType.TEF,
+            RunGenTracedWorkloads,
+            MPRTEFAggregate,
+        )
+
+
+class PIMProfileRunnerSanity(FeatureExperiment, shorthand="PIMSan"):
+    """Test runner for feature performance."""
+
+    NAME = "PIMProfilerSan"
+
+    REPORT_SPEC = ReportSpecification(MPRPIMAggregate)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+
+        return setup_actions_for_walrus_sanity_experiment(
+            self,
+            project,
+            FeatureInstrType.PERF_INFLUENCE_TRACE,
+            RunGenTracedWorkloads,
+            MPRPIMAggregate,
+        )
+
+
+class EbpfTraceTEFProfileRunnerSanity(FeatureExperiment, shorthand="ETEFSan"):
+    """Test runner for feature performance."""
+    NAME = "EbpfProfilerSan"
+    REPORT_SPEC = ReportSpecification(MPRTEFAggregate)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+
+        return setup_actions_for_walrus_sanity_experiment(
+            self,
+            project,
+            FeatureInstrType.USDT_RAW,
+            RunBPFTracedWorkloads,
+            MPRTEFAggregate,
+        )
+
+
 ################################################################################
 # Overhead computation
 ################################################################################
