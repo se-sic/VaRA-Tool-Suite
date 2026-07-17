@@ -305,7 +305,10 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         """Setup performance overhead comparision table."""
-        case_studies = get_loaded_paper_config().get_all_case_studies()
+        case_studies = [
+            cs for cs in get_loaded_paper_config().get_all_case_studies()
+            if cs.project_name == "SynthIPCombined"
+        ]
         profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
 
         # Data aggregation
@@ -393,14 +396,36 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
 
         pivot_df = pivot_df.swaplevel(0, 1, 1).sort_index(axis=1)
 
-        columns = [
-            'precision', 'recall', 'overhead_time_rel', 'overhead_memory_rel',
-            'overhead_memory'
-        ]
         pivot_df = pivot_df.reindex([
             (prof.name, c) for prof in profilers for c in columns
         ],
                                     axis=1)
+
+        metric_map = {
+            "precision": ("Precision", ""),
+            "recall": ("Recall", ""),
+            "overhead_time_rel": ("overhead_time", "Multi"),
+            "overhead_time_single_core_rel": ("overhead_time", "Single"),
+            "overhead_memory_rel": ("overhead_memory", "Relative"),
+            "overhead_memory": ("overhead_memory", "Absolute"),
+        }
+
+        tmp = merged_df[columns].copy()
+        tmp.columns = pd.MultiIndex.from_tuples([
+            metric_map[c] for c in columns
+        ])
+
+        merged2 = pd.concat([merged_df.drop(columns=columns), tmp], axis=1)
+        pivot2 = merged2.pivot(
+            index='CaseStudy', columns='Profiler', values=tmp.columns
+        )
+        pivot2 = pivot2.swaplevel(1, 2, 1).swaplevel(0, 1, 1).sort_index(axis=1)
+
+        order = list(metric_map.values())
+        pivot2 = pivot2.reindex([
+            (prof.name, m, v) for prof in profilers for m, v in order
+        ],
+                                axis=1)
 
         # All means need to be computed before they are added as rows
         overall_mean = pivot_df.mean()
@@ -423,22 +448,6 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
 
         pivot_df.loc["OverallMean"] = overall_mean
 
-        # Rename columns
-        # pylint: disable=anomalous-backslash-in-string
-        overhead_time_c_name = "$\Delta$ Time $(\%)$"
-        overhead_memory_c_name = "$\Delta$ Mem $(\%)$"
-        overhead_memory_val_c_name = "$\Delta$ Mem $(Kbyte)$"
-        # pylint: enable=anomalous-backslash-in-string
-        pivot_df = pivot_df.rename(
-            columns={
-                "precision": "Precision",
-                "recall": "Recall",
-                "overhead_time_rel": overhead_time_c_name,
-                "overhead_memory_rel": overhead_memory_c_name,
-                "overhead_memory": overhead_memory_val_c_name,
-            }
-        )
-
         style: pd.io.formats.style.Styler = pivot_df.style
         kwargs: tp.Dict[str, tp.Any] = {}
 
@@ -447,6 +456,22 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             doc.packages.append(Package("amssymb"))
 
         if table_format.is_latex():
+            # Rename columns
+            # pylint: disable=anomalous-backslash-in-string
+            overhead_time_c_name = "$\Delta$ Time $(\%)$"
+            overhead_memory_c_name = "$\Delta$ Mem $(\%)$"
+            overhead_memory_val_c_name = "$\Delta$ Mem $(Kbyte)$"
+            # pylint: enable=anomalous-backslash-in-string
+            pivot_df = pivot_df.rename(
+                columns={
+                    "precision": "Precision",
+                    "recall": "Recall",
+                    "overhead_time_rel": overhead_time_c_name,
+                    "overhead_memory_rel": overhead_memory_c_name,
+                    "overhead_memory": overhead_memory_val_c_name,
+                }
+            )
+
             mv_columns = [
                 (prof.name, overhead_memory_val_c_name) for prof in profilers
             ]
