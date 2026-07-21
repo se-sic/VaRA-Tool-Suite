@@ -24,6 +24,9 @@ from varats.data.reports.performance_interaction_report import (
 from varats.experiments.base.perf_sampling import PerfSamplingSynth
 from varats.experiments.vara.performance_interaction import (
     PerformanceInteractionExperiment,
+    get_function_annotations,
+)
+from varats.experiments.vara.performance_interaction_synth import (
     PerformanceInteractionExperimentSynthetic,
 )
 from varats.jupyterhelper.file import (
@@ -36,6 +39,9 @@ from varats.mapping.configuration_map import ConfigurationMap
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config, get_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.report.function_overhead_report import (
+    MPRWLFunctionOverheadReportAggregate,
+)
 from varats.report.gnu_time_report import MPRWLTimeReportAggregate
 from varats.report.report import FileStatusExtension
 from varats.revision.revisions import (
@@ -291,13 +297,13 @@ def get_performance_data(
     except KeyError:
         return []
 
-    if np.isnan(vals_raw):
-        return []
+    if isinstance(vals_raw, str):
+        return tp.cast("list[float]", ast.literal_eval(vals_raw))
 
     if isinstance(vals_raw, list):
         return vals_raw
 
-    return tp.cast("list[float]", ast.literal_eval(vals_raw))
+    return []
 
 
 def get_regressing_configs(
@@ -409,13 +415,13 @@ def is_regression(
     new_avg = np.average(new_vals)
     diff = abs(old_avg - new_avg)
     res = stats.ttest_ind(old_vals, new_vals, equal_var=False)
-    confidence_interval = res.confidence_interval(0.95)
-    print(
-        f"p={res.pvalue:.3f}, ci=[{confidence_interval.low:.3f}],"
-        f"{confidence_interval.high:.3f}, d={diff:.3f}]"
-    )
+    # confidence_interval = res.confidence_interval(0.95)
+    # print(
+    #     f"p={res.pvalue:.3f}, ci=[{confidence_interval.low:.3f}],"
+    #     f"{confidence_interval.high:.3f}, d={diff:.3f}]"
+    # )
 
-    return (res.pvalue <= p) and (diff >= threshold * old_avg)
+    return bool(res.pvalue <= p) and bool(diff >= threshold * old_avg)
 
 
 def get_relevant_configs(
@@ -713,7 +719,7 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
                     commit_map,
                     case_study,
                     cached_only=False,
-                ).pivot_table(
+                ).pivot(
                     index="config_id",
                     columns="revision",
                     values="wall_clock_time",
@@ -999,7 +1005,6 @@ def load_synth_baseline_data(
             assert patched_report is not None
             assert len(patched_report.workload_names()) == 1
             workload = next(iter(patched_report.workload_names()))
-            # fmt: off
             data.append(
                 {
                     "revision": patch_name,
@@ -1008,7 +1013,6 @@ def load_synth_baseline_data(
                         patched_report.measurements_wall_clock_time(workload),
                 }
             )
-            # fmt: on
 
     return pd.DataFrame.from_records(data)
 
@@ -1074,7 +1078,7 @@ class PerformanceRegressionClassificationTableSynth(
 
             revisions = performance_data["revision"].unique().tolist()
             revisions.remove("base")
-            performance_data = performance_data.pivot_table(
+            performance_data = performance_data.pivot(
                 index="config_id", columns="revision", values="wall_clock_time"
             )
             perf_inter_reports = load_synth_perf_inter_reports(case_study)
