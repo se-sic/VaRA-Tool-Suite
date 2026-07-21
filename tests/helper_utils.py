@@ -3,6 +3,7 @@
 import contextlib
 import os
 import shutil
+import sys
 import tempfile
 import typing as tp
 from functools import wraps
@@ -13,12 +14,15 @@ from typing import Protocol
 import benchbuild.utils.settings as bb_settings
 import plumbum as pb
 from benchbuild import Project
+from benchbuild.experiment import ExperimentRegistry
 from benchbuild.source import FetchableSource, Git, Variant, base
 from benchbuild.utils.cmd import git
 
 from varats.base.configuration import ConfigurationImpl, ConfigurationOptionImpl
 from varats.project.project_util import is_git_source
+from varats.table.tables import TableGenerator
 from varats.tools.bb_config import create_new_bb_config
+from varats.tools.research_tools.research_tool import ResearchTool
 from varats.utils import settings
 
 TEST_INPUTS_DIR = Path(__file__).parent / 'TEST_INPUTS'
@@ -50,17 +54,17 @@ class FileFixture(UnitTestFixture):
     """A file or directory that is copied into the test environment."""
 
     def __init__(self, src: Path, dst: Path):
-        self.__src = src
-        self.__dst = dst
+        self._src = src
+        self._dst = dst
 
     def copy_to_env(self, path: Path) -> None:
-        dst = path / self.__dst
-        if self.__src.is_dir():
-            if self.__dst.exists():
-                self.__dst.rmdir()
-            shutil.copytree(self.__src, dst)
+        dst = path / self._dst
+        if self._src.is_dir():
+            if self._dst.exists():
+                self._dst.rmdir()
+            shutil.copytree(self._src, dst)
         else:
-            shutil.copy(self.__src, dst)
+            shutil.copy(self._src, dst)
 
     def cleanup(self) -> None:
         pass
@@ -97,6 +101,56 @@ class RepoFixture(UnitTestFixture):
     def cleanup(self) -> None:
         bb_tmp = str(settings.bb_cfg()["tmp_dir"])
         base.CFG["tmp_dir"] = bb_tmp
+
+
+class ExternalRepoFixture(FileFixture):
+    """A git repository that is cloned into test environment and registered."""
+
+    def __init__(self):
+        super().__init__(
+            TEST_INPUTS_DIR / "external_repo_template", Path("external_repo")
+        )
+
+    def copy_to_env(self, path: Path) -> None:
+        super().copy_to_env(path)
+
+    def cleanup(self) -> None:
+        """Remove imported external test modules and registry entries."""
+
+        registry_items = [
+            (ExperimentRegistry.experiments, "ExternalExperiment"),
+            (TableGenerator.GENERATORS, "external_table"),
+            (ResearchTool.REGISTRY, "externalresearchtool"),
+        ]
+
+        for registry, expected_name in registry_items:
+            for key, value in list(registry.items()):
+                if (
+                    key == expected_name
+                    or getattr(value, "__name__", "") == expected_name
+                ):
+                    registry.pop(key, None)
+
+        module_names = [
+            "experiments.external_experiment",
+            "experiments",
+            "tables.external_table",
+            "tables",
+            "research_tools.external_research_tool",
+            "research_tools",
+            "plots.external_plot",
+            "plots",
+            "projects.external_project",
+            "projects",
+            "reports.external_report",
+            "reports",
+        ]
+
+        for module_name in module_names:
+            sys.modules.pop(module_name, None)
+
+        if str(self._dst) in sys.path:
+            sys.path.remove(str(self._dst))
 
 
 class UnitTestFixtures:

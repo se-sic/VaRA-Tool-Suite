@@ -52,6 +52,7 @@ vara-container = "varats.tools.driver_container:main"
 vara-cs = "varats.tools.driver_casestudy:main"
 vara-cs-gui = "varats.tools.driver_casestudy_gui:main"
 vara-develop = "varats.tools.driver_develop:main"
+vara-external = "varats.tools.driver_external:main"
 vd = "varats.tools.driver_develop:main"
 vara-gen-bbconfig = "varats.tools.driver_gen_benchbuild_config:main"
 vara-pc = "varats.tools.driver_paper_config:main"
@@ -127,7 +128,7 @@ markers = [
 
 [tool.ruff]
 line-length = 80
-exclude = ["CVS", "gui", "filtertree_data.py", ".eggs", "docs/source/conf.py",]
+exclude = ["CVS", "gui", "filtertree_data.py", ".eggs", "docs/source/conf.py", "tests/TEST_INPUTS/external_repo_template/*"]
 indent-width = 4
 
 [tool.ruff.lint]
@@ -212,6 +213,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*" = ["D"]
+"varats/varats/projects/**/*" = ["RUF012"]
 
 [tool.ruff.lint.pydocstyle]
 # Use Google-style docstrings.
@@ -302,7 +304,7 @@ source = [
   "varats/varats/",
   "varats-core/varats/"
 ]
-source_pkgs = ["varats", "varats-core"]
+source_pkgs = ["varats"]
 parallel = true
 
 [tool.coverage.report]
