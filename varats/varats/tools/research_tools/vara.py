@@ -1,8 +1,11 @@
-"""Module for the research tool VaRA that describes the VaRA code base layout
-and how to configure and setup VaRA."""
+"""
+Module for the research tool VaRA.
+
+Describes the VaRA code base layout and how to configure and setup VaRA.
+"""
+
 import logging
 import math
-import os
 import re
 import shutil
 import typing as tp
@@ -15,10 +18,10 @@ from PyQt5.QtCore import QProcess
 from varats.tools.research_tools.cmake_util import set_cmake_var
 from varats.tools.research_tools.research_tool import (
     CodeBase,
-    ResearchTool,
-    SubProject,
     Dependencies,
     Distro,
+    ResearchTool,
+    SubProject,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
@@ -30,34 +33,42 @@ from varats.utils.logger_util import log_without_linesep
 from varats.utils.settings import save_config, vara_cfg
 
 if tp.TYPE_CHECKING:
-    from varats.containers import containers  # pylint: disable=W0611
+    from varats.containers import containers
 
 LOG = logging.getLogger(__name__)
 
 
 def set_vara_cmake_variables(
-    install_prefix: str,
-    post_out: tp.Callable[[str], None] = lambda x: None
+    install_prefix: str, post_out: tp.Callable[[str], None] = lambda _: None
 ) -> None:
     """Set all wanted/needed cmake flags."""
     set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
-    set_cmake_var("CMAKE_CXX_STANDARD", str(17), post_out)
+    set_cmake_var("CMAKE_CXX_STANDARD", str(20), post_out)
 
 
 class VaRACodeBase(CodeBase):
-    """Layout of the VaRA code base: setting up vara-llvm-project fork, VaRA,
-    and optionally phasar for static analysis."""
+    """
+    Layout of the VaRA code base.
+
+    Setting up vara-llvm-project fork, VaRA, and phasar for static analysis.
+    """
 
     def __init__(self, base_dir: Path) -> None:
+        """Instantiates the VaRA code base."""
         sub_projects = [
             SubProject(
-                base_dir, "vara-llvm-project",
-                "https://github.com/llvm/llvm-project.git", "upstream",
-                "vara-llvm-project"
+                base_dir,
+                "vara-llvm-project",
+                "https://github.com/llvm/llvm-project.git",
+                "upstream",
+                "vara-llvm-project",
             ),
             SubProject(
-                base_dir, "VaRA", "git@github.com:se-sic/VaRA.git", "origin",
-                "vara-llvm-project/vara"
+                base_dir,
+                "VaRA",
+                "git@github.com:se-sic/VaRA.git",
+                "origin",
+                "vara-llvm-project/vara",
             ),
             SubProject(
                 base_dir,
@@ -65,24 +76,22 @@ class VaRACodeBase(CodeBase):
                 "https://github.com/secure-software-engineering/phasar.git",
                 "origin",
                 "vara-llvm-project/phasar",
-                is_submodule=True
-            )
+                is_submodule=True,
+            ),
         ]
         super().__init__(base_dir, sub_projects)
 
     def setup_vara_remotes(self) -> None:
-        """Sets up VaRA specific upstream remotes for projects that were
-        forked."""
+        """Sets up VaRA-specific upstream remotes for forked projects."""
         self.get_sub_project("vara-llvm-project").add_remote(
             "origin", "git@github.com:se-sic/vara-llvm-project.git"
         )
 
     def setup_build_link(self) -> None:
-        """Setup build-config folder link for VaRA's default build setup
-        scripts."""
-        llvm_project_dir = self.base_dir / self.get_sub_project(
-            "vara-llvm-project"
-        ).path
+        """Sets up link for VaRA's default build setup scripts."""
+        llvm_project_dir = (
+            self.base_dir / self.get_sub_project("vara-llvm-project").path
+        )
         mkdir(llvm_project_dir / "build/")
         with local.cwd(llvm_project_dir / "build/"):
             ln("-s", "../vara/utils/vara/builds/", "build_cfg")
@@ -100,8 +109,9 @@ class VaRACodeBase(CodeBase):
         dev_suffix = "-dev" if use_dev_branches else ""
         print(f"Checking out VaRA version {str(version) + dev_suffix}")
 
-        self.get_sub_project("vara-llvm-project"
-                            ).checkout_branch(f"vara-{version}{dev_suffix}")
+        self.get_sub_project("vara-llvm-project").checkout_branch(
+            f"vara-{version}{dev_suffix}"
+        )
 
         # TODO (sattlerf): make different checkout for older versions
         self.get_sub_project("VaRA").checkout_branch(f"vara{dev_suffix}")
@@ -119,24 +129,19 @@ class VaRACodeBase(CodeBase):
     def fetch(
         self,
         sub_prj_name: str,
-        remote: tp.Optional[str] = None,
-        extra_args: tp.Optional[tp.List[str]] = None
+        remote: str | None = None,
+        extra_args: list[str] | None = None,
     ) -> None:
-        """Fetch the `SubProject` corresponding to the passed subproject
-        name."""
+        """Fetch the `SubProject` for the passed subproject name."""
         sub_prj: SubProject = self.get_sub_project(sub_prj_name)
         sub_prj.fetch(remote, extra_args)
 
     def get_tags(
-        self,
-        sub_prj_name: str,
-        extra_args: tp.Optional[tp.List[str]] = None
-    ) -> tp.List[str]:
-        """Get a list of available git tags of the `SubProject` corresponding to
-        the passed subproject name."""
+        self, sub_prj_name: str, extra_args: list[str] | None = None
+    ) -> list[str]:
+        """Retrieve git tags for the given subproject."""
         sub_prj: SubProject = self.get_sub_project(sub_prj_name)
-        tag_list = sub_prj.get_tags(extra_args)
-        return tag_list
+        return sub_prj.get_tags(extra_args)
 
 
 class VaRA(ResearchTool[VaRACodeBase]):
@@ -146,30 +151,53 @@ class VaRA(ResearchTool[VaRACodeBase]):
     Find the main repo online on github: https://github.com/se-sic/VaRA
     """
 
-    __DEPENDENCIES = Dependencies({
-        Distro.DEBIAN: [
-            "libboost-all-dev", "libpapi-dev", "googletest", "libsqlite3-dev",
-            "libxml2-dev", "libcurl4-openssl-dev", "cmake", "ninja-build",
-            "libprotobuf-dev", "libgrpc++-dev", "protobuf-compiler-grpc",
-            "libpcre3", 'libtbb-dev'
-        ],
-        Distro.ARCH: [
-            "boost-libs", "boost", "sqlite3", "libxml2", "cmake", "curl",
-            "ninja"
-        ],
-        Distro.FEDORA: [
-            "libsqlite3x-devel", "libcurl-devel", "boost-devel", "papi-devel",
-            "llvm-googletest", "libxml2-devel", "clang"
-        ]
-    })
+    __DEPENDENCIES = Dependencies(
+        {
+            Distro.DEBIAN: [
+                "libboost-all-dev",
+                "libpapi-dev",
+                "googletest",
+                "libsqlite3-dev",
+                "libxml2-dev",
+                "libcurl4-openssl-dev",
+                "cmake",
+                "ninja-build",
+                "libprotobuf-dev",
+                "libgrpc++-dev",
+                "protobuf-compiler-grpc",
+                "libpcre3",
+                'libtbb-dev',
+            ],
+            Distro.ARCH: [
+                "boost-libs",
+                "boost",
+                "sqlite3",
+                "libxml2",
+                "cmake",
+                "curl",
+                "ninja",
+            ],
+            Distro.FEDORA: [
+                "libsqlite3x-devel",
+                "libcurl-devel",
+                "boost-devel",
+                "papi-devel",
+                "llvm-googletest",
+                "libxml2-devel",
+                "clang",
+            ],
+        }
+    )
 
     def __init__(self, base_dir: Path) -> None:
+        """Instantiates the VaRA tool."""
         super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
         vara_cfg()["vara"]["llvm_source_dir"] = str(base_dir)
         save_config()
 
     @classmethod
     def get_dependencies(cls) -> Dependencies:
+        """Returns the dependencies for this tool."""
         return cls.__DEPENDENCIES
 
     @staticmethod
@@ -189,23 +217,26 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
     @staticmethod
     def has_install_location() -> bool:
-        """Checks if a install location of the research tool is configured."""
+        """Checks if an install-location for the research tool is configured."""
         return vara_cfg()["vara"]["llvm_install_dir"].value is not None
 
     def setup(
-        self, source_folder: tp.Optional[Path], install_prefix: Path,
-        version: tp.Optional[int]
+        self,
+        source_folder: Path | None,
+        install_prefix: Path,
+        version: int | None,
     ) -> None:
         """
-        Setup the research tool VaRA with it's code base. This method sets up
-        all relevant config variables, downloads repositories via the
-        ``CodeBase``, checkouts the correct branches and prepares the research
-        tool to be built.
+        Sets up the research tool VaRA with it's code base.
+
+        This method sets up all relevant config variables, downloads
+        repositories via the ``CodeBase``, checks out the correct branches and
+        prepares the research tool to be built.
 
         Args:
             source_folder: location to store the code base in
             install_prefix: Installation prefix path
-            version: Version to setup
+            version: Version to set up
         """
         cfg = vara_cfg()
         if source_folder:
@@ -229,12 +260,10 @@ class VaRA(ResearchTool[VaRACodeBase]):
         self.code_base.setup_build_link()
 
     def find_highest_sub_prj_version(self, sub_prj_name: str) -> int:
-        """Returns the highest release version number for the specified
-        ``SubProject`` name."""
-
+        """Finds the highest release version for the specified subproject."""
         self.code_base.fetch(sub_prj_name)
 
-        unfiltered_version_list: tp.List[str]
+        unfiltered_version_list: list[str]
         highest_version = -1
 
         if sub_prj_name == "VaRA":
@@ -257,12 +286,12 @@ class VaRA(ResearchTool[VaRACodeBase]):
             match = version_pattern.search(unfiltered_version)
             if match:
                 match_version = int(re.sub(r"\D", "", match.group()))
-                if match_version > highest_version:
-                    highest_version = match_version
+                highest_version = max(highest_version, match_version)
 
         if highest_version == -1:
-            warning_str = f"No version in {sub_prj_name} matched the release " \
-                          f"pattern."
+            warning_str = (
+                f"No version in {sub_prj_name} matched the release pattern."
+            )
             LOG.warning(warning_str)
             raise LookupError
 
@@ -270,7 +299,6 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
     def is_up_to_date(self) -> bool:
         """Returns true if VaRA's major release version is up to date."""
-
         current_vara_version = int(vara_cfg()["vara"]["version"])
 
         highest_vara_tag_version = self.find_highest_sub_prj_version("VaRA")
@@ -278,13 +306,11 @@ class VaRA(ResearchTool[VaRACodeBase]):
             "vara-llvm-project"
         )
 
-        if (current_vara_version
-            >= highest_vara_llvm_version) and current_vara_version >= (
-                math.ceil(highest_vara_tag_version / 10) * 10
-            ):
-            return True
-
-        return False
+        return bool(
+            current_vara_version >= highest_vara_llvm_version
+            and current_vara_version
+            >= math.ceil(highest_vara_tag_version / 10) * 10
+        )
 
     def upgrade(self) -> None:
         """Upgrade the research tool to a newer version."""
@@ -292,9 +318,11 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         # The vara-llvm-project dev branch is always one major version ahead
         # from the latest VaRA release tag, hence, their difference is 10.
-        if new_version - (
-            math.ceil(self.find_highest_sub_prj_version("VaRA") / 10) * 10
-        ) != 10:
+        if (
+            new_version
+            - (math.ceil(self.find_highest_sub_prj_version("VaRA") / 10) * 10)
+            != 10
+        ):
             raise AssertionError("vara-llvm-project and vara tool out of sync.")
 
         if str(vara_cfg()["vara"]["version"]) != str(new_version):
@@ -306,16 +334,22 @@ class VaRA(ResearchTool[VaRACodeBase]):
         self.code_base.pull()
 
     def build(
-        self, build_type: BuildType, install_location: Path,
-        build_folder_suffix: tp.Optional[str]
+        self,
+        build_type: BuildType,
+        install_location: Path,
+        build_folder_suffix: str | None,
     ) -> None:
         """
-        Build/Compile VaRA in the specified ``build_type``. This method leaves
-        VaRA in a finished state, i.e., being ready to be installed.
+        Build/Compile VaRA in the specified ``build_type``.
+
+        This method leaves VaRA in a finished state, i.e., being ready to be
+        installed.
 
         Args:
             build_type: which type of build should be used, e.g., debug,
                         development or release
+            install_location: where to install VaRA
+            build_folder_suffix: suffix to add to build folder name
         """
         full_path = self.code_base.base_dir / "vara-llvm-project" / "build/"
         if not self.is_build_type_supported(build_type):
@@ -330,10 +364,10 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         # Setup configured build folder
         print(" - Setting up build folder.")
-        if not os.path.exists(full_path):
+        if not Path(full_path).exists():
             try:
-                os.makedirs(full_path.parent, exist_ok=True)
-                build_script = f"./build_cfg/build-{str(build_type)}.sh"
+                Path(full_path.parent).mkdir(exist_ok=True, parents=True)
+                build_script = f"./build_cfg/build-{build_type!s}.sh"
 
                 with ProcessManager.create_process(
                     build_script, args=build_args, workdir=full_path.parent
@@ -364,11 +398,13 @@ class VaRA(ResearchTool[VaRACodeBase]):
         ) as proc:
             proc.setProcessChannelMode(QProcess.MergedChannels)
             proc.readyReadStandardOutput.connect(
-                lambda:
-                run_process_with_output(proc, log_without_linesep(print))
+                lambda: run_process_with_output(
+                    proc, log_without_linesep(print)
+                )
             )
 
-    def get_install_binaries(self) -> tp.List[str]:
+    def get_install_binaries(self) -> list[str]:  # noqa: PLR6301
+        """Returns a list of relevant installed binaries."""
         return ["bin/clang++", "bin/opt"]
 
     def verify_install(self, install_location: Path) -> bool:
@@ -391,7 +427,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         return status_ok
 
     def verify_build(
-        self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
+        self, build_type: BuildType, build_folder_suffix: str | None
     ) -> bool:
         """
         Verifies whether vara was built correctly for the given target.
@@ -399,6 +435,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         Args:
             build_type: which type of build should be used, e.g., debug,
                         development or release
+            build_folder_suffix: suffix to add to build folder name
 
         Returns:
             True iff all tests from check_vara pass
@@ -417,15 +454,13 @@ class VaRA(ResearchTool[VaRACodeBase]):
         ret, _, _ = ninja.run("check-vara")
         return bool(ret == 0)
 
-
-# ContainerInstallable protocol implementation ---------------------------------
+    # ContainerInstallable protocol implementation -----------------------------
 
     def container_install_dependencies(
         self, stage_builder: 'containers.StageBuilder'
     ) -> None:
         """
-        Add layers for installing this research tool's dependencies to the given
-        container.
+        Add layers for installing dependencies to the given container.
 
         Args:
             stage_builder: the builder object for the current container stage
@@ -435,8 +470,9 @@ class VaRA(ResearchTool[VaRACodeBase]):
         ):
             stage_builder.layers.run(
                 *(
-                    self.get_dependencies().
-                    get_install_command(stage_builder.base.distro).split(" ")
+                    self.get_dependencies()
+                    .get_install_command(stage_builder.base.distro)
+                    .split(" ")
                 )
             )
 
@@ -463,12 +499,11 @@ class VaRA(ResearchTool[VaRACodeBase]):
         )
         stage_builder.layers.copy_([vara_install_dir], str(container_vara_dir))
 
-    def container_tool_env(
+    def container_tool_env(  # noqa: PLR6301
         self, stage_builder: 'containers.StageBuilder'
-    ) -> tp.Dict[str, tp.List[str]]:
+    ) -> dict[str, list[str]]:
         """
-        Tool-specific container configuration in the form of environment
-        variables.
+        Add tool-specific container configuration as environment variables.
 
         Args:
             stage_builder: the builder object for the current container stage
