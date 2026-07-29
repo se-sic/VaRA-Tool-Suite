@@ -1,5 +1,3 @@
-import math
-
 import numpy as np
 import pandas as pd
 
@@ -7,7 +5,8 @@ from varats.data.databases.hidden_configurability_database import (
     ACTIVE_HV_PROJECTS,
     EffectSize,
     aggregate_data_for_cs,
-    filter_for_significant_changes, get_all_data,
+    filter_for_significant_changes,
+    get_all_data,
 )
 from varats.experiments.vara.hidden_configurability_experiments import (
     _PROJECT_WORKLOADS,
@@ -365,7 +364,7 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
             ) -> str:
                 if range_tuple[0] == "N/A" or range_tuple[1] == "N/A":
                     return "N/A"
-                return f"{range_tuple[0]:+.2%} -- {range_tuple[1]:+.2%}"
+                return f"{range_tuple[0]:+.1%} -- {range_tuple[1]:+.1%}"
 
             # Escape percent signs in the Range column for LaTeX
             df["Range"] = (df["Range"].apply(format_range)
@@ -396,7 +395,7 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
             ] = (r"Summary of our findings for \RQref{1}."
                  r" For each project we list the total number of alternatives"
                  r" considered (\symNumAlts{}) and report for each metric the"
-                 r" total number significant findings(\symNumSig{}),"
+                 r" total number significant findings (\symNumSig{}),"
                  r" as well as the number of findings with an overall positive"
                  r" impact (\symNumSigPos{}) and negative impact"
                  r" (\symNumSigNeg{}) on the mean of the metric. In addition, "
@@ -411,7 +410,7 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
             ) -> str:
                 if range_tuple[0] == "N/A" or range_tuple[1] == "N/A":
                     return "N/A"
-                return f"({range_tuple[0]:+.2%}, {range_tuple[1]:+.2%})"
+                return f"({range_tuple[0]:+.1%}, {range_tuple[1]:+.1%})"
 
             df["Range"] = df["Range"].apply(format_range)
 
@@ -425,3 +424,61 @@ class HCPerfSummaryGenerator(
     def generate(self) -> list[Table]:
         """Generates the HC Performance Summary Table."""
         return [HCPerfSummaryTable(self.table_config, **self.table_kwargs)]
+
+def _generate_table_data(table_kwargs,fields):
+    case_study = table_kwargs.get("case_study")
+    if not case_study:
+        raise ValueError("case_study argument is required for this table")
+
+    cs_data = aggregate_data_for_cs(case_study, None)
+    if cs_data.empty:
+        raise ValueError(f"No data found for case study {case_study.project_name}")
+
+    return cs_data[fields].drop_duplicates().sort_values(
+        by=fields).set_index(fields[0])
+
+class SettingIDMappingTable(
+    Table, table_name="setting-id-mapping"
+):
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        """Tabulates the HC Setting ID Mapping Table."""
+        df = _generate_table_data(self.table_kwargs, ["setting_id", "binary-wl", "config_id", "metric"])
+
+        return dataframe_to_table(df, table_format, wrap_table=wrap_table)
+
+class ConfAltIDMappingTable(
+    Table, table_name="confalt-id-mapping"
+):
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        """Tabulates the HC Setting ID Mapping Table."""
+        df = _generate_table_data(self.table_kwargs, ["config_alt_id", "config_opportunity", "variation"])
+
+        return dataframe_to_table(df, table_format, wrap_table=wrap_table)
+
+class SettingIDMappingGenerator(
+    TableGenerator, generator_name="hc_setting_id_mappings", options=[
+    ]
+):
+    """Generator for the HC Setting ID Mapping Table."""
+
+    def generate(self) -> list[Table]:
+        """Generates the HC Setting ID Mapping Table."""
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        case_studies = [cs for cs in case_studies if cs.project_name in _PROJECT_WORKLOADS]
+
+        return [SettingIDMappingTable(self.table_config, case_study=cs, **self.table_kwargs) for cs in case_studies]
+
+class ConfAltIDMappingGenerator(
+    TableGenerator, generator_name="hc_config_alt_id_mappings", options=[
+    ]
+):
+    """Generator for the HC Setting ID Mapping Table."""
+
+    def generate(self) -> list[Table]:
+        """Generates the HC Setting ID Mapping Table."""
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        case_studies = [cs for cs in case_studies if cs.project_name in _PROJECT_WORKLOADS]
+
+        return [ConfAltIDMappingTable(self.table_config, case_study=cs, **self.table_kwargs) for cs in case_studies]

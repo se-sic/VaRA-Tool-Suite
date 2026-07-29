@@ -53,8 +53,6 @@ def _load_data_for_case_studies(case_studies) -> pd.DataFrame:
         # Append to plot data
         plot_data = pd.concat([plot_data, sig_data], ignore_index=True)
 
-    plot_data["config_id"] = plot_data["config_id"].fillna(-1)
-
     return plot_data
 
 class PerfChangeSummaryPlot(Plot, plot_name="hc-perf-change-summary"):
@@ -158,13 +156,21 @@ class PerfChangeInSettingPlot(Plot, plot_name="hc-setting-kw"):
 
             sig_data = sig_data.iloc[indices]
 
+        # Enlarge figure if there are many groups
+        if len(sig_data) > 10:
+            print(f"Enlarging figure for {case_study.project_name} with group_by {group_by} due to many groups ({len(sig_data)}).")
+            plt.figure(figsize=(len(sig_data) * 0.8, 4.8))
+        else:
+            # Set plot size to be half as high as default, but keep width the same
+            plt.figure(figsize=(6.4, 4.8 * 0.75))
+
         plot_rows = []
         # Create df for plot:
-        for setting_id, (_, group) in enumerate(sig_data.iterrows()):
+        for _, group in sig_data.iterrows():
             means = group["mean_values_relative"]
             for m in means:
                 plot_rows.append({
-                    "setting_id": setting_id,
+                    "setting_id": group["id"],
                     "value_relative": m
                 })
 
@@ -178,6 +184,7 @@ class PerfChangeInSettingPlot(Plot, plot_name="hc-setting-kw"):
         if self.plot_kwargs.get("color"):
             plot_args["color"] = self.plot_kwargs.get("color")
 
+
         sns.boxplot(x="setting_id", y="value_relative", data=plot_data, **plot_args)
 
         # Add percent formatter to y-axis
@@ -186,9 +193,16 @@ class PerfChangeInSettingPlot(Plot, plot_name="hc-setting-kw"):
         )
 
         plt.ylabel("Relative Performance Change (%)")
-        plt.xlabel("")
+        plt.xlabel(self.plot_kwargs.get("xlabel", "Setting ID"))
+
+        # Increase font size of ticks
+        plt.xticks(fontsize=11.5)
+        plt.yticks(fontsize=11.5)
+        # Increase font size of y-label
+        plt.gca().yaxis.label.set_size(12)
+        plt.gca().xaxis.label.set_size(12)
         # Show no x-ticks if there are too many groups
-        plt.xticks([])
+        #plt.xticks([])
         plt.tight_layout()
 
 class PerfChangeInSettingPlotGenerator(PlotGenerator,
@@ -221,7 +235,14 @@ class PerfChangeInSettingPlotGenerator(PlotGenerator,
                                                 type=int,
                                                 required=False,
                                                 help="Limit the number of groups to plot",
-                                         )
+                                         ),
+                                         # xlabel
+                                        make_cli_option(
+                                                "--xlabel",
+                                                type=str,
+                                                required=False,
+                                                help="X-axis label for the plot",
+                                        )
                                     ]):
     def generate(self) -> list[Plot]:
         # Ensure that limit_groups is at least 2

@@ -82,6 +82,8 @@ class LibZQMBenchmarkPlot(Plot, plot_name="libzmq_benchmark"):
 
         base_throughput = benchmark_data[benchmark_data['hwm'] == 1000].set_index('message_size')['throughput_mb']
 
+        plt.figure(figsize=(6.4, 4.8*0.75))
+
         for hwm in hwms:
             print(hwm)
             if hwm not in [100,200,500,1000,1024,1500]:
@@ -120,7 +122,7 @@ class LibZQMBenchmarkPlot(Plot, plot_name="libzmq_benchmark"):
         plt.ylabel('Throughput (MB/s)')
         plt.xscale('log', base=2)
         plt.yscale('log', base=10)
-        plt.legend(title="Configuration Alternative",alignment="left")
+        plt.legend(title="Alternative value",alignment="left", fontsize=9)
         plt.xticks([2**i for i in range(10, 20)])
 
 

@@ -34,7 +34,7 @@ from varats.ts_utils.click_param_types import (
     create_multi_case_study_choice,
     create_single_case_study_choice,
 )
-from varats.utils.git_util import calc_repo_loc, RepositoryHandle
+from varats.utils.git_util import RepositoryHandle, calc_repo_loc
 from varats.utils.testsuite_utils import TestResult
 
 
@@ -199,8 +199,8 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
             "Project": str,
             "Domain": str,
             "LOC": int,
-            "|CL|": int,
-            "|CO|": int,
+            "|L|": int,
+            "|O|": int,
             "|S|": int,
         }
 
@@ -236,7 +236,8 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
                 locs = calc_repo_loc(project_repo, cs.revisions[0].hash)
 
                 if cs.project_name == "DunePerfRegression":
-                    # For DunePerfRegression, we need to add the LOC for all the submodules as well
+                    # For DunePerfRegression, we need to add the LOC for all the
+                    # submodules as well
                     dune_submodules = [
                         "dune-alugrid",
                         "dune-common",
@@ -300,9 +301,25 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
         if table_format == TableFormat.LATEX:
             # Format LOC with thousands separator
             df["LOC"] = df["LOC"].apply(lambda x: f"{x:,}".replace(",", r"\,"))
+            df["|L|"] = df["|L|"].apply(lambda x: f"{x:,}".replace(",", r"\,"))
+
+            # Rename domain for HyTeg
+            df["Domain"] = df["Domain"].replace({
+                "High Performance Application": "HPC"
+            })
 
             # Wrap project names in \textsc{}
             df = reformat_project_column(df, column_name="Project")
+
+            # Rename columns for LaTeX
+            df = df.rename(columns={
+                "Project": "Project",
+                "Domain": "Domain",
+                "LOC": "LOC",
+                "|L|": r"$|\symCanLocs{}|$",
+                "|O|": r"$|\symConfOpps{}|$",
+                "|S|": r"$|\symSubjectSystems{}|$"
+            })
 
             kwargs["hrules"] = True
             kwargs[
@@ -362,10 +379,7 @@ class HCPerfDetailTable(Table, table_name="hc_perf_detail"):
                 if row["significance"] >= 0.05:
                     return False
 
-                if abs(row["value_relative"]) < 0.05:
-                    return False
-
-                return True
+                return not abs(row["value_relative"]) < 0.05
 
             cs_data = cs_data[cs_data["config_opportunity"] != "__baseline__"]
             cs_data["Project"] = case_study.project_name

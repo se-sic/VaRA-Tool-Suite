@@ -186,11 +186,16 @@ def group_kruskal_wallis(df: pd.DataFrame,
 
     # Group by binary-wl, metric, and config_id, then calculate the Kruskal-Wallis H-test
     def kruskal_wallis(group):
+        # Get identifier of the current group from the first row of the group
+        group_id = group[group_by].iloc[0].to_dict()
+        group_id = "_".join([str(group_id[col]) for col in group_by])
+
         if len(group) < 2:
             return pd.Series({"kruskal_statistic": np.nan,
                               "kruskal_pvalue": np.nan,
                               "effect_size": np.nan,
-                              "mean_values_relative": []})
+                              "mean_values_relative": [],
+                              "id": group_id})
 
         # Extract the value_relative lists for each variation
         data = [row["value_relative"] for _, row in group.iterrows()]
@@ -204,9 +209,11 @@ def group_kruskal_wallis(df: pd.DataFrame,
         eta_squared = (statistic - len(data) + 1) / (sum(len(d) for d in data) - len(data))
 
         return pd.Series({"kruskal_statistic": statistic,
-                            "kruskal_pvalue": pvalue,
-                            "effect_size": eta_squared,
-                          "mean_values_relative": [np.mean(d) for d in data]})
+                          "kruskal_pvalue": pvalue,
+                          "effect_size": eta_squared,
+                          "mean_values_relative": [np.mean(d) for d in data],
+                          "id": group_id
+                          })
 
     def means_min_max(group):
         if len(group) == 0:
@@ -894,9 +901,21 @@ def aggregate_data_for_cs(
     num_true = result_df[result_df["testsuite_equivalent"] == True].shape[0]
     print(f"Number of rows where testsuite_equivalent is True: {num_true}")
 
+    # Convert config_id to int and fill NaN with -1 for projects without configs
+    result_df["config_id"] = result_df["config_id"].fillna(-1)
+
     # Filter out non-baseline rows where testsuite_equivalent is None
     # This indicates a failure in the testsuite run which leads to no results being available for comparison.
     result_df = result_df[~((result_df["testsuite_equivalent"].isna()) & (result_df["config_opportunity"] != "__baseline__"))]
+
+    # Generate a numeric setting_id column based on binary-wl, metric, and config_id
+    result_df["setting_id"] = result_df.groupby(["binary-wl", "metric", "config_id"]).ngroup()
+
+    # Generate numeric config_alt_id column based on config_opportunity and variation
+    result_df["config_alt_id"] = result_df.groupby(["config_opportunity", "variation"]).ngroup()
+
+    # Baseline rows have None as config_alt_id, so we can fill them with -1
+    result_df["config_alt_id"] = result_df["config_alt_id"].fillna(-1).astype(int)
 
     # Only return rows where testsuite_equivalent is True or None (not False)
     return result_df[result_df["testsuite_equivalent"].isin([True, None])]

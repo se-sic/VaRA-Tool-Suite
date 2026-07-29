@@ -58,8 +58,8 @@ class HCPerfSensitivityTable(Table, table_name="hc_perf_sensitivity"):
         #   max_config_alt_range
         # Such that:
         # - They are multiplied by 100 with 2 decimal places
-        # - iff the valus is < 1, simply show "< 1".
-        # - Iff the calus is nan, simply show "-"
+        # - iff the value is < 1, simply show "< 1".
+        # - Iff the value is nan, simply show "-"
         for col in [
             "min_setting_range",
             "max_setting_range",
