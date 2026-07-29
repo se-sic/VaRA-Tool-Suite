@@ -101,6 +101,7 @@ def get_local_project_repos(
     """
     repos: tp.Dict[str, RepositoryHandle] = {}
     project_cls = get_project_cls_by_name(project_name)
+    print(f'project_cls: {project_cls}')
 
     for source in project_cls.SOURCE:
         if isinstance(source, Git):

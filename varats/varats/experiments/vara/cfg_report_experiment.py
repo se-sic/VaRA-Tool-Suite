@@ -69,7 +69,6 @@ class CFBlameReportGeneration(actions.ProjectStep):  # type: ignore
             opt_params = [
                 "--passes=vara-rewriteMD,vara-CFG-Analyses", "-vara-init-commits",
                 f"-vara-analysis-type={self.__analysis_type.value}",
-                f"-vara-blame-taint-scope=REGION",
                 "-vara-git-mappings=" + ",".join([
                     f'{repo_name}:{repo.repo_path}' for repo_name, repo in
                     get_local_project_repos(self.project.name).items()
@@ -82,6 +81,8 @@ class CFBlameReportGeneration(actions.ProjectStep):  # type: ignore
                     ]
                 )
             ]
+
+            print(f'project binaries:{self.project.binaries}: ,project_names:{self.project.name}\n')
 
             run_cmd = opt[opt_params]
 
