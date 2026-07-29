@@ -68,8 +68,7 @@ class BlameReportGeneration(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "--passes=vara-BR",
-                "-vara-init-commits", "-vara-rewriteMD",
+                "--passes=vara-rewriteMD,vara-BR",
                 "-vara-git-mappings=" + ",".join([
                     f'{repo_name}:{repo.repo_path}' for repo_name, repo in
                     get_local_project_repos(self.project.name).items()
