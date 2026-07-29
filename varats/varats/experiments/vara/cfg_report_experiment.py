@@ -67,7 +67,8 @@ class CFBlameReportGeneration(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "--passes=vara-rewriteMD,vara-CFG-Analyses", "-vara-init-commits",
+                "--passes=vara-rewriteMD,vara-CFG-Analyses",
+                "-vara-init-commits",
                 f"-vara-analysis-type={self.__analysis_type.value}",
                 "-vara-git-mappings=" + ",".join([
                     f'{repo_name}:{repo.repo_path}' for repo_name, repo in
