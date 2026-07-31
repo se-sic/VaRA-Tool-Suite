@@ -1,5 +1,9 @@
-"""The Report module implements basic report functionalities and provides a
-minimal interface ``BaseReport`` to implement own reports."""
+"""
+The Report module implements basic report functionalities.
+
+It provides a minimal interface ``BaseReport`` to implement own reports.
+"""
+
 import re
 import shutil
 import typing as tp
@@ -22,7 +26,8 @@ class FileStatusExtension(Enum):
 
     Specific report files can map these to their own specific representation.
     """
-    value: tp.Tuple[str, Color]  # pylint: disable=invalid-name
+
+    value: tuple[str, Color]  # pylint: disable=invalid-name
 
     SUCCESS = ("success", colors.green)
     PARTIAL = ("partial", colors.darkturquoise)
@@ -49,27 +54,25 @@ class FileStatusExtension(Enum):
         return self.value[1]
 
     def get_colored_status(self) -> str:
-        """Returns the corresponding file status, colored in the specific status
-        color."""
-        return tp.cast(str, self.status_color[self.nice_name()])
+        """Returns the file status colored in the specific status color."""
+        return tp.cast("str", self.status_color[self.nice_name()])
 
     def num_color_characters(self) -> int:
         """Returns the number of non printable color characters."""
         return len(self.status_color[''])
 
     @staticmethod
-    def get_physical_file_statuses() -> tp.Set['FileStatusExtension']:
-        """Returns the set of file status extensions that are associated with
-        real result files."""
+    def get_physical_file_statuses() -> set['FileStatusExtension']:
+        """Returns file statuses associated with real result files."""
         return {
-            FileStatusExtension.SUCCESS, FileStatusExtension.FAILED,
-            FileStatusExtension.COMPILE_ERROR
+            FileStatusExtension.SUCCESS,
+            FileStatusExtension.FAILED,
+            FileStatusExtension.COMPILE_ERROR,
         }
 
     @staticmethod
-    def get_virtual_file_statuses() -> tp.Set['FileStatusExtension']:
-        """Returns the set of file status extensions that are not associated
-        with real result files."""
+    def get_virtual_file_statuses() -> set['FileStatusExtension']:
+        """Returns file statuses not associated with real result files."""
         return {FileStatusExtension.MISSING, FileStatusExtension.BLOCKED}
 
     @staticmethod
@@ -77,7 +80,7 @@ class FileStatusExtension(Enum):
         """Returns a regex group that can match all file stati."""
         regex_grp = r"(?P<status_ext>("
         for status in FileStatusExtension:
-            regex_grp += fr"{status.get_status_extension()}" + '|'
+            regex_grp += rf"{status.get_status_extension()}" + '|'
 
         # Remove the '|' at the end
         regex_grp = regex_grp[:-1]
@@ -97,21 +100,23 @@ class FileStatusExtension(Enum):
 
         Test:
         >>> FileStatusExtension.get_file_status_from_str('success')
-        <FileStatusExtension.SUCCESS: ('success', <ANSIStyle: Green>)>
+        <FileStatusExtension.SUCCESS: ('success', <ANSIStyle: Foreground Green>)>
 
         >>> FileStatusExtension.get_file_status_from_str('SUCCESS')
-        <FileStatusExtension.SUCCESS: ('success', <ANSIStyle: Green>)>
+        <FileStatusExtension.SUCCESS: ('success', <ANSIStyle: Foreground Green>)>
 
         >>> FileStatusExtension.get_file_status_from_str('###')
-        <FileStatusExtension.MISSING: ('###', <ANSIStyle: Full: Yellow3A>)>
+        <FileStatusExtension.MISSING: ('###', <ANSIStyle: Full: Foreground Yellow3A>)>
 
         >>> FileStatusExtension.get_file_status_from_str('CompileError')
-        <FileStatusExtension.COMPILE_ERROR: ('cerror', <ANSIStyle: Red>)>
-        """
+        <FileStatusExtension.COMPILE_ERROR: ('cerror', <ANSIStyle: Foreground Red>)>
+        """  # noqa: E501
         for fs_enum in FileStatusExtension:
-            if status_name.upper(
-            ) == fs_enum.name or status_name == fs_enum.value[
-                0] or status_name == fs_enum.nice_name():
+            if (
+                status_name.upper() == fs_enum.name
+                or status_name == fs_enum.value[0]
+                or status_name == fs_enum.nice_name()
+            ):
                 return fs_enum
 
         raise ValueError(f"Unknown file status extension name: {status_name}")
@@ -126,11 +131,11 @@ class FileStatusExtension(Enum):
         Should no specific combination rule apply, the lhs is used as a default.
         """
         if (
-            lhs == FileStatusExtension.SUCCESS and
-            rhs != FileStatusExtension.SUCCESS
+            lhs == FileStatusExtension.SUCCESS
+            and rhs != FileStatusExtension.SUCCESS
         ) or (
-            rhs == FileStatusExtension.SUCCESS and
-            lhs != FileStatusExtension.SUCCESS
+            rhs == FileStatusExtension.SUCCESS
+            and lhs != FileStatusExtension.SUCCESS
         ):
             if FileStatusExtension.PARTIAL in (lhs, rhs):
                 return FileStatusExtension.PARTIAL
@@ -139,38 +144,51 @@ class FileStatusExtension(Enum):
         return lhs
 
 
-class ReportFilename():
-    """ReportFilename wraps special semantics about our report filenames around
-    strings and paths."""
+class ReportFilename:
+    """Wraps special semantics of report filenames around strings and paths."""
 
     __RESULT_FILE_REGEX = re.compile(
-        r"(?P<experiment_shorthand>.*)-" + r"(?P<report_shorthand>.*)-" +
-        r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-        r"(?P<file_commit_hash>.*)[_\/](?P<UUID>[0-9a-fA-F\-]*)"
-        r"(_config-(?P<config_id>\d+))?" + "_" +
-        FileStatusExtension.get_regex_grp() + r"?" + r"(?P<file_ext>\..*)?" +
-        "$"
+        r"(?P<experiment_shorthand>.*)-"
+        + r"(?P<report_shorthand>.*)-"
+        + r"(?P<project_name>.*)-(?P<binary_name>.*)-"
+        + r"(?P<file_commit_hash>.*)[_\/](?P<UUID>[0-9a-fA-F\-]*)"
+        r"(_config-(?P<config_id>\d+))?"
+        + "_"
+        + FileStatusExtension.get_regex_grp()
+        + r"?"
+        + r"(?P<file_ext>\..*)?"
+        + "$"
     )
 
     __RESULT_FILE_TEMPLATE = (
-        "{experiment_shorthand}-" + "{report_shorthand}-" + "{project_name}-" +
-        "{binary_name}-" + "{project_revision}_" + "{project_uuid}_" +
-        "{status_ext}" + "{file_ext}"
+        "{experiment_shorthand}-"
+        + "{report_shorthand}-"
+        + "{project_name}-"
+        + "{binary_name}-"
+        + "{project_revision}_"
+        + "{project_uuid}_"
+        + "{status_ext}"
+        + "{file_ext}"
     )
 
     __CONFIG_SPECIFIC_RESULT_FILE_TEMPLATE = (
-        "{experiment_shorthand}-" + "{report_shorthand}-" + "{project_name}-" +
-        "{binary_name}-" + "{project_revision}/" + "{project_uuid}" +
-        "_config-{config_id}_" + "{status_ext}" + "{file_ext}"
+        "{experiment_shorthand}-"
+        + "{report_shorthand}-"
+        + "{project_name}-"
+        + "{binary_name}-"
+        + "{project_revision}/"
+        + "{project_uuid}"
+        + "_config-{config_id}_"
+        + "{status_ext}"
+        + "{file_ext}"
     )
 
-    def __init__(self, file_name: tp.Union[str, Path]) -> None:
+    def __init__(self, file_name: str | Path) -> None:
+        """Constructs a report filename."""
         self.__filename = str(file_name)
 
     @staticmethod
-    def construct(
-        filepath: Path, base_folder: tp.Optional[Path]
-    ) -> 'ReportFilename':
+    def construct(filepath: Path, base_folder: Path | None) -> 'ReportFilename':
         """
         Constructs a `ReportFilename` from a given path and a base folder.
 
@@ -190,7 +208,7 @@ class ReportFilename():
     @property
     def project_name(self) -> str:
         """Name of the analyzed project."""
-        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
+        if match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename):
             return str(match.group("project_name"))
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
@@ -198,7 +216,7 @@ class ReportFilename():
     @property
     def binary_name(self) -> str:
         """Name of the analyzed binary."""
-        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
+        if match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename):
             return str(match.group("binary_name"))
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
@@ -273,7 +291,7 @@ class ReportFilename():
             True, if the file name is for a file with the the specified
             ``extension_type``
         """
-        if (match := ReportFilename.__RESULT_FILE_REGEX.search(file_name)):
+        if match := ReportFilename.__RESULT_FILE_REGEX.search(file_name):
             return match.group("status_ext") == (
                 FileStatusExtension.get_status_extension(extension_type)
             )
@@ -297,7 +315,7 @@ class ReportFilename():
         Returns:
             the commit hash from a result file name
         """
-        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
+        if match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename):
             return ShortCommitHash(match.group("file_commit_hash"))
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
@@ -310,7 +328,7 @@ class ReportFilename():
         Returns:
             the experiment shorthand from a result file
         """
-        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
+        if match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename):
             return match.group("experiment_shorthand").split('/')[-1]
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
@@ -323,7 +341,7 @@ class ReportFilename():
         Returns:
             the report shorthand from a result file
         """
-        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
+        if match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename):
             return match.group("report_shorthand")
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
@@ -336,7 +354,7 @@ class ReportFilename():
         Returns:
             the FileStatusExtension of the result file
         """
-        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
+        if match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename):
             return FileStatusExtension.get_file_status_from_str(
                 match.group("status_ext")
             )
@@ -344,15 +362,17 @@ class ReportFilename():
         raise ValueError('File {file_name} name was wrongly formatted.')
 
     @property
-    def config_id(self) -> tp.Optional[int]:
+    def config_id(self) -> int | None:
         """
-        Configuration ID of the result file. A configuartion ID is only present
-        in configuration specific reports, for others, no ID exists.
+        Configuration ID of the result file.
+
+        A configuration ID is only present in configuration specific reports,
+        for others, no ID exists.
 
         Returns:
             the configuration ID from a result file
         """
-        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
+        if match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename):
             config_id_group = match.group("config_id")
             if config_id_group:
                 return int(config_id_group)
@@ -370,18 +390,24 @@ class ReportFilename():
 
     @property
     def uuid(self) -> str:
-        """Report UUID of the result file, genereated by BenchBuild during the
-        experiment."""
-        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
+        """
+        Report UUID of the result file.
+
+        The UUID is generated by BenchBuild during the experiment.
+        """
+        if match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename):
             return match.group("UUID")
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
     @property
     def file_suffix(self) -> str:
-        """File suffix, commonly known as file ending/type (in the codebase
-        referred to as file_ext)."""
-        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
+        """
+        File suffix, commonly known as file ending/type.
+
+        The suffix is referred to as file_ext in the codebase.
+        """
+        if match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename):
             return match.group("file_ext")
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
@@ -396,7 +422,7 @@ class ReportFilename():
         project_uuid: str,
         extension_type: FileStatusExtension,
         file_ext: str = ".txt",
-        config_id: tp.Optional[int] = None
+        config_id: int | None = None,
     ) -> 'ReportFilename':
         """
         Generates a filename for a report file out the different parts.
@@ -410,6 +436,7 @@ class ReportFilename():
             project_uuid: benchbuild uuid for the experiment run
             extension_type: to specify the status of the generated report
             file_ext: file extension of the report file
+            config_id: optional config id of the project
 
         Returns:
             name for the report file that can later be uniquely identified
@@ -431,7 +458,7 @@ class ReportFilename():
                     project_uuid=project_uuid,
                     status_ext=status_ext,
                     config_id=config_id,
-                    file_ext=file_ext
+                    file_ext=file_ext,
                 )
             )
 
@@ -444,90 +471,121 @@ class ReportFilename():
                 project_revision=project_revision,
                 project_uuid=project_uuid,
                 status_ext=status_ext,
-                file_ext=file_ext
+                file_ext=file_ext,
             )
         )
 
     def with_status(self, new_status: FileStatusExtension) -> 'ReportFilename':
-        """Returns a new report filename, adapted with the new file extension
-        `new_status`."""
+        """Returns a new report filename adapted with the new file extension."""
         return self.get_file_name(
-            self.experiment_shorthand, self.report_shorthand, self.project_name,
-            self.binary_name, self.commit_hash, self.uuid, new_status,
-            self.file_suffix, self.config_id
+            self.experiment_shorthand,
+            self.report_shorthand,
+            self.project_name,
+            self.binary_name,
+            self.commit_hash,
+            self.uuid,
+            new_status,
+            self.file_suffix,
+            self.config_id,
         )
 
     def __eq__(self, other: object) -> bool:
+        """Returns whether other is equivalent to this report file."""
         if isinstance(other, ReportFilename):
             return self.filename == other.filename
         return NotImplemented
 
+    def __hash__(self) -> int:
+        """Returns a hash of the report filename."""
+        return hash(self.filename)
+
     def __str__(self) -> str:
+        """Returns this report filename as a string name."""
         return self.filename
 
     def __repr__(self) -> str:
+        """Returns a representation of this report file name."""
         return self.filename
 
 
-class ReportFilepath():
-    """ReportFilepath combines report filenames with path semantics and presents
-    the file as a full path."""
+class ReportFilepath:
+    """Combines report filenames with path semantics."""
 
     def __init__(
         self, base_path: Path, report_filename: ReportFilename
     ) -> None:
+        """Creates a report file path."""
         self.__base_path = base_path
         self.__report_filename = report_filename
 
     @staticmethod
     def construct(full_filepath: Path, base_folder: Path) -> 'ReportFilepath':
-        """Constructs a `ReportFilepath` from a given full path, ideally a fully
-        qualified path but this is not strictly required, and a base folder."""
+        """
+        Constructs a `ReportFilepath` from a given full path and a base folder.
+
+        Ideally, a fully qualified path is given but this is not strictly
+        required.
+        """
         return ReportFilepath(
             base_folder, ReportFilename.construct(full_filepath, base_folder)
         )
 
     @property
     def base_path(self) -> Path:
+        """Returns the base path component."""
         return self.__base_path
 
     @property
     def report_filename(self) -> ReportFilename:
+        """Returns the report filename component."""
         return self.__report_filename
 
     def full_path(self) -> Path:
+        """Returns the full path."""
         return self.base_path / str(self.report_filename)
 
     def with_status(self, new_status: FileStatusExtension) -> 'ReportFilepath':
+        """Returns a new report filename adapted with the new file extension."""
         return ReportFilepath(
             self.base_path, self.report_filename.with_status(new_status)
         )
 
     def stat(self) -> stat_result:
+        """Returns this path's stat result."""
         return self.full_path().stat()
 
     def __eq__(self, other: object) -> bool:
+        """Returns whether other is equivalent to this report file path."""
         if isinstance(other, ReportFilepath):
-            return self.base_path == other.base_path and self.report_filename == other.report_filename
+            return (
+                self.base_path == other.base_path
+                and self.report_filename == other.report_filename
+            )
         return NotImplemented
 
+    def __hash__(self) -> int:
+        """Returns a hash of this report file path."""
+        return hash((self.base_path, self.report_filename))
+
     def __str__(self) -> str:
+        """Returns this path as a string."""
         return str(self.full_path())
 
     def __repr__(self) -> str:
+        """Returns a representation of this report file path."""
         return str(self)
 
 
-class BaseReport():
-    """Report base class to add general report properties and helper
-    functions."""
+class BaseReport:
+    """Base class for all reports."""
 
-    REPORT_TYPES: tp.Dict[str, tp.Type['BaseReport']] = {}
+    REPORT_TYPES: tp.ClassVar[dict[str, type['BaseReport']]] = {}
 
-    SHORTHAND: str
-    FILE_TYPE: str
+    SHORTHAND: tp.ClassVar[str]
+    FILE_TYPE: tp.ClassVar[str]
 
     def __init__(self, path: Path) -> None:
+        """Creates a report."""
         self.__path = path
         self.__filename = ReportFilename(path)
 
@@ -535,6 +593,7 @@ class BaseReport():
     def __init_subclass__(
         cls, shorthand: str, file_type: str, *args: tp.Any, **kwargs: tp.Any
     ) -> None:
+        """Handles class registration and naming."""
         super().__init_subclass__(*args, **kwargs)
 
         cls.SHORTHAND = shorthand
@@ -546,8 +605,8 @@ class BaseReport():
 
     @staticmethod
     def lookup_report_type_from_file_name(
-        file_name: str
-    ) -> tp.Optional[tp.Type['BaseReport']]:
+        file_name: str,
+    ) -> type['BaseReport'] | None:
         """
         Looks-up the correct report class from a given `file_name`.
 
@@ -567,8 +626,8 @@ class BaseReport():
 
     @staticmethod
     def lookup_report_type_by_shorthand(
-        shorthand: str
-    ) -> tp.Optional[tp.Type['BaseReport']]:
+        shorthand: str,
+    ) -> type['BaseReport'] | None:
         """
         Looks-up the correct report class from a given report `shorthand`.
 
@@ -596,7 +655,7 @@ class BaseReport():
         project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
-        config_id: tp.Optional[int] = None
+        config_id: int | None = None,
     ) -> ReportFilename:
         """
         Generates a filename for a report file.
@@ -608,14 +667,21 @@ class BaseReport():
             project_revision: version of the analyzed project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
             extension_type: to specify the status of the generated report
+            config_id: optional config id of the analyzed project
 
         Returns:
-            name for the report file that can later be uniquly identified
+            name for the report file that can later be uniquely identified
         """
         return ReportFilename.get_file_name(
-            experiment_shorthand, cls.SHORTHAND, project_name, binary_name,
-            project_revision, project_uuid, extension_type, cls.FILE_TYPE,
-            config_id
+            experiment_shorthand,
+            cls.SHORTHAND,
+            project_name,
+            binary_name,
+            project_revision,
+            project_uuid,
+            extension_type,
+            cls.FILE_TYPE,
+            config_id,
         )
 
     @property
@@ -656,28 +722,33 @@ class BaseReport():
             return False
 
 
-class ReportSpecification():
-    """Groups together multiple report types into a specification that can be
-    used, e.g., by experiments, to request multiple reports."""
+class ReportSpecification:
+    """
+    Groups multiple report types into a specification.
 
-    def __init__(self, *report_types: tp.Type[BaseReport]) -> None:
+    These specifications can be used, e.g., by experiments to request multiple
+    reports.
+    """
+
+    def __init__(self, *report_types: type[BaseReport]) -> None:
+        """Creates a report specification."""
         self.__reports_types = list(report_types)
 
     @property
-    def report_types(self) -> tp.List[tp.Type[BaseReport]]:
+    def report_types(self) -> list[type[BaseReport]]:
         """Report types in this report specification."""
         return list(self.__reports_types)
 
     @property
-    def main_report(self) -> tp.Type[BaseReport]:
+    def main_report(self) -> type[BaseReport]:
         """Main report of this specification."""
         return self.__reports_types[0]
 
-    def in_spec(self, report_type: tp.Type[BaseReport]) -> bool:
+    def in_spec(self, report_type: type[BaseReport]) -> bool:
         """Checks if a report type is specified in this spec."""
         return report_type in self.report_types
 
-    def get_report_type(self, shorthand: str) -> tp.Type[BaseReport]:
+    def get_report_type(self, shorthand: str) -> type[BaseReport]:
         """
         Look up a report type by its shorthand.
 
@@ -696,10 +767,12 @@ class ReportSpecification():
             f"Report corresponding to {shorthand} was not specified."
         )
 
-    def __contains__(self, report_type: tp.Type[BaseReport]) -> bool:
+    def __contains__(self, report_type: type[BaseReport]) -> bool:
+        """Checks if this specification contains the given report type."""
         return self.in_spec(report_type)
 
-    def __iter__(self) -> tp.Iterator[tp.Type[BaseReport]]:
+    def __iter__(self) -> tp.Iterator[type[BaseReport]]:
+        """Iterates over the report types in this specification."""
         return iter(self.report_types)
 
 
@@ -711,8 +784,7 @@ class KeyedReportAggregate(
     BaseReport, tp.Generic[KeyTy, ReportTy], shorthand="Agg", file_type="zip"
 ):
     """
-    Parses and categories multiple reports of the same type stored inside a zip
-    file.
+    Groups multiple reports of the same type stored inside a zip file.
 
     The `key_func` is used to divide the parsed reports into different
     categories/buckets.
@@ -721,10 +793,11 @@ class KeyedReportAggregate(
     def __init__(
         self,
         path: Path,
-        report_type: tp.Type[ReportTy],
+        report_type: type[ReportTy],
         key_func: tp.Callable[[Path], KeyTy],
-        default_key: tp.Optional[KeyTy] = None
+        default_key: KeyTy | None = None,
     ) -> None:
+        """Creates a new aggregate report."""
         super().__init__(path)
 
         # Create a temporary directory for extraction and register finalizer,
@@ -737,21 +810,24 @@ class KeyedReportAggregate(
             shutil.unpack_archive(self.path, self.__tmpdir.name)
 
         self.__default_key = default_key
-        self.__reports: tp.Dict[KeyTy, tp.List[ReportTy]] = defaultdict(list)
+        self.__reports: dict[KeyTy, list[ReportTy]] = defaultdict(list)
         for file in Path(self.__tmpdir.name).iterdir():
             self.__reports[key_func(file)].append(report_type(file))
 
     def remove(self) -> None:
+        """Removes the underlying temporary directory."""
         self.__finalizer()
 
     @property
     def removed(self) -> bool:
+        """Checks whether the underlying temporary directory was removed."""
         return not self.__finalizer.alive
 
     def keys(self) -> tp.Collection[KeyTy]:
+        """Returns the keys of this aggregate report."""
         return self.__reports.keys()
 
-    def reports(self, key: tp.Optional[KeyTy] = None) -> tp.List[ReportTy]:
+    def reports(self, key: KeyTy | None = None) -> list[ReportTy]:
         """Returns the list of parsed reports."""
         if key:
             return self.__reports[key]
@@ -770,8 +846,10 @@ class ReportAggregate(
     KeyedReportAggregate[int, ReportTy],
     tp.Generic[ReportTy],
     shorthand="Agg",
-    file_type="zip"
+    file_type="zip",
 ):
+    """Aggregate report with ints as keys."""
 
-    def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
+    def __init__(self, path: Path, report_type: type[ReportTy]) -> None:
+        """Creates a new aggregate report."""
         super().__init__(path, report_type, _key_id, 0)
