@@ -49,8 +49,7 @@ def update_term(text: str, enable_inline: bool = False) -> None:
 
 def print_up_to_date_message(research_tool: ResearchTool[VaRACodeBase]) -> None:
     """
-    Checks if VaRA's major release version is up to date and prints a message in
-    the terminal if VaRA is outdated.
+    Prints a message if VaRA's major release number is outdated.
 
     Args:
         research_tool: The loaded research tool
@@ -70,8 +69,7 @@ def show_major_release_prompt(
     research_tool: ResearchTool[VaRACodeBase],
 ) -> None:
     """
-    Shows a prompt if VaRA's major release version is not up to date to decide
-    if the user wants to upgrade.
+    Prompt whether VaRA should be upgraded to the current major release version.
 
     Args:
         research_tool: The loaded research tool
@@ -225,18 +223,16 @@ def __build_setup_init(
     if source_location and not source_location.exists():
         source_location.mkdir(parents=True)
 
-    if distro := Distro.get_current_distro():
-        if not tool.get_dependencies().has_dependencies_for_distro(distro):
-            missing_deps = (
-                tool.get_dependencies().get_missing_dependencies_for_distro(
-                    distro
-                )
-            )
-            print(
-                f"The following dependencies "
-                f"have to be installed: {missing_deps}"
-            )
-            return
+    if (
+        distro := Distro.get_current_distro()
+    ) and not tool.get_dependencies().has_dependencies_for_distro(distro):
+        missing_deps = (
+            tool.get_dependencies().get_missing_dependencies_for_distro(distro)
+        )
+        print(
+            f"The following dependencies have to be installed: {missing_deps}"
+        )
+        return
 
     tool.setup(
         source_location,
@@ -253,7 +249,7 @@ def __get_install_prefix(
     elif tool.has_install_location():
         install_prefix = tool.install_location()
     else:
-        install_prefix = Path(str(os.getcwd()) + f"/tools/{tool.name}/")
+        install_prefix = Path(str(Path.cwd()) + f"/tools/{tool.name}/")
 
     if not install_prefix.exists():
         install_prefix.mkdir(parents=True)
