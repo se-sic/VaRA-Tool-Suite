@@ -122,7 +122,7 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
         # blame annotations. Note: this does not guarantee that a project is
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
-        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
+        project.cflags += ["-O1", "-Xclang", "-disable-llvm-passes", "-Xclang", "-disable-llvm-verifier" , "-g0"]
         bc_file_extensions = [
             BCFileExtensions.NO_OPT,
             BCFileExtensions.TBAA,

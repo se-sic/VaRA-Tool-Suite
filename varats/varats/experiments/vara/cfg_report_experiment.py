@@ -118,7 +118,7 @@ class CFBlameReportExperiment(VersionExperiment, shorthand="CFBR"):
         Args:
             project: to analyze
         """
-        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
+        project.cflags += ["-O1", "-Xclang", "-disable-llvm-passes", "-Xclang", "-disable-llvm-verifier" , "-g0"]
         bc_file_extensions = [
             BCFileExtensions.NO_OPT,
             BCFileExtensions.TBAA,
