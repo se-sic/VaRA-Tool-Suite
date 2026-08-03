@@ -40,7 +40,7 @@ from varats.utils.testsuite_utils import (
 
 
 class Bzip2(VProject):
-    """Compression and decompression tool bzip2 (fetched by Git)"""
+    """Compression and decompression tool bzip2 (fetched by Git)."""
 
     NAME = 'bzip2'
     GROUP = 'c_projects'
@@ -107,6 +107,8 @@ class Bzip2(VProject):
     ]
 
     class Bzip2BuildMethod(Enum):
+        """Supported build methods for Bzip2."""
+
         MAKE = 0
         AUTOTOOLS = 1
         CMAKE = 2
@@ -154,6 +156,7 @@ class Bzip2(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash,
     ) -> list[ProjectBinaryWrapper]:
+        """Return a list of binaries generated for a specific revision."""
         binary_map = RevisionBinaryMap(get_local_project_repo(Bzip2.NAME))
 
         binary_map.specify_binary(
@@ -174,9 +177,10 @@ class Bzip2(VProject):
         return binary_map[revision]
 
     def run_tests(self) -> None:
+        """Unused in the VProject interface."""
         pass
 
-    def __getbuilddir(self) -> tuple[Path, Bzip2BuildMethod]:
+    def __get_build_dir(self) -> tuple[Path, Bzip2BuildMethod]:
         """Get the build directory and build method."""
         bzip2_source = local.path(self.source_of_primary)
         bzip2_repo = RepositoryHandle(bzip2_source)
@@ -207,17 +211,15 @@ class Bzip2(VProject):
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
-        build_dir, build_method = self.__getbuilddir()
+        build_dir, build_method = self.__get_build_dir()
         if build_method == Bzip2.Bzip2BuildMethod.MAKE:
-            with local.cwd(build_dir):
-                with local.env(CC=str(cc_compiler)):
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            with local.cwd(build_dir), local.env(CC=str(cc_compiler)):
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
         elif build_method == Bzip2.Bzip2BuildMethod.AUTOTOOLS:
-            with local.cwd(build_dir):
-                with local.env(CC=str(cc_compiler)):
-                    bb.watch(local["./autogen.sh"])()
-                    bb.watch(local["./configure"])()
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            with local.cwd(build_dir), local.env(CC=str(cc_compiler)):
+                bb.watch(local["./autogen.sh"])()
+                bb.watch(local["./configure"])()
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
         else:
             with local.cwd(build_dir):
                 with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
@@ -239,7 +241,7 @@ class Bzip2(VProject):
 
     def recompile(self) -> None:
         """Recompile the project."""
-        build_dir, build_method = self.__getbuilddir()
+        build_dir, build_method = self.__get_build_dir()
         if build_method in [
             Bzip2.Bzip2BuildMethod.MAKE,
             Bzip2.Bzip2BuildMethod.AUTOTOOLS,
@@ -262,20 +264,22 @@ class Bzip2(VProject):
         cpp_compiler = bb.compiler.cxx(self)
         cc_compiler = bb.compiler.cc(self)
 
-        build_dir, build_method = self.__getbuilddir()
+        build_dir, build_method = self.__get_build_dir()
 
         if build_method != Bzip2.Bzip2BuildMethod.CMAKE:
             raise NotImplementedError(
                 "Test suites are only supported for revisions using CMake."
             )
 
-        with local.cwd(build_dir):
-            with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
-                bb.watch(cmake)("test", "-G", "Unix Makefiles", "..")
+        with (
+            local.cwd(build_dir),
+            local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)),
+        ):
+            bb.watch(cmake)("test", "-G", "Unix Makefiles", "..")
 
     def build_tests(self) -> None:
         """Build the tests."""
-        build_dir, build_method = self.__getbuilddir()
+        build_dir, build_method = self.__get_build_dir()
 
         if build_method != Bzip2.Bzip2BuildMethod.CMAKE:
             raise NotImplementedError(

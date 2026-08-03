@@ -63,14 +63,12 @@ class JustTest(VersionExperiment, shorthand="JT"):
             get_current_config_id(project),
         )
 
-        analysis_actions = [
+        return [
             PrepareTestSuite(project),
             BuildTestSuite(project),
             RunTestSuite(project, Path(result_file.full_path())),
             actions.Clean(project),
         ]
-
-        return analysis_actions
 
 
 class CollectTestNames(VersionExperiment, shorthand="CTN"):

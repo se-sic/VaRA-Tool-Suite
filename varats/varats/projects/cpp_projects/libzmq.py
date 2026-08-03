@@ -33,9 +33,11 @@ from varats.utils.testsuite_utils import (
 
 class Libzmq(VProject):
     """
+    Class for the Libzmq project.
+
     The ZeroMQ lightweight messaging kernel is a library which extends the
     standard socket interfaces with features traditionally provided by
-    specialised messaging middleware products.
+    specialized messaging middleware products.
     """
 
     NAME = 'libzmq'
@@ -81,6 +83,7 @@ class Libzmq(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash,
     ) -> list[ProjectBinaryWrapper]:
+        """Get the binaries for a specific revision."""
         binary_map = RevisionBinaryMap(get_local_project_repo(Libzmq.NAME))
 
         binary_map.specify_binary(
@@ -98,6 +101,7 @@ class Libzmq(VProject):
         return binary_map[revision]
 
     def run_tests(self) -> None:
+        """Unsupported for VProjects, use run_testsuite instead."""
         pass
 
     def compile(self) -> None:
@@ -126,6 +130,7 @@ class Libzmq(VProject):
 
     @classmethod
     def get_cve_product_info(cls) -> list[tuple[str, str]]:
+        """Get the CVE product information for this project."""
         return [("Zeromq", "Libzmq")]
 
     def prepare_test_environment(self) -> None:
@@ -137,9 +142,11 @@ class Libzmq(VProject):
 
         mkdir("-p", version_source / "build")
 
-        with local.cwd(version_source / "build"):
-            with local.env(CC=str(cc_compiler), CXX=str(cpp_compiler)):
-                bb.watch(cmake)("-G", "Unix Makefiles", "..")
+        with (
+            local.cwd(version_source / "build"),
+            local.env(CC=str(cc_compiler), CXX=str(cpp_compiler)),
+        ):
+            bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
     def build_tests(self) -> None:
         """Build the tests."""

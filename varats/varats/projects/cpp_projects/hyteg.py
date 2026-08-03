@@ -36,8 +36,7 @@ LOG = logging.getLogger(__name__)
 
 class HyTeg(VProject):
     """
-    C++ framework for large scale high performance finite element simulations
-    based on (but not limited to) matrix-free geometric multigrid.
+    C++ framework for large scale high performance finite element simulations.
 
     Notes:
         1.
@@ -67,6 +66,7 @@ class HyTeg(VProject):
             - This can be achieved by either EXPORT-ing it manually, adding it
             to your .benchbuild.yml configuration or (when running with slurm)
             adding the export to your slurm scripts
+
     """
 
     NAME = 'HyTeg'
@@ -110,6 +110,7 @@ class HyTeg(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash,
     ) -> list['ProjectBinaryWrapper']:
+        """Return a list of binaries generated for a revision."""
         binaries = RevisionBinaryMap(get_local_project_repo(HyTeg.NAME))
 
         binaries.specify_binary(
@@ -149,12 +150,14 @@ class HyTeg(VProject):
                 " compilation errors when using configurations"
             )
 
-        with local.cwd(hyteg_source / "build"):
-            with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)(*cmake_args)
+        with (
+            local.cwd(hyteg_source / "build"),
+            local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)),
+        ):
+            bb.watch(cmake)(*cmake_args)
 
-                with local.cwd(hyteg_source / "build"):
-                    bb.watch(ninja)("ProfilingApp")
+            with local.cwd(hyteg_source / "build"):
+                bb.watch(ninja)("ProfilingApp")
 
     def recompile(self) -> None:
         """Recompiles HyTeg e.g. after a patch has been applied."""
@@ -164,6 +167,7 @@ class HyTeg(VProject):
             bb.watch(ninja)("ProfilingApp")
 
     def run_tests(self) -> None:
+        """Unsupported, use run_testsuite instead."""
         pass
 
     def prepare_test_environment(self) -> None:
@@ -188,9 +192,11 @@ class HyTeg(VProject):
                 " compilation errors when using configurations"
             )
 
-        with local.cwd(hyteg_source / "build"):
-            with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)(cmake_args)
+        with (
+            local.cwd(hyteg_source / "build"),
+            local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)),
+        ):
+            bb.watch(cmake)(cmake_args)
 
     def build_tests(self) -> None:
         """Build the tests."""

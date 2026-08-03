@@ -170,6 +170,7 @@ class DunePerfRegression(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash,
     ) -> list['ProjectBinaryWrapper']:
+        """Return a list of binaries generated for a specific revision."""
         binary_map = RevisionBinaryMap(
             get_local_project_repo(DunePerfRegression.NAME)
         )
@@ -251,6 +252,7 @@ class DunePerfRegression(VProject):
             )
 
     def run_tests(self) -> None:
+        """Unsupported, use run_testsuite instead."""
         pass
 
     # SupportsTesting interface

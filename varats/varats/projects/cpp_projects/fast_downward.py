@@ -31,7 +31,7 @@ from varats.utils.testsuite_utils import TestResult, parse_junit_xml
 
 
 class FastDownward(VProject, ReleaseProviderHook):
-    """Planning tool FastDownward (fetched by Git)"""
+    """Planning tool FastDownward (fetched by Git)."""
 
     NAME = 'FastDownward'
     GROUP = 'cpp_projects'
@@ -56,6 +56,7 @@ class FastDownward(VProject, ReleaseProviderHook):
     def binaries_for_revision(
         revision: ShortCommitHash,
     ) -> list[ProjectBinaryWrapper]:
+        """Get the binaries for a specific revision."""
         binary_map = RevisionBinaryMap(
             get_local_project_repo(FastDownward.NAME)
         )
@@ -66,6 +67,7 @@ class FastDownward(VProject, ReleaseProviderHook):
         return binary_map[revision]
 
     def run_tests(self) -> None:
+        """Unsupported, use run_testsuite instead."""
         pass
 
     def prepare_test_environment(self) -> None:
@@ -101,8 +103,9 @@ class FastDownward(VProject, ReleaseProviderHook):
 
         Note:
             Fast Downward requires tests to be built to also collect the test
-            names. Therefore, this method just calls the prepare method.
+            names. Therefore, this method is a non-op.
         """
+        pass
 
     def run_testsuite(
         self,
@@ -117,6 +120,8 @@ class FastDownward(VProject, ReleaseProviderHook):
             test_report_path: Path to store the detailed test results in.
             tests_to_run: List of test cases to run. If None, all tests will be
                           run.
+            tests_to_exclude: List of test cases to exclude. If None, no tests
+                              are excluded.
 
         Returns:
             True if all tests passed, False otherwise.
@@ -145,9 +150,7 @@ class FastDownward(VProject, ReleaseProviderHook):
             test_args = ["driver/tests.py", *tests_to_run]
             _, _, _ = bb.watch(test_runner[test_args])()
 
-        results = parse_junit_xml(test_report_path)
-
-        return results
+        return parse_junit_xml(test_report_path)
 
     def get_test_names(self) -> tp.Iterable[str]:
         """
@@ -168,13 +171,11 @@ class FastDownward(VProject, ReleaseProviderHook):
         # is executed.
         # Therefore, some output from the planning tool is included in stdout
         # All test name lines start with "driver/tests.py::"
-        test_names = [
+        return [
             line.strip()
             for line in output.splitlines()
             if line.startswith("driver/tests.py::")
         ]
-
-        return test_names
 
     def compile(self) -> None:
         """Compile the project."""
@@ -196,8 +197,10 @@ class FastDownward(VProject, ReleaseProviderHook):
 
     @classmethod
     def get_release_revisions(
-        cls, release_type: ReleaseType
+        cls,
+        release_type: ReleaseType,  # noqa: ARG003
     ) -> list[tuple[FullCommitHash, str]]:
+        """Get the release revisions for the project."""
         repo_loc = get_local_project_repo(cls.NAME)
         with local.cwd(repo_loc):
             # Before 2019_07, there were no real releases, but the following
