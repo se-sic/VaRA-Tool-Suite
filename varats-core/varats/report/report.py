@@ -100,17 +100,17 @@ class FileStatusExtension(Enum):
 
         Test:
         >>> FileStatusExtension.get_file_status_from_str('success')
-        <FileStatusExtension.SUCCESS: ('success', <ANSIStyle: Foreground Green>)>
+        <FileStatusExtension.SUCCESS: ('success', <ANSIStyle: Green>)>
 
         >>> FileStatusExtension.get_file_status_from_str('SUCCESS')
-        <FileStatusExtension.SUCCESS: ('success', <ANSIStyle: Foreground Green>)>
+        <FileStatusExtension.SUCCESS: ('success', <ANSIStyle: Green>)>
 
         >>> FileStatusExtension.get_file_status_from_str('###')
-        <FileStatusExtension.MISSING: ('###', <ANSIStyle: Full: Foreground Yellow3A>)>
+        <FileStatusExtension.MISSING: ('###', <ANSIStyle: Full: Yellow3A>)>
 
         >>> FileStatusExtension.get_file_status_from_str('CompileError')
-        <FileStatusExtension.COMPILE_ERROR: ('cerror', <ANSIStyle: Foreground Red>)>
-        """  # noqa: E501
+        <FileStatusExtension.COMPILE_ERROR: ('cerror', <ANSIStyle: Red>)>
+        """
         for fs_enum in FileStatusExtension:
             if (
                 status_name.upper() == fs_enum.name
