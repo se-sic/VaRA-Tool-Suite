@@ -4,7 +4,6 @@ import importlib
 import re
 import unittest
 from pathlib import Path
-from unittest import mock
 
 from click.testing import CliRunner
 
@@ -78,8 +77,7 @@ class TestDriverRun(unittest.TestCase):
         self.assertEqual("52", match.group(1))
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
-    @mock.patch("varats.tools.driver_run.sbatch")
-    def test_bb_run_slurm_and_container(self, mock_sbatch) -> None:  # noqa: ARG002
+    def test_bb_run_slurm_and_container(self) -> None:
         runner = CliRunner()
         vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
         # needed so we see the paper config
