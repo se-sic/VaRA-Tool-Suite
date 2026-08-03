@@ -1,5 +1,4 @@
 """Test artefacts config tool."""
-import traceback
 import unittest
 
 from click.testing import CliRunner
