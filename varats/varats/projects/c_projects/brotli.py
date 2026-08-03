@@ -67,6 +67,7 @@ class Brotli(VProject):
     ]
 
     class BrotliBuildMethod(Enum):
+        """Supported build methods for Brotli."""
         MAKE = 0
         CONFIGURE = 1
         CMAKE = 2
@@ -112,6 +113,7 @@ class Brotli(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash,
     ) -> list[ProjectBinaryWrapper]:
+        """Return a list of binaries generated for a specific revision."""
         binary_map = RevisionBinaryMap(get_local_project_repo(Brotli.NAME))
 
         binary_map.specify_binary(
@@ -148,6 +150,7 @@ class Brotli(VProject):
         return binary_map[revision]
 
     def run_tests(self) -> None:
+        """Unused for VaRA projects, use run_testsuite instead."""
         pass
 
     def prepare_test_environment(self) -> None:
@@ -213,9 +216,11 @@ class Brotli(VProject):
             test_report_path: Path to store the detailed test results in.
             tests_to_run: List of test cases to run.
                           If None, all tests will be run.
+            tests_to_exclude: List of test cases to exclude.
+                              If None, no tests are excluded.
 
         Returns:
-            True if all tests passed, False otherwise.
+            A dictionary mapping test names to their results.
         """
         build_dir, method = self.__get_build_dir()
 
@@ -248,4 +253,5 @@ class Brotli(VProject):
 
     @classmethod
     def get_cve_product_info(cls) -> list[tuple[str, str]]:
+        """Get the product information for CVE matching."""
         return [("google", "brotli")]

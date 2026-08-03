@@ -14,9 +14,10 @@ class TestNamesReport(BaseReport, shorthand="TNR", file_type="txt"):
     """
 
     def __init__(self, path: Path):
+        """Initialize the TestNamesReport from the given path."""
         super().__init__(path)
 
-        with open(path) as f:
+        with path.open("r") as f:
             self.__test_names = [line.strip() for line in f]
 
     @property

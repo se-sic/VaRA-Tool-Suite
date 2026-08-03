@@ -1,9 +1,15 @@
+import benchbuild as bb
 from benchbuild.utils.cmd import cmake, make, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
+from plumbum import local
 
 from tests.helper_utils import TEST_INPUTS_DIR
 from varats.utils.settings import bb_cfg
-from varats.utils.testsuite_utils import *
+from varats.utils.testsuite_utils import (
+    TestResult,
+    ctest_get_test_names,
+    parse_junit_xml,
+)
 
 
 def test_parse_junit_xml() -> None:

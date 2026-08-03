@@ -13,9 +13,10 @@ class PlainTextReport(BaseReport, shorthand="PTR", file_type="txt"):
     """
 
     def __init__(self, path: Path):
+        """Initialize the PlainTextReport from the given path."""
         super().__init__(path)
 
-        with open(path) as f:
+        with path.open("r") as f:
             self.__content = f.read()
 
     @property

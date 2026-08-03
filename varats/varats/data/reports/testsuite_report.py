@@ -16,8 +16,7 @@ class TestsuiteReport(BaseReport, shorthand="TSR", file_type="json"):
         test_results: dict[str, TestResult], path: Path
     ) -> None:
         """
-        Create a testsuite report from test results and save it to the given
-        path.
+        Create a testsuite report from test results.
 
         Args:
             test_results: A dictionary containing test results.
@@ -26,7 +25,7 @@ class TestsuiteReport(BaseReport, shorthand="TSR", file_type="json"):
         test_results_str: dict[str, str] = {
             name: result.name for name, result in test_results.items()
         }
-        with open(path, "w") as f:
+        with path.open("w") as f:
             json.dump(test_results_str, f, indent=4)
 
     @staticmethod
@@ -40,12 +39,13 @@ class TestsuiteReport(BaseReport, shorthand="TSR", file_type="json"):
         Returns:
             A dictionary containing the test results.
         """
-        with open(path) as f:
+        with path.open("r") as f:
             data: dict[str, str] = json.load(f)
 
         return {test: TestResult[result] for test, result in data.items()}
 
     def __init__(self, path: Path):
+        """Initialize the TestsuiteReport from the given path."""
         super().__init__(path)
 
         self.__results = self.load_results_from_report(path)

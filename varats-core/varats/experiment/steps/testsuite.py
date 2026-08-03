@@ -25,9 +25,11 @@ class PrepareTestSuite(ProjectStep):  # type: ignore
     DESCRIPTION = "Prepare the in-built test-suite of the project"
 
     def __init__(self, project: VProject):
+        """Initializes the prepare test-suite step for a project."""
         super().__init__(project)
 
     def __call__(self) -> StepResult:
+        """Call the prepare test-suite step if the project supports it."""
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
                 f"Project {self.project.name} does not support testing."
@@ -41,6 +43,7 @@ class PrepareTestSuite(ProjectStep):  # type: ignore
         return self.status
 
     def __str__(self, indent: int = 0) -> str:
+        """Return a string representation of the step."""
         return textwrap.indent(
             f"* {self.project.name}: Prepare test-suite", indent * " "
         )
@@ -55,9 +58,11 @@ class BuildTestSuite(ProjectStep):  # type: ignore
     DESCRIPTION = "Build the in-built test-suite of the project"
 
     def __init__(self, project: VProject):
+        """Initializes the build test-suite step for a project."""
         super().__init__(project)
 
     def __call__(self) -> StepResult:
+        """Call the build test-suite step if the project supports it."""
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
                 f"Project {self.project.name} does not support testing."
@@ -71,6 +76,7 @@ class BuildTestSuite(ProjectStep):  # type: ignore
         return self.status
 
     def __str__(self, indent: int = 0) -> str:
+        """Return a string representation of the step."""
         return textwrap.indent(
             f"* {self.project.name}: Build test-suite", indent * " "
         )
@@ -98,6 +104,14 @@ class RunTestSuite(ProjectStep):  # type: ignore
         Args:
           project: Project to run the test-suite on
           output_path: Path to write the test report file to
+          tests_to_run: An explicit list of tests to run.
+                        If None, all tests will be run.
+          tests_to_exclude: An explicit list of tests to exclude.
+                            If None, no tests are excluded.
+          result_filter: A callable that takes the test results and returns a
+                boolean indicating whether the test-suite run was successful.
+                If None, the default filter will be used, which considers a test
+                suite run successful if all tests passed or were skipped.
         """
         super().__init__(project)
         self.__output_path = output_path
@@ -111,12 +125,21 @@ class RunTestSuite(ProjectStep):  # type: ignore
 
     @property
     def output_path(self) -> Path | None:
+        """Get the output path for the test report."""
         return self.__output_path
 
     def set_output_path(self, output_path: Path) -> None:
+        """Set the output path for the test report."""
         self.__output_path = output_path
 
-    def _parse_results(self, result: dict[str, TestResult]) -> bool:
+    @staticmethod
+    def _parse_results(result: dict[str, TestResult]) -> bool:
+        """
+        Default result filter.
+
+        Considers a test suite run successful if all tests passed, skipped,
+        or disabled.
+        """
         result_filter = {
             TestResult.PASSED: True,
             TestResult.FAILED: False,
@@ -128,6 +151,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
         return all(result_filter.get(status) for status in result.values())
 
     def __call__(self) -> StepResult:
+        """Call the run test-suite implementation if the project supports it."""
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
                 f"Project {self.project.name} does not support testing."
@@ -153,6 +177,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
         return self.status
 
     def __str__(self, indent: int = 0) -> str:
+        """Return a string representation of the step."""
         return textwrap.indent(
             f"* {self.project.name}: Run test-suite", indent * " "
         )
@@ -167,10 +192,18 @@ class CollectTests(ProjectStep):  # type: ignore
     DESCRIPTION = "Collect the in-built test-suite of the project"
 
     def __init__(self, project: VProject, output_path: Path):
+        """
+        Initializes the collect test-suite step for a project.
+
+        The collect test-suite step collects the names of the tests
+        in the test suite and writes them to a file at the specified
+        output path.
+        """
         super().__init__(project)
         self.__output_path = output_path
 
     def __call__(self) -> StepResult:
+        """Call the collect test-suite step if the project supports it."""
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
                 f"Project {self.project.name} does not support testing."
@@ -184,7 +217,7 @@ class CollectTests(ProjectStep):  # type: ignore
 
         print(f"Collected tests: {tests}")
 
-        with open(self.__output_path, 'w') as f:
+        with self.__output_path.open("w") as f:
             f.writelines(f"{test}\n" for test in tests)
 
         return self.status

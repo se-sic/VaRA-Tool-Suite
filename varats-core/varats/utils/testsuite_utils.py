@@ -87,14 +87,18 @@ def ctest_run_testsuite(
 
         bb.watch(ctest_cmd)()
 
-    results = parse_junit_xml(test_report_path)
+    return parse_junit_xml(test_report_path)
 
-    return results
 
 
 def gtest_get_test_names(build_dir: Path, test_bin: str) -> tp.Iterable[str]:
     """
-    Get the test names
+    Get the test names for a project using Google Test.
+
+    Args:
+        build_dir: Path to the build directory to execute the test binary in
+        test_bin: Name of the test binary to execute
+
     Returns:
         A list of test names available in the test directory.
     """
@@ -151,9 +155,8 @@ def gtest_run_testsuite(
             ]
         )()
 
-    results = parse_junit_xml(output_file)
+    return parse_junit_xml(output_file)
 
-    return results
 
 
 def parse_junit_xml(xml_path: Path) -> dict[str, TestResult]:

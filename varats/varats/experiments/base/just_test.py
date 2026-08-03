@@ -36,10 +36,7 @@ class JustTest(VersionExperiment, shorthand="JT"):
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
-        """
-        Returns the specified steps to run the project(s) specified in the
-        call in a fixed order.
-        """
+        """Returns the necessary actions to run the test suite for a project."""
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = (
             run.RuntimeExtension(project, self) << time.RunWithTime()
@@ -87,6 +84,7 @@ class CollectTestNames(VersionExperiment, shorthand="CTN"):
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
+        """Returns the necessary actions to collect test names."""
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = (
             run.RuntimeExtension(project, self) << time.RunWithTime()
@@ -115,10 +113,9 @@ class CollectTestNames(VersionExperiment, shorthand="CTN"):
             get_current_config_id(project),
         )
 
-        analysis_actions = [
+        return [
             PrepareTestSuite(project),
             CollectTests(project, result_file.full_path().absolute()),
             actions.Clean(project),
         ]
 
-        return analysis_actions
