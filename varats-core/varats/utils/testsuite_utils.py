@@ -90,7 +90,6 @@ def ctest_run_testsuite(
     return parse_junit_xml(test_report_path)
 
 
-
 def gtest_get_test_names(build_dir: Path, test_bin: str) -> tp.Iterable[str]:
     """
     Get the test names for a project using Google Test.
@@ -156,7 +155,6 @@ def gtest_run_testsuite(
         )()
 
     return parse_junit_xml(output_file)
-
 
 
 def parse_junit_xml(xml_path: Path) -> dict[str, TestResult]:

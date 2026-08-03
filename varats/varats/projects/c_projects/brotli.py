@@ -68,6 +68,7 @@ class Brotli(VProject):
 
     class BrotliBuildMethod(Enum):
         """Supported build methods for Brotli."""
+
         MAKE = 0
         CONFIGURE = 1
         CMAKE = 2

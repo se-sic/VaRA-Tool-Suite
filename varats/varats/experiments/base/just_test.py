@@ -118,4 +118,3 @@ class CollectTestNames(VersionExperiment, shorthand="CTN"):
             CollectTests(project, result_file.full_path().absolute()),
             actions.Clean(project),
         ]
-
