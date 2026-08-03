@@ -532,7 +532,7 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
     """
     from shutil import copytree  # noqa
 
-    if Path.is_dir(dest_dir):
+    if dest_dir.is_dir():
         LOG.error(
             "The passed destination directory already exists. "
             "Copy/rename actions are skipped."
