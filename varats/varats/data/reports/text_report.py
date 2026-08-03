@@ -1,4 +1,5 @@
 """Plain text report."""
+
 from pathlib import Path
 
 from varats.report.report import BaseReport
@@ -14,7 +15,7 @@ class PlainTextReport(BaseReport, shorthand="PTR", file_type="txt"):
     def __init__(self, path: Path):
         super().__init__(path)
 
-        with open(path, 'r') as f:
+        with open(path) as f:
             self.__content = f.read()
 
     @property

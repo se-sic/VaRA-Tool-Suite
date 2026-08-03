@@ -1,4 +1,5 @@
 """Project file for Dune."""
+
 import shutil
 import typing as tp
 from pathlib import Path
@@ -24,11 +25,11 @@ from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_commands import update_all_submodules
-from varats.utils.git_util import ShortCommitHash, RepositoryHandle
+from varats.utils.git_util import RepositoryHandle, ShortCommitHash
 from varats.utils.testsuite_utils import (
+    TestResult,
     ctest_get_test_names,
     ctest_run_testsuite,
-    TestResult,
 )
 
 
@@ -64,9 +65,9 @@ class DunePerfRegression(VProject):
             local='dune-VaRA',
             refspec='origin/HEAD',
             limit=None,
-            shallow=False
+            shallow=False,
         ),
-        FeatureSource()
+        FeatureSource(),
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10)
@@ -76,69 +77,87 @@ class DunePerfRegression(VProject):
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
-                ) / RSBinary('dune_performance_regressions'),
-                label='dune-helloworld'
+                )
+                / RSBinary('dune_performance_regressions'),
+                label='dune-helloworld',
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
-                ) / RSBinary('poisson_test'),
+                )
+                / RSBinary('poisson_test'),
                 label='poisson-non-separated',
                 creates=[
-                    'poisson_UG_Pk_2d.vtu', 'poisson-yasp-Q1-2d.vtu',
-                    'poisson-yasp-Q1-3d.vtu', 'poisson-yasp-Q2-2d.vtu',
-                    'poisson-yasp-Q2-3d.vtu'
-                ]
+                    'poisson_UG_Pk_2d.vtu',
+                    'poisson-yasp-Q1-2d.vtu',
+                    'poisson-yasp-Q1-3d.vtu',
+                    'poisson-yasp-Q2-2d.vtu',
+                    'poisson-yasp-Q2-3d.vtu',
+                ],
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
-                ) / RSBinary('poisson_ug_pk_2d'),
+                )
+                / RSBinary('poisson_ug_pk_2d'),
                 label='poisson-ug-pk-2d',
-                creates=['poisson-UG-Pk-2d.vtu']
+                creates=['poisson-UG-Pk-2d.vtu'],
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
-                ) / RSBinary('poisson_yasp_q1_2d'),
+                )
+                / RSBinary('poisson_yasp_q1_2d'),
                 label='poisson-yasp-q1-2d',
-                creates=['poisson-yasp-q1-2d.vtu']
+                creates=['poisson-yasp-q1-2d.vtu'],
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
-                ) / RSBinary('poisson_yasp_q1_3d'),
+                )
+                / RSBinary('poisson_yasp_q1_3d'),
                 label='poisson-yasp-q1-3d',
-                creates=['poisson-yasp-q1-3d.vtu']
+                creates=['poisson-yasp-q1-3d.vtu'],
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
-                ) / RSBinary('poisson_yasp_q2_2d'),
+                )
+                / RSBinary('poisson_yasp_q2_2d'),
                 label='poisson-yasp-q2-2d',
-                creates=['poisson-yasp-q2-2d.vtu']
+                creates=['poisson-yasp-q2-2d.vtu'],
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
-                ) / RSBinary('poisson_yasp_q2_3d'),
+                )
+                / RSBinary('poisson_yasp_q2_3d'),
                 label='poisson-yasp-q2-3d',
-                creates=['poisson-yasp-q2-3d.vtu']
+                creates=['poisson-yasp-q2-3d.vtu'],
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
-                ) / RSBinary('poisson_alugrid'),
+                )
+                / RSBinary('poisson_alugrid'),
                 label='poisson-alugrid',
-                creates=['poisson_ALU_Pk_2d.vtu']
-            )
+                creates=['poisson_ALU_Pk_2d.vtu'],
+            ),
         ]
     }
 
     __DUNE_MODULES = [
-        "dune-common", "dune-istl", "dune-geometry", "dune-uggrid", "dune-grid",
-        "dune-typetree", "dune-multidomaingrid", "dune-localfunctions",
-        "dune-functions", "dune-alugrid", "dune-pdelab"
+        "dune-common",
+        "dune-istl",
+        "dune-geometry",
+        "dune-uggrid",
+        "dune-grid",
+        "dune-typetree",
+        "dune-multidomaingrid",
+        "dune-localfunctions",
+        "dune-functions",
+        "dune-alugrid",
+        "dune-pdelab",
     ]
 
     __CMAKE_FLAGS = [
@@ -149,8 +168,8 @@ class DunePerfRegression(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List['ProjectBinaryWrapper']:
+        revision: ShortCommitHash,
+    ) -> list['ProjectBinaryWrapper']:
         binary_map = RevisionBinaryMap(
             get_local_project_repo(DunePerfRegression.NAME)
         )
@@ -162,7 +181,7 @@ class DunePerfRegression(VProject):
         binary_map.specify_binary(
             'dune_performance_regressions',
             BinaryType.EXECUTABLE,
-            only_valid_in=rev_range
+            only_valid_in=rev_range,
         )
 
         binary_map.specify_binary(
@@ -178,27 +197,19 @@ class DunePerfRegression(VProject):
         )
 
         binary_map.specify_binary(
-            'poisson_yasp_q1_2d',
-            BinaryType.EXECUTABLE,
-            only_valid_in=rev_range
+            'poisson_yasp_q1_2d', BinaryType.EXECUTABLE, only_valid_in=rev_range
         )
 
         binary_map.specify_binary(
-            'poisson_yasp_q2_3d',
-            BinaryType.EXECUTABLE,
-            only_valid_in=rev_range
+            'poisson_yasp_q2_3d', BinaryType.EXECUTABLE, only_valid_in=rev_range
         )
 
         binary_map.specify_binary(
-            'poisson_yasp_q2_2d',
-            BinaryType.EXECUTABLE,
-            only_valid_in=rev_range
+            'poisson_yasp_q2_2d', BinaryType.EXECUTABLE, only_valid_in=rev_range
         )
 
         binary_map.specify_binary(
-            'poisson_yasp_q1_3d',
-            BinaryType.EXECUTABLE,
-            only_valid_in=rev_range
+            'poisson_yasp_q1_3d', BinaryType.EXECUTABLE, only_valid_in=rev_range
         )
 
         binary_map.specify_binary(
@@ -214,16 +225,19 @@ class DunePerfRegression(VProject):
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
-        with local.cwd(version_source):
-            with local.env(
+        with (
+            local.cwd(version_source),
+            local.env(
                 CC=c_compiler,
                 CXX=cxx_compiler,
-                CMAKE_FLAGS=" ".join(self.__CMAKE_FLAGS)
-            ):
-                dunecontrol = cmd['./dune-common/bin/dunecontrol']
+                CMAKE_FLAGS=" ".join(self.__CMAKE_FLAGS),
+            ),
+        ):
+            dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
-                bb.watch(dunecontrol
-                        )('--module=dune-performance-regressions', 'all')
+            bb.watch(dunecontrol)(
+                '--module=dune-performance-regressions', 'all'
+            )
 
     def recompile(self) -> None:
         """Recompiles Dune after e.g. a Patch has been applied."""
@@ -232,8 +246,9 @@ class DunePerfRegression(VProject):
         with local.cwd(version_source):
             dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
-            bb.watch(dunecontrol
-                    )('--module=dune-performance-regressions', 'make')
+            bb.watch(dunecontrol)(
+                '--module=dune-performance-regressions', 'make'
+            )
 
     def run_tests(self) -> None:
         pass
@@ -250,14 +265,16 @@ class DunePerfRegression(VProject):
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
-        with local.cwd(version_source):
-            with local.env(
+        with (
+            local.cwd(version_source),
+            local.env(
                 CC=c_compiler,
                 CXX=cxx_compiler,
-                CMAKE_FLAGS=" ".join(self.__CMAKE_FLAGS)
-            ):
-                dunecontrol = cmd['./dune-common/bin/dunecontrol']
-                bb.watch(dunecontrol["cmake"])()
+                CMAKE_FLAGS=" ".join(self.__CMAKE_FLAGS),
+            ),
+        ):
+            dunecontrol = cmd['./dune-common/bin/dunecontrol']
+            bb.watch(dunecontrol["cmake"])()
 
     def build_tests(self) -> None:
         """Build the tests for all subprojects."""
@@ -271,8 +288,9 @@ class DunePerfRegression(VProject):
                     # skip the pdelab module as building tests fails
                     continue
                 bb.watch(
-                    dunecontrol[f"--only={module}", "bexec", "make",
-                                "build_tests"]
+                    dunecontrol[
+                        f"--only={module}", "bexec", "make", "build_tests"
+                    ]
                 )()
 
     def get_test_names(self) -> tp.Iterable[str]:
@@ -300,14 +318,14 @@ class DunePerfRegression(VProject):
 
     def run_testsuite(
         self,
-        test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        test_report_path: Path | None = None,
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+    ) -> dict[str, TestResult] | None:
         """Run the testsuite for the project."""
         version_source = local.path(self.source_of(self.primary_source))
 
-        tests_per_module: tp.Dict[str, tp.List[str]] = {
+        tests_per_module: dict[str, list[str]] = {
             module: [] for module in DunePerfRegression.__DUNE_MODULES
         }
 
@@ -324,7 +342,7 @@ class DunePerfRegression(VProject):
             tests_per_module[module].append(test_name)
 
         aggregated_results = self.builddir / "aggregated_test_results.zip"
-        combined_results: tp.Dict[str, TestResult] = {}
+        combined_results: dict[str, TestResult] = {}
 
         with ZippedReportFolder(aggregated_results) as zip_folder:
             for module in DunePerfRegression.__DUNE_MODULES:
@@ -335,15 +353,19 @@ class DunePerfRegression(VProject):
                 module_test_report = Path(zip_folder) / f"{module}-tests.xml"
                 module_build_dir = version_source / module / "build-cmake"
                 result = ctest_run_testsuite(
-                    module_build_dir, module_test_report,
-                    tests_per_module[module], tests_to_exclude
+                    module_build_dir,
+                    module_test_report,
+                    tests_per_module[module],
+                    tests_to_exclude,
                 )
 
                 if result is not None:
-                    combined_results.update({
-                        f"{module}#{test_name}": test_result
-                        for test_name, test_result in result.items()
-                    })
+                    combined_results.update(
+                        {
+                            f"{module}#{test_name}": test_result
+                            for test_name, test_result in result.items()
+                        }
+                    )
 
         # look at
         if test_report_path:

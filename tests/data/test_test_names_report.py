@@ -9,6 +9,7 @@ from varats.data.reports.test_names_report import TestNamesReport
 
 class TestTestNamesReport(unittest.TestCase):
     """Test TestNamesReport functionality."""
+
     report: TestNamesReport
 
     @classmethod

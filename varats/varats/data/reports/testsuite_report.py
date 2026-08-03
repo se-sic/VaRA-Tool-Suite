@@ -13,7 +13,7 @@ class TestsuiteReport(BaseReport, shorthand="TSR", file_type="json"):
 
     @staticmethod
     def create_report_from_results(
-        test_results: tp.Dict[str, TestResult], path: Path
+        test_results: dict[str, TestResult], path: Path
     ) -> None:
         """
         Create a testsuite report from test results and save it to the given
@@ -23,24 +23,25 @@ class TestsuiteReport(BaseReport, shorthand="TSR", file_type="json"):
             test_results: A dictionary containing test results.
             path: The path where the report should be saved.
         """
-        test_results_str: tp.Dict[str, str] = {
+        test_results_str: dict[str, str] = {
             name: result.name for name, result in test_results.items()
         }
         with open(path, "w") as f:
             json.dump(test_results_str, f, indent=4)
 
     @staticmethod
-    def load_results_from_report(path: Path) -> tp.Dict[str, TestResult]:
+    def load_results_from_report(path: Path) -> dict[str, TestResult]:
         """
         Load test results from a testsuite report.
 
         Args:
             path: The path to the report file.
+
         Returns:
             A dictionary containing the test results.
         """
-        with open(path, 'r') as f:
-            data: tp.Dict[str, str] = json.load(f)
+        with open(path) as f:
+            data: dict[str, str] = json.load(f)
 
         return {test: TestResult[result] for test, result in data.items()}
 
@@ -50,7 +51,7 @@ class TestsuiteReport(BaseReport, shorthand="TSR", file_type="json"):
         self.__results = self.load_results_from_report(path)
 
     @property
-    def results(self) -> tp.Dict[str, TestResult]:
+    def results(self) -> dict[str, TestResult]:
         """
         Get the test results from the report.
 

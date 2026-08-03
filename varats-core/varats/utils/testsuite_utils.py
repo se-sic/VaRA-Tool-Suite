@@ -1,4 +1,5 @@
 """Several utility functions for the testsuite protocol."""
+
 import json
 import re
 import typing as tp
@@ -7,11 +8,12 @@ from pathlib import Path
 
 import benchbuild as bb
 from junitparser import JUnitXml, junitparser
-from plumbum import local, ProcessExecutionError
+from plumbum import ProcessExecutionError, local
 
 
 class TestResult(Enum):
     """Enum for possible test results."""
+
     PASSED = 0
     FAILED = 1
     SKIPPED = 2
@@ -45,10 +47,10 @@ def ctest_get_test_names(build_dir: Path) -> tp.Iterable[str]:
 
 def ctest_run_testsuite(
     build_dir: Path,
-    test_report_path: tp.Optional[Path] = None,
-    tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-    tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-) -> tp.Dict[str, TestResult]:
+    test_report_path: Path | None = None,
+    tests_to_run: tp.Iterable[str] | None = None,
+    tests_to_exclude: tp.Iterable[str] | None = None,
+) -> dict[str, TestResult]:
     """
     Run a test suite using ctest.
 
@@ -72,15 +74,15 @@ def ctest_run_testsuite(
         ctest_cmd = ctest_cmd["--output-junit", test_report_path]
 
         if tests_to_run:
-            test_regex = '|'.join([
-                "^" + re.escape(name) for name in tests_to_run
-            ])
+            test_regex = '|'.join(
+                ["^" + re.escape(name) for name in tests_to_run]
+            )
             ctest_cmd = ctest_cmd["-R", test_regex]
 
         if tests_to_exclude:
-            exclude_regex = '|'.join([
-                "^" + re.escape(name) for name in tests_to_exclude
-            ])
+            exclude_regex = '|'.join(
+                ["^" + re.escape(name) for name in tests_to_exclude]
+            )
             ctest_cmd = ctest_cmd["-E", exclude_regex]
 
         bb.watch(ctest_cmd)()
@@ -91,9 +93,10 @@ def ctest_run_testsuite(
 
 
 def gtest_get_test_names(build_dir: Path, test_bin: str) -> tp.Iterable[str]:
-    """Get the test names
-        Returns:
-            A list of test names available in the test directory.
+    """
+    Get the test names
+    Returns:
+        A list of test names available in the test directory.
     """
     test_path = build_dir / test_bin
     try:
@@ -120,10 +123,10 @@ def gtest_get_test_names(build_dir: Path, test_bin: str) -> tp.Iterable[str]:
 def gtest_run_testsuite(
     build_dir: Path,
     test_bin: Path,
-    test_report_path: tp.Optional[Path] = None,
-    tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-    tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-) -> tp.Optional[tp.Dict[str, TestResult]]:
+    test_report_path: Path | None = None,
+    tests_to_run: tp.Iterable[str] | None = None,
+    tests_to_exclude: tp.Iterable[str] | None = None,
+) -> dict[str, TestResult] | None:
     """Run the testsuite."""
     if tests_to_exclude is None:
         tests_to_exclude = []
@@ -143,8 +146,9 @@ def gtest_run_testsuite(
 
     with local.cwd(build_dir):
         bb.watch(
-            local[test_bin][f"--gtest_filter={included_tests}-{excluded_tests}",
-                            gtest_out]
+            local[test_bin][
+                f"--gtest_filter={included_tests}-{excluded_tests}", gtest_out
+            ]
         )()
 
     results = parse_junit_xml(output_file)
@@ -152,17 +156,17 @@ def gtest_run_testsuite(
     return results
 
 
-def parse_junit_xml(xml_path: Path) -> tp.Dict[str, TestResult]:
+def parse_junit_xml(xml_path: Path) -> dict[str, TestResult]:
     """Parse the xml test report and return the test results."""
-    results: tp.Dict[str, TestResult] = {}
+    results: dict[str, TestResult] = {}
     test_xml = JUnitXml.fromfile(str(xml_path.absolute()))
     suite: junitparser.TestSuite
     for suite in test_xml:
-        suite_name = suite.name if suite.name else "<unknown>"
+        suite_name = suite.name or "<unknown>"
 
         case: junitparser.TestCase
         for case in suite:
-            case_name = case.name if case.name else "<unknown>"
+            case_name = case.name or "<unknown>"
 
             if case.is_passed:
                 status = TestResult.PASSED

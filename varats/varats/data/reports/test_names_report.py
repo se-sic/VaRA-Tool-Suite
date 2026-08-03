@@ -1,5 +1,5 @@
 """Report for capturing test names."""
-import typing as tp
+
 from pathlib import Path
 
 from varats.report.report import BaseReport
@@ -16,11 +16,11 @@ class TestNamesReport(BaseReport, shorthand="TNR", file_type="txt"):
     def __init__(self, path: Path):
         super().__init__(path)
 
-        with open(path, 'r') as f:
-            self.__test_names = [line.strip() for line in f.readlines()]
+        with open(path) as f:
+            self.__test_names = [line.strip() for line in f]
 
     @property
-    def test_names(self) -> tp.List[str]:
+    def test_names(self) -> list[str]:
         """
         Get the list of test names from the report.
 

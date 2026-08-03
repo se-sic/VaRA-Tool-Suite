@@ -3,6 +3,7 @@ Project Steps for interacting with the TestSuite protocol.
 
 This allows to prepare, build and run test suites for projects
 """
+
 import textwrap
 import typing as tp
 from pathlib import Path
@@ -11,12 +12,13 @@ from benchbuild.utils.actions import ProjectStep, StepResult
 from plumbum import ProcessExecutionError
 
 from varats.data.reports.testsuite_report import TestsuiteReport
-from varats.project.varats_project import VProject, SupportsTestSuites
+from varats.project.varats_project import SupportsTestSuites, VProject
 from varats.utils.testsuite_utils import TestResult
 
 
 class PrepareTestSuite(ProjectStep):  # type: ignore
     """Experiment step to prepare the test suite for a project."""
+
     project: VProject
 
     NAME = "PrepareTestSuite"
@@ -46,6 +48,7 @@ class PrepareTestSuite(ProjectStep):  # type: ignore
 
 class BuildTestSuite(ProjectStep):  # type: ignore
     """Experiment step to build the test suite for a project."""
+
     project: VProject
 
     NAME = "BuildTestSuite"
@@ -75,6 +78,7 @@ class BuildTestSuite(ProjectStep):  # type: ignore
 
 class RunTestSuite(ProjectStep):  # type: ignore
     """Experiment step to run the test suite on a project."""
+
     project: VProject
 
     NAME = "RunTestSuite"
@@ -84,10 +88,9 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self,
         project: VProject,
         output_path: Path,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None,
-        result_filter: tp.Optional[tp.Callable[[tp.Dict[str, TestResult]],
-                                               bool]] = None
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+        result_filter: tp.Callable[[dict[str, TestResult]], bool] | None = None,
     ):
         """
         Initialize the test-suite step.
@@ -107,13 +110,13 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self.__tests_to_exclude = tests_to_exclude
 
     @property
-    def output_path(self) -> tp.Optional[Path]:
+    def output_path(self) -> Path | None:
         return self.__output_path
 
     def set_output_path(self, output_path: Path) -> None:
         self.__output_path = output_path
 
-    def _parse_results(self, result: tp.Dict[str, TestResult]) -> bool:
+    def _parse_results(self, result: dict[str, TestResult]) -> bool:
         result_filter = {
             TestResult.PASSED: True,
             TestResult.FAILED: False,
@@ -157,6 +160,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
 
 class CollectTests(ProjectStep):  # type: ignore
     """Experiment step to collect the test suite for a project."""
+
     project: VProject
 
     NAME = "CollectTests"
@@ -181,7 +185,6 @@ class CollectTests(ProjectStep):  # type: ignore
         print(f"Collected tests: {tests}")
 
         with open(self.__output_path, 'w') as f:
-            for test in tests:
-                f.write(f"{test}\n")
+            f.writelines(f"{test}\n" for test in tests)
 
         return self.status

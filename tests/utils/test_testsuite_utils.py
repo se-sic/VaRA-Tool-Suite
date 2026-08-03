@@ -12,8 +12,10 @@ def test_parse_junit_xml() -> None:
 
     # Check if the result contains any error or failure
     for test, result in results.items():
-        assert not result in {
-            TestResult.TIMEOUT, TestResult.FAILED, TestResult.UNKNOWN
+        assert result not in {
+            TestResult.TIMEOUT,
+            TestResult.FAILED,
+            TestResult.UNKNOWN,
         }
 
 

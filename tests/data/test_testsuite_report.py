@@ -56,12 +56,13 @@ class TestTestsuiteReport(unittest.TestCase):
 
         loaded_report = TestsuiteReport(report_path)
         self.assertEqual(
-            loaded_report.results, {
+            loaded_report.results,
+            {
                 "test_case_1": TestResult.PASSED,
                 "test_case_2": TestResult.FAILED,
                 "test_case_3": TestResult.SKIPPED,
                 "test_case_4": TestResult.TIMEOUT,
                 "test_case_5": TestResult.DISABLED,
                 "test_case_6": TestResult.UNKNOWN,
-            }
+            },
         )

@@ -1,4 +1,5 @@
 """Experiments for simple test execution."""
+
 import typing as tp
 from pathlib import Path
 
@@ -9,17 +10,17 @@ from varats.data.reports.test_names_report import TestNamesReport
 from varats.data.reports.testsuite_report import TestsuiteReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
-    get_default_compile_error_wrapped,
     create_new_success_result_filepath,
+    get_default_compile_error_wrapped,
 )
 from varats.experiment.steps.testsuite import (
-    RunTestSuite,
-    PrepareTestSuite,
     BuildTestSuite,
     CollectTests,
+    PrepareTestSuite,
+    RunTestSuite,
 )
 from varats.experiment.wllvm import RunWLLVM
-from varats.project.project_util import ProjectBinaryWrapper, BinaryType
+from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
@@ -35,16 +36,19 @@ class JustTest(VersionExperiment, shorthand="JT"):
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in the
-        call in a fixed order."""
-
+        """
+        Returns the specified steps to run the project(s) specified in the
+        call in a fixed order.
+        """
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+        project.runtime_extension = (
+            run.RuntimeExtension(project, self) << time.RunWithTime()
+        )
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = compiler.RunCompiler(project, self) \
-            << run.WithTimeout()
+        project.compiler_extension = (
+            compiler.RunCompiler(project, self) << run.WithTimeout()
+        )
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
@@ -55,15 +59,18 @@ class JustTest(VersionExperiment, shorthand="JT"):
         )
 
         result_file = create_new_success_result_filepath(
-            self.get_handle(), TestsuiteReport, project, fake_binary,
-            get_current_config_id(project)
+            self.get_handle(),
+            TestsuiteReport,
+            project,
+            fake_binary,
+            get_current_config_id(project),
         )
 
         analysis_actions = [
             PrepareTestSuite(project),
             BuildTestSuite(project),
             RunTestSuite(project, Path(result_file.full_path())),
-            actions.Clean(project)
+            actions.Clean(project),
         ]
 
         return analysis_actions
@@ -81,13 +88,16 @@ class CollectTestNames(VersionExperiment, shorthand="CTN"):
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-                                    << time.RunWithTime()
+        project.runtime_extension = (
+            run.RuntimeExtension(project, self) << time.RunWithTime()
+        )
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = compiler.RunCompiler(project, self) \
-                                     << RunWLLVM() \
-                                     << run.WithTimeout()
+        project.compiler_extension = (
+            compiler.RunCompiler(project, self)
+            << RunWLLVM()
+            << run.WithTimeout()
+        )
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
@@ -98,15 +108,17 @@ class CollectTestNames(VersionExperiment, shorthand="CTN"):
         )
 
         result_file = create_new_success_result_filepath(
-            self.get_handle(), TestNamesReport, project, fake_binary,
-            get_current_config_id(project)
+            self.get_handle(),
+            TestNamesReport,
+            project,
+            fake_binary,
+            get_current_config_id(project),
         )
 
         analysis_actions = [
             PrepareTestSuite(project),
-            CollectTests(project,
-                         result_file.full_path().absolute()),
-            actions.Clean(project)
+            CollectTests(project, result_file.full_path().absolute()),
+            actions.Clean(project),
         ]
 
         return analysis_actions

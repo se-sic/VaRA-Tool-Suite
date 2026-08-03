@@ -1,28 +1,29 @@
 """Project file for libvpx."""
+
 import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.command import WorkloadSet, SourceRoot
+from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTP
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.containers.containers import get_base_image, ImageBase
+from varats.containers.containers import ImageBase, get_base_image
 from varats.experiment.workload_util import (
-    WorkloadCategory,
-    RSBinary,
     ConfigParams,
+    RSBinary,
+    WorkloadCategory,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    ProjectBinaryWrapper,
     BinaryType,
+    ProjectBinaryWrapper,
+    RevisionBinaryMap,
     get_local_project_repo,
     verify_binaries,
-    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
@@ -31,8 +32,8 @@ from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     TestResult,
-    gtest_run_testsuite,
     gtest_get_test_names,
+    gtest_run_testsuite,
 )
 
 
@@ -50,22 +51,22 @@ class Libvpx(VProject):
             local="libvpx",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
+            shallow=False,
         ),
         FeatureSource(),
         HTTP(
             local="nocturne_aom_sdr_8bit_1080p.y4m",
             remote={
-                "1.0":
-                    "https://storage.googleapis.com/downloads.webmproject.org/"
-                    "AV2Sequences/420_8bit_1080p/"
-                    "nocturne_aom_sdr_8540-9009_offset2_420_8bit_1080p.y4m"
-            }
-        )
+                "1.0": "https://storage.googleapis.com/downloads.webmproject.org/"
+                "AV2Sequences/420_8bit_1080p/"
+                "nocturne_aom_sdr_8540-9009_offset2_420_8bit_1080p.y4m"
+            },
+        ),
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10
-                              ).run('apt', 'install', '-y', 'yasm')
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+        'apt', 'install', '-y', 'yasm'
+    )
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
@@ -76,15 +77,15 @@ class Libvpx(VProject):
                 "nocturne-1080p",
                 ConfigParams(),
                 label="nocturne-1080p",
-                creates=["nocturne-1080p"]
+                creates=["nocturne-1080p"],
             )
         ]
     }
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
-    ) -> tp.List[ProjectBinaryWrapper]:
+        revision: ShortCommitHash,  # pylint: disable=W0613
+    ) -> list[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_repo(Libvpx.NAME))
 
         binary_map.specify_binary("vpxdec", BinaryType.EXECUTABLE)
@@ -118,7 +119,7 @@ class Libvpx(VProject):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
-    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
+    def get_cve_product_info(cls) -> list[tuple[str, str]]:
         return [("john_koleszar", "libvpx")]
 
     def prepare_test_environment(self) -> None:
@@ -131,13 +132,15 @@ class Libvpx(VProject):
         cxx = bb.compiler.cxx(self)
         with local.cwd(test_source):
             with local.env(CC=str(clang), CXX=str(cxx)):
-                configure = local["../configure"]["--disable-examples",
-                                                  "--disable-tools",
-                                                  "--disable-docs",
-                                                  "--enable-unit-tests"]
+                configure = local["../configure"][
+                    "--disable-examples",
+                    "--disable-tools",
+                    "--disable-docs",
+                    "--enable-unit-tests",
+                ]
                 # TODO: See how to include perf tests as workloads?
-                #"--enable-decode-perf-tests",
-                #"--enable-encode-perf-tests"]
+                # "--enable-decode-perf-tests",
+                # "--enable-encode-perf-tests"]
 
                 bb.watch(configure)()
 
@@ -164,10 +167,10 @@ class Libvpx(VProject):
 
     def run_testsuite(
         self,
-        test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        test_report_path: Path | None = None,
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+    ) -> dict[str, TestResult] | None:
         """Run the testsuite."""
         libvpx_source = local.path(self.source_of_primary)
         test_source = local.path(self.source_of_primary) / "build_tests"

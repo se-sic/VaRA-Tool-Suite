@@ -1,33 +1,34 @@
 """Adds the HyTeg framework as a project to VaRA-TS."""
+
 import logging
 import os
 import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.command import WorkloadSet, SourceRoot
-from benchbuild.utils.cmd import ninja, cmake, mkdir
+from benchbuild.command import SourceRoot, WorkloadSet
+from benchbuild.utils.cmd import cmake, mkdir, ninja
 from benchbuild.utils.revision_ranges import SingleRevision
 from plumbum import local
 
-from varats.experiment.workload_util import WorkloadCategory, RSBinary
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    get_local_project_repo,
     BinaryType,
     ProjectBinaryWrapper,
     RevisionBinaryMap,
+    get_local_project_repo,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_commands import update_all_submodules
-from varats.utils.git_util import ShortCommitHash, RepositoryHandle
+from varats.utils.git_util import RepositoryHandle, ShortCommitHash
 from varats.utils.testsuite_utils import (
     TestResult,
-    ctest_run_testsuite,
     ctest_get_test_names,
+    ctest_run_testsuite,
 )
 
 LOG = logging.getLogger(__name__)
@@ -67,6 +68,7 @@ class HyTeg(VProject):
             to your .benchbuild.yml configuration or (when running with slurm)
             adding the export to your slurm scripts
     """
+
     NAME = 'HyTeg'
     GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.HPC
@@ -78,30 +80,36 @@ class HyTeg(VProject):
             local="HyTeg",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
+            shallow=False,
         ),
-        FeatureSource()
+        FeatureSource(),
     ]
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot("HyTeg") / "build" / "apps" / "profiling" /
-                RSBinary('ProfilingApp'),
-                label='ProfilingApp'
+                SourceRoot("HyTeg")
+                / "build"
+                / "apps"
+                / "profiling"
+                / RSBinary('ProfilingApp'),
+                label='ProfilingApp',
             )
         ]
     }
 
     CMAKE_ARGS = [
-        "-G", "Ninja", "..", "-DWALBERLA_BUILD_WITH_MPI=OFF",
-        "-DHYTEG_BUILD_DOC=OFF"
+        "-G",
+        "Ninja",
+        "..",
+        "-DWALBERLA_BUILD_WITH_MPI=OFF",
+        "-DHYTEG_BUILD_DOC=OFF",
     ]
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List['ProjectBinaryWrapper']:
+        revision: ShortCommitHash,
+    ) -> list['ProjectBinaryWrapper']:
         binaries = RevisionBinaryMap(get_local_project_repo(HyTeg.NAME))
 
         binaries.specify_binary(
@@ -109,7 +117,7 @@ class HyTeg(VProject):
             BinaryType.EXECUTABLE,
             only_valid_in=SingleRevision(
                 "f4711dadc3f61386e6ccdc704baa783253332db2"
-            )
+            ),
         )
 
         return binaries[revision]
@@ -126,11 +134,14 @@ class HyTeg(VProject):
         cxx_compiler = bb.compiler.cxx(self)
 
         cmake_args = [
-            "-G", "Ninja", "..", "-DWALBERLA_BUILD_WITH_MPI=OFF",
-            "-DHYTEG_BUILD_DOC=OFF"
+            "-G",
+            "Ninja",
+            "..",
+            "-DWALBERLA_BUILD_WITH_MPI=OFF",
+            "-DHYTEG_BUILD_DOC=OFF",
         ]
 
-        if (eigen_path := os.getenv("EIGEN_PATH")):
+        if eigen_path := os.getenv("EIGEN_PATH"):
             cmake_args.append(f"-DEIGEN_DIR={eigen_path}")
         else:
             LOG.warning(
@@ -169,7 +180,7 @@ class HyTeg(VProject):
         cxx_compiler = bb.compiler.cxx(self)
 
         cmake_args = self.CMAKE_ARGS
-        if (eigen_path := os.getenv("EIGEN_PATH")):
+        if eigen_path := os.getenv("EIGEN_PATH"):
             cmake_args.append(f"-DEIGEN_DIR={eigen_path}")
         else:
             LOG.warning(
@@ -195,10 +206,10 @@ class HyTeg(VProject):
 
     def run_testsuite(
         self,
-        test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Dict[str, TestResult]:
+        test_report_path: Path | None = None,
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+    ) -> dict[str, TestResult]:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"
         return ctest_run_testsuite(
