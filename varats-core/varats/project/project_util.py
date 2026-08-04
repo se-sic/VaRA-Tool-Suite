@@ -1,7 +1,9 @@
 """Utility module for BenchBuild project handling."""
+
 import logging
 import os
 import typing as tp
+from _operator import attrgetter
 from collections import defaultdict
 from enum import Enum
 from itertools import chain
@@ -9,23 +11,24 @@ from pathlib import Path
 
 import benchbuild as bb
 import pygit2
-from _operator import attrgetter
 from benchbuild.source import Git
-from benchbuild.utils.revision_ranges import AbstractRevisionRange
 from plumbum import local
 from plumbum.commands.base import BoundCommand
 
+if tp.TYPE_CHECKING:
+    from benchbuild.utils.revision_ranges import AbstractRevisionRange
+
 from varats.utils.git_util import (
-    RepositoryHandle,
-    FullCommitHash,
-    num_commits,
-    get_submodule_commits,
-    get_authors,
-    calc_repo_loc,
     CommitHash,
-    ShortCommitHash,
-    CommitRepoPair,
     CommitLookupTy,
+    CommitRepoPair,
+    FullCommitHash,
+    RepositoryHandle,
+    ShortCommitHash,
+    calc_repo_loc,
+    get_authors,
+    get_submodule_commits,
+    num_commits,
 )
 from varats.utils.settings import bb_cfg
 
@@ -36,9 +39,10 @@ class CompilationError(Exception):
     """Exception raised if an error during the compilation was discovered."""
 
 
-def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
+def get_project_cls_by_name(project_name: str) -> type[bb.Project]:
     """Look up a BenchBuild project by its name."""
-    from varats.project.varats_project import VProject  # pylint: disable=W0611
+    from varats.project.varats_project import VProject  # noqa
+
     for project_cls in bb.project.ProjectRegistry.projects.itervalues(
         prefix=project_name
     ):
@@ -46,14 +50,15 @@ def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
             # currently we only support varats provided projects
             continue
 
-        return tp.cast(tp.Type[bb.Project], project_cls)
+        return tp.cast("type[bb.Project]", project_cls)
 
     raise LookupError
 
 
-def get_loaded_vara_projects() -> tp.Generator[tp.Type[bb.Project], None, None]:
-    """Get all loaded vara projects."""
-    from varats.project.varats_project import VProject  # pylint: disable=W0611
+def get_loaded_vara_projects() -> tp.Generator[type[bb.Project], None, None]:
+    """Get all loaded VaRA projects."""
+    from varats.project.varats_project import VProject  # noqa
+
     for project_cls in bb.project.ProjectRegistry.projects.values():
         if not issubclass(project_cls, VProject):
             # currently we only support varats provided projects
@@ -63,13 +68,15 @@ def get_loaded_vara_projects() -> tp.Generator[tp.Type[bb.Project], None, None]:
 
 
 def get_primary_project_source(project_name: str) -> bb.source.FetchableSource:
+    """Get the primary source for the given project."""
     project_cls = get_project_cls_by_name(project_name)
     return bb.source.primary(*project_cls.SOURCE)
 
 
 def get_local_project_repo(
-    project_name: str, git_name: tp.Optional[str] = None
+    project_name: str, git_name: str | None = None
 ) -> RepositoryHandle:
+    """Get the repo handle for the given project and optional repo name."""
     if git_name:
         source = get_extended_commit_lookup_source(project_name, git_name)
     else:
@@ -87,9 +94,7 @@ def get_local_project_repo(
     return RepositoryHandle(git_path)
 
 
-def get_local_project_repos(
-    project_name: str
-) -> tp.Dict[str, RepositoryHandle]:
+def get_local_project_repos(project_name: str) -> dict[str, RepositoryHandle]:
     """
     Get the all git repositories for a given benchbuild project.
 
@@ -99,13 +104,13 @@ def get_local_project_repos(
     Returns:
         dict with the repository handles for the project's git sources
     """
-    repos: tp.Dict[str, RepositoryHandle] = {}
+    repos: dict[str, RepositoryHandle] = {}
     project_cls = get_project_cls_by_name(project_name)
     print(f'project_cls: {project_cls}')
 
     for source in project_cls.SOURCE:
         if isinstance(source, Git):
-            source_name = os.path.basename(source.local)
+            source_name = Path(source.local).name
             repos[source_name] = get_local_project_repo(
                 project_name, source_name
             )
@@ -117,8 +122,9 @@ def get_extended_commit_lookup_source(
     project_name: str, git_name: str
 ) -> bb.source.FetchableSource:
     """
-    Get benchbuild FetchableSource specified by the git_name or raise a
-    LookupError if no match was found within the given benchbuild project.
+    Get benchbuild FetchableSource specified by the git_name.
+
+    Raises a LookupError if no match was found within the given project.
 
     Args:
         project_name: name of the given benchbuild project
@@ -127,10 +133,9 @@ def get_extended_commit_lookup_source(
     Returns:
         benchbuild FetchableSource of the searched git repository
     """
-
     project_cls = get_project_cls_by_name(project_name)
     for source in project_cls.SOURCE:
-        if git_name == os.path.basename(source.local):
+        if git_name == Path(source.local).name:
             return source
 
     raise LookupError(
@@ -149,7 +154,6 @@ def create_project_commit_lookup_helper(project_name: str) -> CommitLookupTy:
         a Callable that maps a commit hash and repository name to the
         corresponding commit.
     """
-
     repos = get_local_project_repos(project_name)
 
     def get_commit(crp: CommitRepoPair) -> pygit2.Commit:
@@ -173,21 +177,22 @@ def create_project_commit_lookup_helper(project_name: str) -> CommitLookupTy:
     return get_commit
 
 
-def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
+def get_tagged_commits(project_name: str) -> list[tuple[str, str]]:
     """Get a list of all tagged commits along with their respective tags."""
     repo = get_local_project_repo(project_name)
     # --dereference resolves tag IDs into commits for annotated tags
     # These lines are indicated by the suffix '^{}' (see man git-show-ref)
-    ref_list: tp.List[str] = repo("show-ref", "--tags",
-                                  "--dereference").strip().split("\n")
+    ref_list: list[str] = (
+        repo("show-ref", "--tags", "--dereference").strip().split("\n")
+    )
 
     # Only keep dereferenced or leightweight tags (i.e., only keep commits)
     # and strip suffix, if necessary
-    refs: tp.List[tp.Tuple[str, str]] = [
+    refs: list[tuple[str, str]] = [
         (ref_split[0], ref_split[1][10:].replace('^{}', ''))
         for ref_split in [ref.strip().split() for ref in ref_list]
-        if repo("cat-file", "-t", ref_split[1][10:]).replace('\n', ''
-                                                            ) == 'commit'
+        if repo("cat-file", "-t", ref_split[1][10:]).replace('\n', '')
+        == 'commit'
     ]
 
     return refs
@@ -208,10 +213,13 @@ def num_project_commits(project_name: str, revision: FullCommitHash) -> int:
     main_repo = get_local_project_repo(project_name)
 
     commits = num_commits(main_repo, revision.hash)
-    for submodule, sub_rev in get_submodule_commits(main_repo,
-                                                    revision.hash).items():
+    for submodule, sub_rev in get_submodule_commits(
+        main_repo, revision.hash
+    ).items():
         if submodule not in project_repos:
-            LOG.warning("Ignoring unknown submodule %s",)
+            LOG.warning(
+                "Ignoring unknown submodule %s",
+            )
             continue
         commits += num_commits(project_repos[submodule], sub_rev.hash)
     return commits
@@ -228,13 +236,13 @@ def num_project_authors(project_name: str, revision: FullCommitHash) -> int:
     Returns:
         the number of authors in the project
     """
-
     project_repos = get_local_project_repos(project_name)
     main_repo = get_local_project_repo(project_name)
 
     authors = get_authors(main_repo, revision.hash)
-    for submodule, sub_rev in get_submodule_commits(main_repo,
-                                                    revision.hash).items():
+    for submodule, sub_rev in get_submodule_commits(
+        main_repo, revision.hash
+    ).items():
         if submodule not in project_repos:
             LOG.warning("Ignoring unknown submodule %s", submodule)
             continue
@@ -257,8 +265,9 @@ def calc_project_loc(project_name: str, revision: FullCommitHash) -> int:
     main_repo = get_local_project_repo(project_name)
 
     loc = calc_repo_loc(main_repo, revision.hash)
-    for submodule, sub_rev in get_submodule_commits(main_repo,
-                                                    revision.hash).items():
+    for submodule, sub_rev in get_submodule_commits(
+        main_repo, revision.hash
+    ).items():
         if submodule not in project_repos:
             LOG.warning("Ignoring unknown submodule %s", submodule)
             continue
@@ -281,6 +290,7 @@ def is_git_source(source: bb.source.FetchableSource) -> bool:
 
 class BinaryType(Enum):
     """Enum for different binary types."""
+
     value: int  # pylint: disable=invalid-name
 
     EXECUTABLE = 1
@@ -289,13 +299,15 @@ class BinaryType(Enum):
 
     @property
     def is_library(self) -> bool:
+        """Returns whether the binary type is considered a libraary."""
         return self in (BinaryType.SHARED_LIBRARY, BinaryType.STATIC_LIBRARY)
 
     def __str__(self) -> str:
+        """Return binary type as string."""
         return str(self.name.lower())
 
 
-class ProjectBinaryWrapper():
+class ProjectBinaryWrapper:
     """
     Wraps project binaries which get generated during compilation.
 
@@ -309,9 +321,10 @@ class ProjectBinaryWrapper():
         binary_name: str,
         path_to_binary: Path,
         binary_type: BinaryType,
-        entry_point: tp.Optional[Path] = None,
-        valid_exit_codes: tp.Optional[tp.List[int]] = None,
+        entry_point: Path | None = None,
+        valid_exit_codes: list[int] | None = None,
     ) -> None:
+        """Crates a binary wrapper."""
         self.__binary_name = binary_name
         self.__binary_path = path_to_binary
         self.__type = binary_type
@@ -340,23 +353,26 @@ class ProjectBinaryWrapper():
 
     @property
     def type(self) -> BinaryType:
-        """Specifies the type, e.g., executable, shared, or static library, of
-        the binary."""
+        """The type of a binary (executable, shared, or static library)."""
         return self.__type
 
     @property
-    def entry_point(self) -> tp.Optional[Path]:
-        """Entry point to an executable "thing" that executes the wrapped
-        binary, if possible."""
+    def entry_point(self) -> Path | None:
+        """
+        Entry point for a binary.
+
+        The entry point can be the binary itself, but also a script that
+        calls the actual binary.
+        """
         return self.__entry_point
 
     @property
-    def valid_exit_codes(self) -> tp.List[int]:
-        """Specifies which exit codes indicate a successful execution of the
-        binary."""
+    def valid_exit_codes(self) -> list[int]:
+        """Specifies exit codes for a successful execution of the binary."""
         return self.__valid_exit_codes
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        """Execute the binary with the given arguments."""
         if self.type is not BinaryType.EXECUTABLE:
             LOG.warning(f"Executing {self.type} is not possible.")
             return None
@@ -365,6 +381,7 @@ class ProjectBinaryWrapper():
         return executable_entry_point(*args, **kwargs)
 
     def __getitem__(self, args: tp.Any) -> BoundCommand:
+        """Build a command for the binary with the given arguments."""
         if self.type is not BinaryType.EXECUTABLE:
             raise AssertionError(f"Executing {self.type} is not possible.")
 
@@ -372,19 +389,21 @@ class ProjectBinaryWrapper():
         return executable_entry_point[args]
 
     def __str__(self) -> str:
-        return f"{self.name}: {self.path} | {str(self.type)}"
+        """Return binary as string."""
+        return f"{self.name}: {self.path} | {self.type!s}"
 
     def __repr__(self) -> str:
-        return f"({str(self)})"
+        """Return representation of the binary."""
+        return f"({self!s})"
 
 
-class BinaryNotFound(CompilationError):
+class BinaryNotFoundError(CompilationError):
     """Exception raised if a binary that should exist was not found."""
 
     @staticmethod
     def create_error_for_binary(
-        binary: ProjectBinaryWrapper
-    ) -> 'BinaryNotFound':
+        binary: ProjectBinaryWrapper,
+    ) -> 'BinaryNotFoundError':
         """
         Creates a BinaryNotFound error for a specific binary.
 
@@ -395,29 +414,29 @@ class BinaryNotFound(CompilationError):
             initialzied BinaryNotFound error
         """
         msg = str(
-            f"Could not find specified binary {binary.name} at relative " +
-            f"project path: {str(binary.path)}"
+            f"Could not find specified binary {binary.name} at relative "
+            + f"project path: {binary.path!s}"
         )
-        return BinaryNotFound(msg)
+        return BinaryNotFoundError(msg)
 
 
 def verify_binaries(project: bb.Project) -> None:
     """Verifies that all binaries for a given project exist."""
     for binary in project.binaries:
         if not binary.path.exists():
-            raise BinaryNotFound.create_error_for_binary(binary)
+            raise BinaryNotFoundError.create_error_for_binary(binary)
 
 
 class RevisionBinaryMap(tp.Container[str]):
-    """A special map that specifies for which revision ranges a binaries is
-    valid."""
+    """A map that specifies for which revision ranges a binary is valid."""
 
     def __init__(self, repo: RepositoryHandle) -> None:
+        """Creates a RevisionBinaryMap."""
         self.__repo_location = repo.worktree_path
-        self.__revision_specific_mappings: tp.Dict[
-            'AbstractRevisionRange',
-            tp.List[ProjectBinaryWrapper]] = defaultdict(list)
-        self.__always_valid_mappings: tp.List[ProjectBinaryWrapper] = []
+        self.__revision_specific_mappings: dict[
+            AbstractRevisionRange, list[ProjectBinaryWrapper]
+        ] = defaultdict(list)
+        self.__always_valid_mappings: list[ProjectBinaryWrapper] = []
 
     def specify_binary(
         self, location: str, binary_type: BinaryType, **kwargs: tp.Any
@@ -442,17 +461,20 @@ class RevisionBinaryMap(tp.Container[str]):
         binary_name: str = kwargs.get(
             "override_binary_name", binary_location_path.stem
         )
-        override_entry_point = kwargs.get("override_entry_point", None)
+        override_entry_point = kwargs.get("override_entry_point")
         if override_entry_point:
             override_entry_point = Path(override_entry_point)
-        validity_range: tp.Optional[AbstractRevisionRange] = kwargs.get(
-            "only_valid_in", None
+        validity_range: AbstractRevisionRange | None = kwargs.get(
+            "only_valid_in"
         )
-        valid_exit_codes = kwargs.get("valid_exit_codes", None)
+        valid_exit_codes = kwargs.get("valid_exit_codes")
 
         wrapped_binary = ProjectBinaryWrapper(
-            binary_name, binary_location_path, binary_type,
-            override_entry_point, valid_exit_codes
+            binary_name,
+            binary_location_path,
+            binary_type,
+            override_entry_point,
+            valid_exit_codes,
         )
 
         if validity_range:
@@ -465,13 +487,15 @@ class RevisionBinaryMap(tp.Container[str]):
 
         return self
 
-    def __getitem__(self,
-                    revision: CommitHash) -> tp.List[ProjectBinaryWrapper]:
+    def __getitem__(self, revision: CommitHash) -> list[ProjectBinaryWrapper]:
+        """Get the binaries available for a given revision."""
         revision = revision.to_short_commit_hash()
         revision_specific_binaries = []
 
-        for validity_range, wrapped_binaries \
-                in self.__revision_specific_mappings.items():
+        for (
+            validity_range,
+            wrapped_binaries,
+        ) in self.__revision_specific_mappings.items():
             if revision in map(ShortCommitHash, validity_range):
                 revision_specific_binaries.extend(wrapped_binaries)
 
@@ -482,10 +506,11 @@ class RevisionBinaryMap(tp.Container[str]):
         )
 
     def __contains__(self, binary_name: object) -> bool:
+        """Checks whether the map contains a given binary."""
         if isinstance(binary_name, str):
             for binary in chain(
                 self.__always_valid_mappings,
-                *self.__revision_specific_mappings.values()
+                *self.__revision_specific_mappings.values(),
             ):
                 if binary.name == binary_name:
                     return True
@@ -495,6 +520,8 @@ class RevisionBinaryMap(tp.Container[str]):
 
 def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
     """
+    Restores .gitted repositories.
+
     Renames git files that were made git_storable (e.g., .gitted) back to their
     original git name and stores the renamed copy at the destination path. The
     original files stay untouched. Renaming and copying will be skipped if the
@@ -504,34 +531,31 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
         src_dir: path to the source directory
         dest_dir: path to the destination directory
     """
-    # pylint: disable=import-outside-toplevel
-    from distutils.dir_util import copy_tree
-    if os.path.isdir(dest_dir):
+    from shutil import copytree  # noqa
+
+    if dest_dir.is_dir():
         LOG.error(
             "The passed destination directory already exists. "
             "Copy/rename actions are skipped."
         )
         return
-    copy_tree(str(src_dir), str(dest_dir))
+    copytree(str(src_dir), str(dest_dir))
 
     for root, dirs, files in os.walk(dest_dir, topdown=False):
+        root_path = Path(root)
         for name in files:
             if name == "gitmodules":
-                os.rename(
-                    os.path.join(root, name), os.path.join(root, ".gitmodules")
-                )
+                Path.rename(root_path / name, root_path / ".gitmodules")
             elif name == "gitattributes":
-                os.rename(
-                    os.path.join(root, name),
-                    os.path.join(root, ".gitattributes")
+                Path.rename(
+                    root_path / name,
+                    root_path / ".gitattributes",
                 )
             elif name == "gitignore":
-                os.rename(
-                    os.path.join(root, name), os.path.join(root, ".gitignore")
-                )
+                Path.rename(root_path / name, root_path / ".gitignore")
             elif name == ".gitted":
-                os.rename(os.path.join(root, name), os.path.join(root, ".git"))
+                Path.rename(root_path / name, root_path / ".git")
 
         for name in dirs:
             if name == ".gitted":
-                os.rename(os.path.join(root, name), os.path.join(root, ".git"))
+                Path.rename(root_path / name, root_path / ".git")
