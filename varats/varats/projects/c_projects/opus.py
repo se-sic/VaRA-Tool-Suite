@@ -41,7 +41,7 @@ class Opus(VProject):
     ]
 
     CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
+        ImageBase.DEBIAN_12
     ).run('apt', 'install', '-y', 'autoconf', 'automake', 'libtool')
 
     @staticmethod

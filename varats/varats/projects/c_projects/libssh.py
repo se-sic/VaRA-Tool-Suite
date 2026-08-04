@@ -55,7 +55,7 @@ class Libssh(VProject):
     ]
 
     CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
+        ImageBase.DEBIAN_12
     ).run('apt', 'install', '-y', 'libssl-dev', 'cmake')
 
     @staticmethod

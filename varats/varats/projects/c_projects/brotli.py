@@ -56,7 +56,7 @@ class Brotli(VProject):
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12
                               ).run('apt', 'install', '-y', 'cmake')
 
     @staticmethod

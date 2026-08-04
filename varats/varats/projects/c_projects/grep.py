@@ -50,7 +50,7 @@ class Grep(VProject):
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
         'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
         'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
     )

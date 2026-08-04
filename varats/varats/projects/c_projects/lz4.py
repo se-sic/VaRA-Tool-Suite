@@ -43,7 +43,7 @@ class Lz4(VProject):
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
     @staticmethod
     def binaries_for_revision(

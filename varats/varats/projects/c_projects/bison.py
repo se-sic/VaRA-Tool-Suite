@@ -54,7 +54,7 @@ class Bison(VProject):
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
         'apt', 'install', '-y', 'autoconf', 'automake', 'autopoint', 'flex',
         'gettext', 'graphviz', 'help2man', 'perl', 'rsync', 'texinfo', 'wget'
     )
