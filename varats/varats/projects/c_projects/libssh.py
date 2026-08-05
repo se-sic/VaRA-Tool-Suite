@@ -83,6 +83,8 @@ class Libssh(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
+        self.cflags += ["-Wno-error=strict-prototypes"]
+
         libssh_repo = get_local_project_repo(self.NAME)
         libssh_version = ShortCommitHash(self.version_of_primary)
         cmake_revisions = get_all_revisions_between(

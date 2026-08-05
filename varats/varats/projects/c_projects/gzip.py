@@ -133,7 +133,9 @@ class Gzip(VProject, ReleaseProviderHook):
 
         self.cflags += [
             "-Wno-error=string-plus-int", "-Wno-error=shift-negative-value",
-            "-Wno-string-plus-int", "-Wno-shift-negative-value"
+            "-Wno-string-plus-int", "-Wno-shift-negative-value",
+            "-Wno-error=deprecated-non-prototype",
+            "-Wno-error=strict-prototypes"
         ]
 
         with local.cwd(gzip_version_source):

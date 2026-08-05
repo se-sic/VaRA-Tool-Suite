@@ -76,6 +76,8 @@ class Bison(VProject):
         """Compile the project."""
         bison_source = local.path(self.source_of(self.primary_source))
 
+        self.cflags += ["-Wno-incompatible-function-pointer-types"]
+
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
         with local.cwd(bison_source):
