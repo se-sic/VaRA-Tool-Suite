@@ -7,6 +7,7 @@ benchbuild interface with tool suite specific functions.
 
 import typing as tp
 from abc import abstractmethod
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
@@ -118,8 +119,8 @@ class SupportsTestSuites(Protocol):
     def run_testsuite(
         self,
         test_report_path: Path | None = None,
-        tests_to_run: tp.Iterable[str] | None = None,
-        tests_to_exclude: tp.Iterable[str] | None = None,
+        tests_to_run: Iterable[str] | None = None,
+        tests_to_exclude: Iterable[str] | None = None,
     ) -> dict[str, TestResult]:
         """
         Run the test suite for this project.
@@ -134,7 +135,7 @@ class SupportsTestSuites(Protocol):
             A dictionary mapping test names to respective result.
         """
 
-    def get_test_names(self) -> tp.Iterable[str]:
+    def get_test_names(self) -> Iterable[str]:
         """
         Returns a list of tests that can be run for this project.
 
