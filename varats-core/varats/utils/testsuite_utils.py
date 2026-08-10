@@ -104,7 +104,7 @@ def gtest_get_test_names(build_dir: Path, test_bin: str) -> tp.Iterable[str]:
     test_path = build_dir / test_bin
     try:
         with local.cwd(build_dir):
-            output = local[test_path]["--gtest_list_tests"]
+            output = local[test_path]["--gtest_list_tests"]()
     except ProcessExecutionError:
         return []
 
@@ -112,6 +112,9 @@ def gtest_get_test_names(build_dir: Path, test_bin: str) -> tp.Iterable[str]:
 
     current_prefix = ""
     for line in output.splitlines():
+        # Filter out lines that are not test names
+        if line.startswith("Running "):
+            continue
         if line.endswith("."):
             current_prefix = line
             continue
@@ -152,7 +155,7 @@ def gtest_run_testsuite(
             local[test_bin][
                 f"--gtest_filter={included_tests}-{excluded_tests}", gtest_out
             ]
-        )()
+        )(retcode=None)
 
     return parse_junit_xml(output_file)
 
