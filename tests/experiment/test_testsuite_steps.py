@@ -144,7 +144,9 @@ class TestTestsuiteSteps(unittest.TestCase):
     def test_get_test_names(self) -> None:
         """Test that get_test_names() returns the expected test names."""
         with TemporaryDirectory() as tmp_dir:
-            collect_step = CollectTests(self.project, Path(tmp_dir))
+            collect_step = CollectTests(
+                self.project, Path(tmp_dir) / "results.json"
+            )
             collect_step()
 
         self.assertEqual(collect_step.status, StepResult.OK)
