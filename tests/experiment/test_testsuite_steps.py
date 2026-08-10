@@ -10,6 +10,7 @@ from benchbuild.utils.actions import StepResult
 from tests.utils.test_experiment_util import BBTestProject
 from varats.experiment.steps.testsuite import (
     BuildTestSuite,
+    CollectTests,
     PrepareTestSuite,
     RunTestSuite,
 )
@@ -142,5 +143,7 @@ class TestTestsuiteSteps(unittest.TestCase):
 
     def test_get_test_names(self) -> None:
         """Test that get_test_names() returns the expected test names."""
-        test_names = list(self.project.get_test_names())
-        self.assertListEqual(test_names, ["test1", "test2", "test3"])
+        collect_step = CollectTests(self.project)
+        test_names = collect_step()
+
+        self.assertListEqual(["test1", "test2", "test3"], test_names)
