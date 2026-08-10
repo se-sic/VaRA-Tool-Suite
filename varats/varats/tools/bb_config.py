@@ -85,7 +85,7 @@ def update_projects(
         'varats.projects.cpp_projects.lepton',
         'varats.projects.cpp_projects.hyteg',
         'varats.projects.cpp_projects.dune',
-    ]  # yapf: disable
+    ]  # fmt: skip
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen',
         'varats.projects.cpp_projects'
@@ -173,7 +173,7 @@ def create_new_bb_config(
         a new default bb config object
     """
     from benchbuild.settings import (  # noqa: PLC0415
-        CFG as BB_CFG,  # pylint: disable=C0415
+        CFG as BB_CFG,
     )
 
     new_bb_cfg = deepcopy(BB_CFG)
