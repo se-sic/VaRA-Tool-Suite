@@ -51,6 +51,7 @@ class Libmpack(VProject):
     def binaries_for_revision(
             revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
+        """Returns a list of binaries for the given revision."""
         binary_map = RevisionBinaryMap(get_local_project_repo(Libmpack.NAME))
 
         binary_map.specify_binary('build/debug/libmpack.la', BinaryType.SHARED_LIBRARY)
@@ -58,6 +59,7 @@ class Libmpack(VProject):
         return binary_map[revision]
 
     def run_tests(self) -> None:
+        """Runs tests for libmpack. Currently none."""
         pass
 
     def compile(self) -> None:
@@ -73,4 +75,5 @@ class Libmpack(VProject):
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
+        """Returns CVE product information."""
         return [("libmpack", "libmpack")]
