@@ -119,6 +119,10 @@ class InteractionGraph(abc.ABC):
         """
         Return a digraph with commits as nodes and interactions as edges.
 
+        All region-level interactions with the same ordered commit pair are
+        aggregated by summing their ``amount`` values. Interactions whose
+        source and target regions belong to the same commit are omitted.
+
         Nodes can be referenced via their
         :class:`~varats.utils.git_util.CommitRepoPair`.
         The graph has the following attributes:
@@ -131,38 +135,41 @@ class InteractionGraph(abc.ABC):
             the commit interaction graph
         """
         interaction_graph = self._interaction_graph()
+        commit_graph = nx.DiGraph()
 
-        def edge_data(
-            source: tp.Set[BIGNodeTy], sink: tp.Set[BIGNodeTy]
-        ) -> CIGEdgeAttrs:
-            assert len(source) == len(
-                sink
-            ) == 1, "Some node has more than one commit."
-            return tp.cast(
-                CIGEdgeAttrs,
-                interaction_graph[next(iter(source))][next(iter(sink))].copy()
+        def commit_of(region_node: BIGNodeTy) -> CommitRepoPair:
+            region_node_attrs = tp.cast(
+                BIGNodeAttrs, interaction_graph.nodes[region_node]
             )
+            return region_node_attrs["blame_taint_data"].commit
 
-        def node_data(node: tp.Set[BIGNodeTy]) -> CIGNodeAttrs:
-            assert len(node) == 1, "Some node has more than one commit."
-            node_attrs = tp.cast(
-                BIGNodeAttrs, interaction_graph.nodes[next(iter(node))]
-            )
-            return {"commit": node_attrs["blame_taint_data"].commit}
+        for region_node in interaction_graph.nodes:
+            commit = commit_of(region_node)
+            commit_node_attrs: CIGNodeAttrs = {"commit": commit}
+            commit_graph.add_node(commit, **commit_node_attrs)
 
-        cig = nx.quotient_graph(
-            interaction_graph,
-            partition=lambda u, v: False,
-            edge_data=edge_data,
-            node_data=node_data,
-            create_using=nx.DiGraph
-        )
-        relabel_dict: tp.Dict[tp.FrozenSet[BIGNodeTy], CommitRepoPair] = {}
-        for node in cig.nodes:
-            relabel_dict[node] = tp.cast(CIGNodeAttrs,
-                                         cig.nodes[node])["commit"]
-        nx.relabel_nodes(cig, relabel_dict, copy=False)
-        return cig
+        for source, sink, data in interaction_graph.edges(data=True):
+            source_commit = commit_of(source)
+            sink_commit = commit_of(sink)
+
+            if source_commit == sink_commit:
+                continue
+
+            amount = int(tp.cast(BIGEdgeAttrs, data)["amount"])
+            if commit_graph.has_edge(source_commit, sink_commit):
+                edge_attrs = tp.cast(
+                    CIGEdgeAttrs, commit_graph[source_commit][sink_commit]
+                )
+                edge_attrs["amount"] += amount
+            else:
+                edge_attrs: CIGEdgeAttrs = {"amount": amount}
+                commit_graph.add_edge(
+                    source_commit,
+                    sink_commit,
+                    **edge_attrs,
+                )
+
+        return commit_graph
 
     def author_interaction_graph(self) -> nx.DiGraph:
         """
