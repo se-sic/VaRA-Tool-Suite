@@ -1,8 +1,8 @@
 """Metrics for comparing commit-interaction graphs."""
 
+import math
 import typing as tp
 from collections import Counter
-from dataclasses import dataclass
 
 import networkx as nx
 import pandas as pd
@@ -172,7 +172,6 @@ def load_comparison_graphs(
     return left_graph, right_graph
 
 
-@dataclass(frozen=True)
 class GraphSummary:
     """Graph-level summary based on deduplicated directed edges."""
 
@@ -181,8 +180,36 @@ class GraphSummary:
     density: float
     degree_gini: float
 
+    def __init__(
+            self,
+            nodes: int,
+            edges: int,
+            density: float,
+            degree_gini: float,
+    ) -> None:
+        self.nodes = nodes
+        self.edges = edges
+        self.density = density
+        self.degree_gini = degree_gini
 
-@dataclass(frozen=True)
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, GraphSummary):
+            return NotImplemented
+
+        return (
+            self.nodes == other.nodes and
+            self.edges == other.edges and
+            self.density == other.density and
+            self.degree_gini == other.degree_gini
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"GraphSummary(nodes={self.nodes!r}, edges={self.edges!r}, "
+            f"density={self.density!r}, degree_gini={self.degree_gini!r})"
+        )
+
+
 class EdgeOverlap:
     """Counts and union-relative shares of two edge sets."""
 
@@ -190,6 +217,36 @@ class EdgeOverlap:
     left_only: int
     right_only: int
     union: int
+
+    def __init__(
+            self,
+            shared: int,
+            left_only: int,
+            right_only: int,
+            union: int,
+    ) -> None:
+        self.shared = shared
+        self.left_only = left_only
+        self.right_only = right_only
+        self.union = union
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, EdgeOverlap):
+            return NotImplemented
+
+        return (
+            self.shared == other.shared and
+            self.left_only == other.left_only and
+            self.right_only == other.right_only and
+            self.union == other.union
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"EdgeOverlap(shared={self.shared!r}, "
+            f"left_only={self.left_only!r}, "
+            f"right_only={self.right_only!r}, union={self.union!r})"
+        )
 
     @property
     def jaccard(self) -> float:
@@ -345,6 +402,26 @@ def shared_edge_weight_dataframe(
         pct=True,
     )
     return data
+
+
+# A better visual representation for the edge weight number comparison
+def shared_edge_weight_log_ratio_dataframe(
+        left_graph: nx.Graph,
+        right_graph: nx.Graph,
+) -> pd.DataFrame:
+    """Calculate log2 weight ratios for shared positive-weight edges."""
+    data = shared_edge_weight_dataframe(left_graph, right_graph)
+    positive_weights = data.loc[
+        (data["Left weight"] > 0) & (data["Right weight"] > 0)
+    ].copy()
+    positive_weights["Log2 weight ratio"] = [
+        math.log2(left_weight / right_weight)
+        for left_weight, right_weight in zip(
+            positive_weights["Left weight"],
+            positive_weights["Right weight"],
+        )
+    ]
+    return positive_weights
 
 
 def spearman_rank_correlation(

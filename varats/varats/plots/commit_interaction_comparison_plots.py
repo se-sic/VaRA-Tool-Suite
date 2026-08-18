@@ -7,6 +7,7 @@ import click
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
+from matplotlib.patches import Patch, Rectangle
 
 from varats.data.reports.commit_interaction_comparison import (
     ALLOWED_ANALYSIS_COMPARISONS,
@@ -18,6 +19,7 @@ from varats.data.reports.commit_interaction_comparison import (
     load_comparison_graphs,
     parse_analysis_comparison,
     shared_edge_weight_dataframe,
+    shared_edge_weight_log_ratio_dataframe,
     shared_edge_weight_spearman,
     shared_node_degree_dataframe,
     shared_node_degree_spearman,
@@ -76,6 +78,18 @@ def _add_equality_line(axes: plt.Axes, upper_bound: float) -> None:
 def _format_rho(rho: float) -> str:
     """Format Spearman's rho, including its undefined state."""
     return "undefined" if math.isnan(rho) else f"{rho:.3f}"
+
+
+def _color_log_ratio_bars(bars: tp.Iterable[Rectangle]) -> None:
+    """Color log-ratio histogram bars by the heavier configuration."""
+    for bar in bars:
+        midpoint = bar.get_x() + bar.get_width() / 2
+        if math.isclose(midpoint, 0.0, abs_tol=bar.get_width() / 2):
+            bar.set_facecolor("#9d9d9d")
+        elif midpoint < 0:
+            bar.set_facecolor(RIGHT_COLOR)
+        else:
+            bar.set_facecolor(LEFT_COLOR)
 
 
 def _shared_author_layout(
@@ -382,6 +396,300 @@ class CommitInteractionEdgeWeightDifferencePlotGenerator(
                 **self.plot_kwargs,
             )
             for case_study in case_studies
+        ]
+
+
+class CommitInteractionEdgeWeightLogRatioPlot(
+    Plot,
+    plot_name="edge-weight-log-ratio-comparison",
+):
+    """Plot log2 weight ratios for positive-weight shared edges."""
+
+    def plot(self, view_mode: bool) -> None:
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        comparison: AnalysisComparison = self.plot_kwargs["comparison"]
+        left_name, right_name = _analysis_names(comparison)
+        left_graph, right_graph = load_comparison_graphs(
+            case_study,
+            comparison,
+        )
+        data = shared_edge_weight_log_ratio_dataframe(
+            left_graph,
+            right_graph,
+        )
+        if data.empty:
+            raise PlotDataEmpty()
+
+        ratios = data["Log2 weight ratio"]
+        median = float(ratios.median())
+        first_quartile = float(ratios.quantile(0.25))
+        third_quartile = float(ratios.quantile(0.75))
+        left_higher = 100 * float((ratios > 0).mean())
+        right_higher = 100 * float((ratios < 0).mean())
+        equal = 100 * float((ratios == 0).mean())
+
+        absolute_bound = max(abs(float(ratios.min())),
+                             abs(float(ratios.max())))
+        if absolute_bound == 0:
+            absolute_bound = 1.0
+
+        figure, axes = plt.subplots(figsize=(9, 5.5))
+        counts, _, bars = axes.hist(
+            ratios,
+            bins=41,
+            range=(-absolute_bound, absolute_bound),
+            edgecolor="white",
+            linewidth=0.35,
+        )
+        _color_log_ratio_bars(bars)
+
+        nonzero_counts = [count for count in counts if count > 0]
+        use_log_scale = (
+            bool(nonzero_counts)
+            and max(nonzero_counts) / min(nonzero_counts) >= 100
+        )
+        if use_log_scale:
+            axes.set_yscale("log")
+
+        axes.axvline(
+            0,
+            color="#333333",
+            linestyle="--",
+            linewidth=1,
+        )
+        axes.axvline(
+            median,
+            color=SHARED_COLOR,
+            linewidth=1.5,
+            label=f"Median: {median:.2f}",
+        )
+        axes.set_xlim(-absolute_bound, absolute_bound)
+        axes.set_xlabel(
+            f"log₂({left_name} weight / {right_name} weight)"
+        )
+        y_label = "Number of shared edges"
+        if use_log_scale:
+            y_label += " (log scale)"
+        axes.set_ylabel(y_label)
+        axes.set_title(
+            f"{case_study.project_name}: shared-edge weight ratios"
+        )
+        axes.grid(axis="y", alpha=0.2)
+        axes.text(
+            0.02,
+            0.97,
+            f"n = {len(data):,}\n"
+            f"median = {median:.2f}\n"
+            f"IQR = [{first_quartile:.2f}, {third_quartile:.2f}]\n"
+            f"{left_name} higher: {left_higher:.1f}%\n"
+            f"{right_name} higher: {right_higher:.1f}%\n"
+            f"equal: {equal:.1f}%",
+            transform=axes.transAxes,
+            verticalalignment="top",
+            bbox={
+                "boxstyle": "round",
+                "facecolor": "white",
+                "alpha": 0.85,
+                "edgecolor": "#cccccc",
+            },
+        )
+        axes.legend(handles=[
+            Patch(color=RIGHT_COLOR, label=f"{right_name} higher"),
+            Patch(color="#9d9d9d", label="Approximately equal"),
+            Patch(color=LEFT_COLOR, label=f"{left_name} higher"),
+            axes.lines[-1],
+        ])
+        figure.tight_layout()
+
+    def calc_missing_revisions(
+            self,
+            boundary_gradient: float,
+    ) -> tp.Set[FullCommitHash]:
+        raise UnsupportedOperation
+
+
+class CommitInteractionEdgeWeightLogRatioPlotGenerator(
+    PlotGenerator,
+    generator_name="edge-weight-log-ratio-comparison",
+    options=[
+        REQUIRE_MULTI_CASE_STUDY,
+        REQUIRE_ANALYSIS_COMPARISON,
+    ],
+):
+    """Generate one shared-edge log-ratio plot per case study."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+        comparison = parse_analysis_comparison(
+            self.plot_kwargs.pop("comparison")
+        )
+        return [
+            CommitInteractionEdgeWeightLogRatioPlot(
+                self.plot_config,
+                case_study=case_study,
+                comparison=comparison,
+                **self.plot_kwargs,
+            )
+            for case_study in case_studies
+        ]
+
+
+class CommitInteractionEdgeWeightLogRatioOverviewPlot(
+    Plot,
+    plot_name="edge-weight-log-ratio-overview",
+):
+    """Arrange project-level log-ratio distributions as small multiples."""
+
+    def plot(self, view_mode: bool) -> None:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        comparison: AnalysisComparison = self.plot_kwargs["comparison"]
+        left_name, right_name = _analysis_names(comparison)
+        project_data: tp.List[tp.Tuple[str, pd.DataFrame]] = []
+
+        for case_study in case_studies:
+            try:
+                left_graph, right_graph = load_comparison_graphs(
+                    case_study,
+                    comparison,
+                )
+            except PlotDataEmpty:
+                continue
+            data = shared_edge_weight_log_ratio_dataframe(
+                left_graph,
+                right_graph,
+            )
+            if not data.empty:
+                project_data.append((case_study.project_name, data))
+
+        if not project_data:
+            raise PlotDataEmpty()
+
+        num_projects = len(project_data)
+        num_columns = min(4, math.ceil(math.sqrt(num_projects)))
+        num_rows = math.ceil(num_projects / num_columns)
+        absolute_bound = max(
+            abs(float(data["Log2 weight ratio"].min()))
+            for _, data in project_data
+        )
+        absolute_bound = max(
+            absolute_bound,
+            max(
+                abs(float(data["Log2 weight ratio"].max()))
+                for _, data in project_data
+            ),
+        )
+        if absolute_bound == 0:
+            absolute_bound = 1.0
+
+        figure, axes_grid = plt.subplots(
+            num_rows,
+            num_columns,
+            figsize=(3.5 * num_columns, 2.7 * num_rows),
+            sharex=True,
+            sharey=True,
+            squeeze=False,
+        )
+        axes_list = list(axes_grid.flat)
+        for axes, (project_name, data) in zip(axes_list, project_data):
+            ratios = data["Log2 weight ratio"]
+            median = float(ratios.median())
+            _, _, bars = axes.hist(
+                ratios,
+                bins=31,
+                range=(-absolute_bound, absolute_bound),
+                weights=[1 / len(data)] * len(data),
+                edgecolor="white",
+                linewidth=0.25,
+            )
+            _color_log_ratio_bars(bars)
+            axes.axvline(
+                0,
+                color="#333333",
+                linestyle="--",
+                linewidth=0.8,
+            )
+            axes.axvline(
+                median,
+                color=SHARED_COLOR,
+                linewidth=1.2,
+            )
+            axes.set_title(project_name, fontsize=9)
+            axes.text(
+                0.03,
+                0.95,
+                f"n={len(data):,}\nmedian={median:.2f}",
+                transform=axes.transAxes,
+                verticalalignment="top",
+                fontsize=7,
+                bbox={
+                    "boxstyle": "round",
+                    "facecolor": "white",
+                    "alpha": 0.75,
+                    "edgecolor": "none",
+                },
+            )
+            axes.grid(axis="y", alpha=0.15)
+
+        for unused_axes in axes_list[num_projects:]:
+            unused_axes.set_axis_off()
+
+        figure.suptitle(
+            "Shared-edge weight-ratio distributions",
+            fontsize=14,
+        )
+        figure.supxlabel(
+            f"log₂({left_name} weight / {right_name} weight)"
+        )
+        figure.supylabel("Share of shared edges")
+        figure.legend(
+            handles=[
+                Patch(color=RIGHT_COLOR, label=f"{right_name} higher"),
+                Patch(color="#9d9d9d", label="Approximately equal"),
+                Patch(color=LEFT_COLOR, label=f"{left_name} higher"),
+                axes_list[0].lines[-1],
+            ],
+            labels=[
+                f"{right_name} higher",
+                "Approximately equal",
+                f"{left_name} higher",
+                "Project median",
+            ],
+            loc="upper center",
+            bbox_to_anchor=(0.5, 0.965),
+            ncol=4,
+            fontsize=8,
+        )
+        figure.tight_layout(rect=(0.03, 0.04, 1, 0.91))
+
+    def calc_missing_revisions(
+            self,
+            boundary_gradient: float,
+    ) -> tp.Set[FullCommitHash]:
+        raise UnsupportedOperation
+
+
+class CommitInteractionEdgeWeightLogRatioOverviewPlotGenerator(
+    PlotGenerator,
+    generator_name="edge-weight-log-ratio-overview",
+    options=[
+        REQUIRE_MULTI_CASE_STUDY,
+        REQUIRE_ANALYSIS_COMPARISON,
+    ],
+):
+    """Generate one paper-ready overview for selected case studies."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+        comparison = parse_analysis_comparison(
+            self.plot_kwargs.pop("comparison")
+        )
+        return [
+            CommitInteractionEdgeWeightLogRatioOverviewPlot(
+                self.plot_config,
+                case_studies=case_studies,
+                comparison=comparison,
+                **self.plot_kwargs,
+            )
         ]
 
 
