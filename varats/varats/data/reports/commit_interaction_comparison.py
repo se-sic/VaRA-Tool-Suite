@@ -2,37 +2,33 @@
 
 import typing as tp
 from collections import Counter
+from dataclasses import dataclass
 
 import networkx as nx
 import pandas as pd
 
 from varats.data.reports.blame_report import AnalysisType
-from varats.experiment.experiment_util import (
-    exec_func_with_pe_error_handler,
-    VersionExperiment,
-    ExperimentHandle,
-    wrap_unlimit_stack_size,
-    create_default_compiler_error_handler,
-    create_default_analysis_failure_handler,
-    create_new_success_result_filepath,
-)
 from varats.data.reports.blame_interaction_graph import (
+    AIGEdgeAttrs,
+    AIGNodeAttrs,
     create_blame_interaction_graph,
 )
 from varats.experiments.vara.blame_report_experiment import (
-    BlameReportExperiment,
-    BlameReportExperimentRegion
+    BlameReportExperimentRegion,
 )
 from varats.experiments.vara.cfg_report_experiment import (
+    CFCollectiveReportExperiment,
     CFDirectReportExperiment,
-    CFCollectiveReportExperiment
 )
+from varats.experiment.experiment_util import VersionExperiment
+from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
-    newest_processed_revision_for_case_study,
+    processed_revisions_for_case_study,
 )
 from varats.plot.plot import PlotDataEmpty
-from varats.utils.git_util import CommitRepoPair
+from varats.project.project_util import create_project_commit_lookup_helper
+from varats.utils.git_util import CommitRepoPair, UNCOMMITTED_COMMIT_HASH
 
 
 class AnalysisConfig:
@@ -41,9 +37,7 @@ class AnalysisConfig:
     analysis_type: AnalysisType
     experiment_type: tp.Type[VersionExperiment]
 
-    def __init__(self,
-                 analysis_type: AnalysisType,
-    ):
+    def __init__(self, analysis_type: AnalysisType) -> None:
         self.analysis_type = analysis_type
         self.experiment_type = {
             AnalysisType.DF_ANALYSIS: BlameReportExperimentRegion,
@@ -52,26 +46,21 @@ class AnalysisConfig:
         }[analysis_type]
 
 
-ANALYSIS_CONFIGS: dict[str, AnalysisConfig] = {
-    "df": AnalysisConfig(
-        analysis_type=AnalysisType.DF_ANALYSIS
-    ),
-    "cfd": AnalysisConfig(
-        analysis_type=AnalysisType.CF_DIRECT_ANALYSIS
-    ),
-    "cfc": AnalysisConfig(
-        analysis_type=AnalysisType.CF_COLLECTIVE_ANALYSIS
-    ),
+ANALYSIS_CONFIGS: tp.Dict[str, AnalysisConfig] = {
+    "df": AnalysisConfig(analysis_type=AnalysisType.DF_ANALYSIS),
+    "cfd": AnalysisConfig(analysis_type=AnalysisType.CF_DIRECT_ANALYSIS),
+    "cfc": AnalysisConfig(analysis_type=AnalysisType.CF_COLLECTIVE_ANALYSIS),
 }
 
 ALLOWED_ANALYSIS_COMPARISONS = {
-    ("cfd-cfc"),
-    ("cfd-df"),
-    ("cfc-df"),
-    ("cfc-cfd"),
-    ("df-cfd"),
-    ("df-cfc"),
+    "cfd-cfc",
+    "cfd-df",
+    "cfc-df",
+    "cfc-cfd",
+    "df-cfd",
+    "df-cfc",
 }
+
 
 class AnalysisComparison:
     """Supported pairwise analysis comparisons."""
@@ -79,7 +68,7 @@ class AnalysisComparison:
     left: AnalysisConfig
     right: AnalysisConfig
 
-    def __init__(self, left, right):
+    def __init__(self, left: AnalysisConfig, right: AnalysisConfig) -> None:
         self.left = left
         self.right = right
 
@@ -139,65 +128,327 @@ def parse_analysis_comparison(value: str) -> AnalysisComparison:
         ) from error
 
     if left_name == right_name:
-        raise ValueError(
-            "An analysis cannot be compared with itself."
-        )
+        raise ValueError("An analysis cannot be compared with itself.")
 
     return AnalysisComparison(left_config, right_config)
 
+
 def load_comparison_graphs(
-    case_study: CaseStudy,
-    comparison: AnalysisComparison,
+        case_study: CaseStudy,
+        comparison: AnalysisComparison,
 ) -> tp.Tuple[nx.DiGraph, nx.DiGraph]:
-    """Load the two CIGs required for one comparison."""
-
-
-    # bruh fix the revision
-    left_revision = newest_processed_revision_for_case_study(
+    """Load both CIGs at their newest commonly processed revision."""
+    left_revisions = processed_revisions_for_case_study(
         case_study,
         comparison.left_experiment_type,
     )
-    right_revision = newest_processed_revision_for_case_study(
+    right_revisions = set(processed_revisions_for_case_study(
         case_study,
         comparison.right_experiment_type,
-    )
+    ))
+    common_revisions = [
+        revision for revision in left_revisions
+        if revision in right_revisions
+    ]
 
-    if not left_revision or not right_revision:
+    if not common_revisions:
         raise PlotDataEmpty()
+
+    commit_map = get_commit_map(case_study.project_name)
+    revision = max(common_revisions, key=commit_map.time_id)
 
     left_graph = create_blame_interaction_graph(
         case_study.project_name,
-        left_revision,
+        revision,
         comparison.left_experiment_type,
     ).commit_interaction_graph()
 
     right_graph = create_blame_interaction_graph(
         case_study.project_name,
-        right_revision,
+        revision,
         comparison.right_experiment_type,
     ).commit_interaction_graph()
 
     return left_graph, right_graph
 
 
+@dataclass(frozen=True)
+class GraphSummary:
+    """Graph-level summary based on deduplicated directed edges."""
+
+    nodes: int
+    edges: int
+    density: float
+    degree_gini: float
+
+
+@dataclass(frozen=True)
+class EdgeOverlap:
+    """Counts and union-relative shares of two edge sets."""
+
+    shared: int
+    left_only: int
+    right_only: int
+    union: int
+
+    @property
+    def jaccard(self) -> float:
+        """Return the intersection-over-union similarity."""
+        return self.shared / self.union if self.union else 1.0
+
+    @property
+    def shared_share(self) -> float:
+        """Return the union share occupied by common edges."""
+        return self.jaccard
+
+    @property
+    def left_only_share(self) -> float:
+        """Return the union share occupied only by the left graph."""
+        return self.left_only / self.union if self.union else 0.0
+
+    @property
+    def right_only_share(self) -> float:
+        """Return the union share occupied only by the right graph."""
+        return self.right_only / self.union if self.union else 0.0
+
+
+def deduplicated_edges(
+        graph: nx.Graph,
+) -> tp.Set[tp.Tuple[tp.Hashable, tp.Hashable]]:
+    """Return the graph's unique edges, retaining edge direction."""
+    return set(graph.edges())
+
+
+def unique_neighbor_degrees(
+        graph: nx.Graph,
+) -> tp.Dict[tp.Hashable, int]:
+    """Calculate direction-independent degree as unique-neighbor count."""
+    degrees: tp.Dict[tp.Hashable, int] = {}
+    directed = graph.is_directed()
+
+    for node in graph.nodes:
+        if directed:
+            directed_graph = tp.cast(nx.DiGraph, graph)
+            neighbors = set(directed_graph.predecessors(node))
+            neighbors.update(directed_graph.successors(node))
+        else:
+            neighbors = set(graph.neighbors(node))
+        neighbors.discard(node)
+        degrees[node] = len(neighbors)
+
+    return degrees
+
+
+def gini_coefficient(values: tp.Iterable[float]) -> float:
+    """Calculate the Gini coefficient of non-negative values."""
+    sorted_values = sorted(float(value) for value in values)
+    if any(value < 0 for value in sorted_values):
+        raise ValueError("Gini coefficient requires non-negative values.")
+
+    value_sum = sum(sorted_values)
+    num_values = len(sorted_values)
+    if num_values == 0 or value_sum == 0:
+        return 0.0
+
+    weighted_sum = sum(
+        (2 * index - num_values - 1) * value
+        for index, value in enumerate(sorted_values, start=1)
+    )
+    return weighted_sum / (num_values * value_sum)
+
+
+def graph_summary(graph: nx.Graph) -> GraphSummary:
+    """Summarize size, density, and unique-neighbor degree inequality."""
+    num_nodes = graph.number_of_nodes()
+    edges = deduplicated_edges(graph)
+    non_loop_edges = {
+        (source, target) for source, target in edges if source != target
+    }
+
+    if num_nodes < 2:
+        density = 0.0
+    elif graph.is_directed():
+        density = len(non_loop_edges) / (num_nodes * (num_nodes - 1))
+    else:
+        density = 2 * len(non_loop_edges) / (
+                num_nodes * (num_nodes - 1)
+        )
+
+    return GraphSummary(
+        nodes=num_nodes,
+        edges=len(edges),
+        density=density,
+        degree_gini=gini_coefficient(unique_neighbor_degrees(graph).values()),
+    )
+
+
+def edge_overlap(
+        left_graph: nx.Graph,
+        right_graph: nx.Graph,
+) -> EdgeOverlap:
+    """Calculate common and exclusive deduplicated edge counts."""
+    left_edges = deduplicated_edges(left_graph)
+    right_edges = deduplicated_edges(right_graph)
+    return EdgeOverlap(
+        shared=len(left_edges & right_edges),
+        left_only=len(left_edges - right_edges),
+        right_only=len(right_edges - left_edges),
+        union=len(left_edges | right_edges),
+    )
+
+
 def edge_jaccard_similarity(
-    left_graph: nx.DiGraph,
-    right_graph: nx.DiGraph,
+        left_graph: nx.Graph,
+        right_graph: nx.Graph,
 ) -> float:
     """Calculate edge-set Jaccard similarity."""
-    left_edges = set(left_graph.edges())
-    right_edges = set(right_graph.edges())
+    return edge_overlap(left_graph, right_graph).jaccard
 
-    edge_union = left_edges | right_edges
 
-    if not edge_union:
-        return 1.0
+def _edge_weight(
+        graph: nx.Graph,
+        edge: tp.Tuple[tp.Hashable, tp.Hashable],
+) -> float:
+    """Read an edge's interaction amount, defaulting to one."""
+    source, target = edge
+    return float(graph[source][target].get("amount", 1))
 
-    return len(left_edges & right_edges) / len(edge_union)
+
+def shared_edge_weight_dataframe(
+        left_graph: nx.Graph,
+        right_graph: nx.Graph,
+) -> pd.DataFrame:
+    """Build matched weights and percentile ranks for common edges."""
+    shared_edges = deduplicated_edges(left_graph) & deduplicated_edges(
+        right_graph
+    )
+    rows = [
+        {
+            "Edge": edge,
+            "Left weight": _edge_weight(left_graph, edge),
+            "Right weight": _edge_weight(right_graph, edge),
+        }
+        for edge in sorted(shared_edges, key=repr)
+    ]
+    data = pd.DataFrame(
+        rows,
+        columns=["Edge", "Left weight", "Right weight"],
+    )
+    if data.empty:
+        data["Left rank"] = pd.Series(dtype=float)
+        data["Right rank"] = pd.Series(dtype=float)
+        return data
+
+    data["Left rank"] = data["Left weight"].rank(method="average", pct=True)
+    data["Right rank"] = data["Right weight"].rank(
+        method="average",
+        pct=True,
+    )
+    return data
+
+
+def spearman_rank_correlation(
+        left_values: tp.Iterable[float],
+        right_values: tp.Iterable[float],
+) -> float:
+    """Calculate Spearman's rho, returning NaN when it is undefined."""
+    data = pd.DataFrame({
+        "left": list(left_values),
+        "right": list(right_values),
+    })
+    if (
+            len(data) < 2
+            or data["left"].nunique() < 2
+            or data["right"].nunique() < 2
+    ):
+        return float("nan")
+
+    left_ranks = data["left"].rank(method="average")
+    right_ranks = data["right"].rank(method="average")
+    return float(left_ranks.corr(right_ranks))
+
+
+def shared_edge_weight_spearman(
+        left_graph: nx.Graph,
+        right_graph: nx.Graph,
+) -> float:
+    """Calculate weight-rank agreement for edges present in both graphs."""
+    data = shared_edge_weight_dataframe(left_graph, right_graph)
+    return spearman_rank_correlation(
+        data["Left weight"],
+        data["Right weight"],
+    )
+
+
+def edge_weight_distribution_dataframe(
+        left_graph: nx.Graph,
+        right_graph: nx.Graph,
+        left_name: str = "Left",
+        right_name: str = "Right",
+) -> pd.DataFrame:
+    """Collect all deduplicated edge weights for distribution comparison."""
+    rows = [
+        {
+            "Analysis": analysis,
+            "Weight": _edge_weight(graph, edge),
+        }
+        for analysis, graph in (
+            (left_name, left_graph),
+            (right_name, right_graph),
+        )
+        for edge in deduplicated_edges(graph)
+    ]
+    return pd.DataFrame(rows, columns=["Analysis", "Weight"])
+
+
+def shared_node_degree_dataframe(
+        left_graph: nx.Graph,
+        right_graph: nx.Graph,
+) -> pd.DataFrame:
+    """Build unique-neighbor degrees and ranks for common nodes."""
+    left_degrees = unique_neighbor_degrees(left_graph)
+    right_degrees = unique_neighbor_degrees(right_graph)
+    shared_nodes = set(left_degrees) & set(right_degrees)
+    rows = [
+        {
+            "Node": node,
+            "Left degree": left_degrees[node],
+            "Right degree": right_degrees[node],
+        }
+        for node in sorted(shared_nodes, key=repr)
+    ]
+    data = pd.DataFrame(
+        rows,
+        columns=["Node", "Left degree", "Right degree"],
+    )
+    if data.empty:
+        data["Left rank"] = pd.Series(dtype=float)
+        data["Right rank"] = pd.Series(dtype=float)
+        return data
+
+    data["Left rank"] = data["Left degree"].rank(method="average", pct=True)
+    data["Right rank"] = data["Right degree"].rank(
+        method="average",
+        pct=True,
+    )
+    return data
+
+
+def shared_node_degree_spearman(
+        left_graph: nx.Graph,
+        right_graph: nx.Graph,
+) -> float:
+    """Calculate degree-rank agreement for nodes present in both graphs."""
+    data = shared_node_degree_dataframe(left_graph, right_graph)
+    return spearman_rank_correlation(
+        data["Left degree"],
+        data["Right degree"],
+    )
+
 
 def edge_weight_differences(
-    left_graph: nx.DiGraph,
-    right_graph: nx.DiGraph,
+        left_graph: nx.DiGraph,
+        right_graph: nx.DiGraph,
 ) -> tp.Dict[tp.Tuple[CommitRepoPair, CommitRepoPair], int]:
     """
     Calculate left edge weight minus right edge weight.
@@ -224,9 +475,10 @@ def edge_weight_differences(
 
     return differences
 
+
 def edge_weight_difference_dataframe(
-    left_graph: nx.DiGraph,
-    right_graph: nx.DiGraph,
+        left_graph: nx.DiGraph,
+        right_graph: nx.DiGraph,
 ) -> pd.DataFrame:
     """Build a frequency table for edge-weight differences."""
     differences = edge_weight_differences(
@@ -243,3 +495,74 @@ def edge_weight_difference_dataframe(
         for difference, frequency in sorted(frequencies.items())
     ])
 
+
+# RQ3
+def create_author_interaction_graph(
+        commit_interaction_graph: nx.DiGraph,
+        project_name: str,
+) -> nx.Graph:
+    """Create the thesis-specific author-interaction graph from a CIG.
+
+    The resulting graph is undirected and contains one node for every author
+    present in the commit-interaction graph. Interactions between commits by
+    the same author are discarded. An author-edge's ``amount`` is the number
+    of commit-interaction edges connecting the two authors; the instruction-
+    level ``amount`` stored on a CIG edge is deliberately not propagated.
+
+    Args:
+        commit_interaction_graph: directed commit-interaction graph to convert
+        project_name: project used to resolve commit authors from git metadata
+
+    Returns:
+        the undirected author-interaction graph
+    """
+    commit_lookup = create_project_commit_lookup_helper(project_name)
+
+    def author_of(commit_node: CommitRepoPair) -> str:
+        if commit_node.commit_hash == UNCOMMITTED_COMMIT_HASH:
+            return "Unknown"
+        return str(commit_lookup(commit_node).author.name)
+
+    author_graph = nx.Graph()
+    author_commits: tp.Dict[str, tp.List[CommitRepoPair]] = {}
+    commit_authors: tp.Dict[CommitRepoPair, str] = {}
+
+    for commit in commit_interaction_graph.nodes:
+        author = author_of(commit)
+        commit_authors[commit] = author
+        author_commits.setdefault(author, []).append(commit)
+
+    for author, commits in author_commits.items():
+        node_attrs: AIGNodeAttrs = {
+            "author": author,
+            "num_commits": len(commits),
+            "commits": commits,
+        }
+        author_graph.add_node(author, **node_attrs)
+
+    for source, sink in commit_interaction_graph.edges:
+        source_author = commit_authors[source]
+        sink_author = commit_authors[sink]
+
+        if source_author == sink_author:
+            continue
+
+        interaction = (source, sink)
+        if author_graph.has_edge(source_author, sink_author):
+            edge_attrs = tp.cast(
+                AIGEdgeAttrs, author_graph[source_author][sink_author]
+            )
+            edge_attrs["amount"] += 1
+            edge_attrs["interactions"].append(interaction)
+        else:
+            edge_attrs = {
+                "amount": 1,
+                "interactions": [interaction],
+            }
+            author_graph.add_edge(
+                source_author,
+                sink_author,
+                **edge_attrs,
+            )
+
+    return author_graph
