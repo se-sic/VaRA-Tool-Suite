@@ -5,6 +5,7 @@ import typing as tp
 from collections import Counter
 
 import networkx as nx
+import numpy as np
 import pandas as pd
 
 from varats.data.reports.blame_report import AnalysisType
@@ -28,7 +29,11 @@ from varats.paper_mgmt.case_study import (
 )
 from varats.plot.plot import PlotDataEmpty
 from varats.project.project_util import create_project_commit_lookup_helper
-from varats.utils.git_util import CommitRepoPair, UNCOMMITTED_COMMIT_HASH
+from varats.utils.git_util import (
+    CommitRepoPair,
+    FullCommitHash,
+    UNCOMMITTED_COMMIT_HASH,
+)
 
 
 class AnalysisConfig:
@@ -172,25 +177,75 @@ def load_comparison_graphs(
     return left_graph, right_graph
 
 
+def load_analysis_graph(
+        case_study: CaseStudy,
+        analysis: str,
+        revision: tp.Optional[FullCommitHash] = None,
+) -> nx.DiGraph:
+    """Load one analysis graph, optionally at an explicitly selected revision."""
+    try:
+        config = ANALYSIS_CONFIGS[analysis.lower()]
+    except KeyError as error:
+        raise ValueError(f"Unknown analysis {analysis!r}.") from error
+
+    revisions = processed_revisions_for_case_study(
+        case_study, config.experiment_type
+    )
+    if revision is None:
+        if not revisions:
+            raise PlotDataEmpty()
+        commit_map = get_commit_map(case_study.project_name)
+        revision = max(revisions, key=commit_map.time_id)
+    elif revision not in revisions:
+        raise PlotDataEmpty()
+
+    return create_blame_interaction_graph(
+        case_study.project_name,
+        revision,
+        config.experiment_type,
+    ).commit_interaction_graph()
+
+
+def load_all_analysis_graphs(
+        case_study: CaseStudy,
+) -> tp.Dict[str, nx.DiGraph]:
+    """Load DF, CFD, and CFC graphs at their newest common revision."""
+    revision_sets = {
+        name: set(processed_revisions_for_case_study(
+            case_study, config.experiment_type
+        ))
+        for name, config in ANALYSIS_CONFIGS.items()
+    }
+    common_revisions = set.intersection(*revision_sets.values())
+    if not common_revisions:
+        raise PlotDataEmpty()
+    commit_map = get_commit_map(case_study.project_name)
+    revision = max(common_revisions, key=commit_map.time_id)
+    return {
+        name: load_analysis_graph(case_study, name, revision)
+        for name in ANALYSIS_CONFIGS
+    }
+
+
 class GraphSummary:
     """Graph-level summary based on deduplicated directed edges."""
 
     nodes: int
     edges: int
     density: float
-    degree_gini: float
+    gini: float
 
     def __init__(
             self,
             nodes: int,
             edges: int,
             density: float,
-            degree_gini: float,
+            gini: float,
     ) -> None:
         self.nodes = nodes
         self.edges = edges
         self.density = density
-        self.degree_gini = degree_gini
+        self.gini = gini
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, GraphSummary):
@@ -200,14 +255,19 @@ class GraphSummary:
             self.nodes == other.nodes and
             self.edges == other.edges and
             self.density == other.density and
-            self.degree_gini == other.degree_gini
+            self.gini == other.gini
         )
 
     def __repr__(self) -> str:
         return (
             f"GraphSummary(nodes={self.nodes!r}, edges={self.edges!r}, "
-            f"density={self.density!r}, degree_gini={self.degree_gini!r})"
+            f"density={self.density!r}, gini={self.gini!r})"
         )
+
+    @property
+    def gini_coef(self) -> float:
+        """Backward-compatible name for the graph's Gini coefficient."""
+        return self.gini
 
 
 class EdgeOverlap:
@@ -272,14 +332,23 @@ class EdgeOverlap:
 def deduplicated_edges(
         graph: nx.Graph,
 ) -> tp.Set[tp.Tuple[tp.Hashable, tp.Hashable]]:
-    """Return the graph's unique edges, retaining edge direction."""
-    return set(graph.edges())
+    """Return unique valid edges, retaining direction where applicable.
+
+    Self-loops are excluded because a commit interacting with itself is not a
+    valid commit interaction. This also protects comparisons that receive a
+    graph constructed outside the normal report-loading path.
+    """
+    return {
+        (source, target)
+        for source, target in graph.edges()
+        if source != target
+    }
 
 
 def unique_neighbor_degrees(
         graph: nx.Graph,
 ) -> tp.Dict[tp.Hashable, int]:
-    """Calculate direction-independent degree as unique-neighbor count."""
+    """Calculate unique-neighbor count for each node."""
     degrees: tp.Dict[tp.Hashable, int] = {}
     directed = graph.is_directed()
 
@@ -297,7 +366,7 @@ def unique_neighbor_degrees(
 
 
 def gini_coefficient(values: tp.Iterable[float]) -> float:
-    """Calculate the Gini coefficient of non-negative values."""
+    """Calculate the Gini coefficient for a graph"""
     sorted_values = sorted(float(value) for value in values)
     if any(value < 0 for value in sorted_values):
         raise ValueError("Gini coefficient requires non-negative values.")
@@ -335,7 +404,7 @@ def graph_summary(graph: nx.Graph) -> GraphSummary:
         nodes=num_nodes,
         edges=len(edges),
         density=density,
-        degree_gini=gini_coefficient(unique_neighbor_degrees(graph).values()),
+        gini=gini_coefficient(unique_neighbor_degrees(graph).values()),
     )
 
 
@@ -428,16 +497,12 @@ def spearman_rank_correlation(
         left_values: tp.Iterable[float],
         right_values: tp.Iterable[float],
 ) -> float:
-    """Calculate Spearman's rho, returning NaN when it is undefined."""
+    """Calculate Spearman's rank correlation coefficient."""
     data = pd.DataFrame({
         "left": list(left_values),
         "right": list(right_values),
     })
-    if (
-            len(data) < 2
-            or data["left"].nunique() < 2
-            or data["right"].nunique() < 2
-    ):
+    if (len(data) < 2 or data["left"].nunique() < 2 or data["right"].nunique() < 2):
         return float("nan")
 
     left_ranks = data["left"].rank(method="average")
@@ -523,6 +588,112 @@ def shared_node_degree_spearman(
     )
 
 
+def author_centrality_dataframe(
+        left_graph: nx.Graph,
+        right_graph: nx.Graph,
+        metric: str = "degree",
+) -> pd.DataFrame:
+    """Build matched weighted author-centrality values and ranks."""
+    if metric == "degree":
+        left_values = dict(left_graph.degree(weight="amount"))
+        right_values = dict(right_graph.degree(weight="amount"))
+    elif metric == "eigenvector":
+        def eigenvalues(graph: nx.Graph) -> tp.Dict[tp.Hashable, float]:
+            if graph.number_of_nodes() == 0:
+                return {}
+            try:
+                return tp.cast(
+                    tp.Dict[tp.Hashable, float],
+                    nx.eigenvector_centrality_numpy(graph, weight="amount"),
+                )
+            except (nx.NetworkXException, np.linalg.LinAlgError):
+                # Small or disconnected graphs can make the numpy solver fail.
+                try:
+                    return {
+                        node: float(value)
+                        for node, value in nx.eigenvector_centrality(
+                            graph, max_iter=1000, weight="amount"
+                        ).items()
+                    }
+                except nx.NetworkXException:
+                    return {node: 0.0 for node in graph.nodes}
+        left_values = eigenvalues(left_graph)
+        right_values = eigenvalues(right_graph)
+    else:
+        raise ValueError(f"Unknown author centrality metric {metric!r}.")
+
+    shared = set(left_values) & set(right_values)
+    rows = [{
+        "Author": author,
+        "Left centrality": float(left_values[author]),
+        "Right centrality": float(right_values[author]),
+    } for author in sorted(shared, key=repr)]
+    data = pd.DataFrame(rows, columns=[
+        "Author", "Left centrality", "Right centrality"
+    ])
+    if data.empty:
+        data["Left rank"] = pd.Series(dtype=float)
+        data["Right rank"] = pd.Series(dtype=float)
+        return data
+    data["Left rank"] = data["Left centrality"].rank(
+        method="average", ascending=False
+    )
+    data["Right rank"] = data["Right centrality"].rank(
+        method="average", ascending=False
+    )
+    return data
+
+
+def author_centrality_spearman(
+        left_commit_graph: nx.DiGraph,
+        right_commit_graph: nx.DiGraph,
+        project_name: str,
+        metric: str = "degree",
+) -> float:
+    """Compare author centrality ranks for two commit-interaction graphs."""
+    left_authors = create_author_interaction_graph(
+        left_commit_graph, project_name
+    )
+    right_authors = create_author_interaction_graph(
+        right_commit_graph, project_name
+    )
+    data = author_centrality_dataframe(left_authors, right_authors, metric)
+    return spearman_rank_correlation(
+        data["Left centrality"], data["Right centrality"]
+    )
+
+
+def top_ranked_items(
+        values: tp.Mapping[tp.Hashable, float],
+        limit: int = 10,
+) -> tp.List[tp.Tuple[tp.Hashable, int]]:
+    """Return top-k ranked items."""
+    ordered = sorted(values.items(), key=lambda item: (-float(item[1]), repr(item[0])))
+    return [(item, index) for index, (item, _) in enumerate(ordered[:limit], 1)]
+
+
+def rank_difference_dataframe(
+        left_values: tp.Mapping[tp.Hashable, float],
+        right_values: tp.Mapping[tp.Hashable, float],
+        limit: int = 10,
+) -> pd.DataFrame:
+    """Return ranks for the union of both analyses' top-*limit* items."""
+    left_top = dict(top_ranked_items(left_values, limit))
+    right_top = dict(top_ranked_items(right_values, limit))
+    items = sorted(set(left_top) | set(right_top), key=repr)
+    missing_rank = limit + 1
+    return pd.DataFrame([
+        {
+            "Item": item,
+            "Left rank": left_top.get(item, missing_rank),
+            "Right rank": right_top.get(item, missing_rank),
+            "Rank difference": left_top.get(item, missing_rank)
+            - right_top.get(item, missing_rank),
+        }
+        for item in items
+    ], columns=["Item", "Left rank", "Right rank", "Rank difference"])
+
+
 def edge_weight_differences(
         left_graph: nx.DiGraph,
         right_graph: nx.DiGraph,
@@ -532,7 +703,7 @@ def edge_weight_differences(
 
     Missing edges have weight zero.
     """
-    all_edges = set(left_graph.edges()) | set(right_graph.edges())
+    all_edges = deduplicated_edges(left_graph) | deduplicated_edges(right_graph)
 
     differences = {}
 
