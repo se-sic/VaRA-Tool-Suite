@@ -169,6 +169,11 @@ class InteractionGraph(abc.ABC):
                     **edge_attrs,
                 )
 
+        # A commit interacting with itself is not a valid commit interaction.
+        # Some analyses can nevertheless emit these edges as an artefact, so
+        # enforce the invariant at the graph-construction boundary as well.
+        commit_graph.remove_edges_from(list(nx.selfloop_edges(commit_graph)))
+
         return commit_graph
 
     def author_interaction_graph(self) -> nx.DiGraph:
