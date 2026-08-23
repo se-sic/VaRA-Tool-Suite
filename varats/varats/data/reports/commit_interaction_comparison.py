@@ -602,11 +602,22 @@ def author_centrality_dataframe(
             if graph.number_of_nodes() == 0:
                 return {}
             try:
+                # scipy's sparse eigensolver cannot handle k >= N - 1,
+                # which occurs for the one- and two-author graphs that are
+                # common after filtering a project. The iterative solver is
+                # stable for these small graphs.
+                if graph.number_of_nodes() <= 2:
+                    return {
+                        node: float(value)
+                        for node, value in nx.eigenvector_centrality(
+                            graph, max_iter=1000, weight="amount"
+                        ).items()
+                    }
                 return tp.cast(
                     tp.Dict[tp.Hashable, float],
                     nx.eigenvector_centrality_numpy(graph, weight="amount"),
                 )
-            except (nx.NetworkXException, np.linalg.LinAlgError):
+            except (nx.NetworkXException, np.linalg.LinAlgError, TypeError):
                 # Small or disconnected graphs can make the numpy solver fail.
                 try:
                     return {
