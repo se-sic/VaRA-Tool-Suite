@@ -6,9 +6,9 @@ from tempfile import TemporaryDirectory
 from unittest import mock
 
 from benchbuild.utils.actions import StepResult
-from helper_utils import run_in_test_environment
 from plumbum import ProcessExecutionError
 
+from tests.helper_utils import run_in_test_environment
 from tests.utils.test_experiment_util import BBTestProject
 from varats.experiment.steps.testsuite import (
     BuildTestSuite,
