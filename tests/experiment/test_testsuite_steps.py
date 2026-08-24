@@ -8,7 +8,6 @@ from unittest import mock
 from benchbuild.utils.actions import StepResult
 from plumbum import ProcessExecutionError
 
-from tests.helper_utils import run_in_test_environment
 from tests.utils.test_experiment_util import BBTestProject
 from varats.experiment.steps.testsuite import (
     BuildTestSuite,
@@ -99,7 +98,6 @@ with (
 class TestTestsuiteSteps(unittest.TestCase):
     """Tests for the TestSuite steps."""
 
-    @run_in_test_environment()
     def setUp(self) -> None:
         """Set up the test project."""
         self.project = TestsuiteProject(
@@ -110,7 +108,6 @@ class TestTestsuiteSteps(unittest.TestCase):
             }
         )
 
-    @run_in_test_environment()
     def test_prepare_test_environment(self) -> None:
         """Test that prepare_test_environment() can be called."""
         self.assertFalse(self.project.prepare_called)
@@ -120,7 +117,6 @@ class TestTestsuiteSteps(unittest.TestCase):
         self.assertTrue(self.project.prepare_called)
         self.assertEqual(prepare_step.status, StepResult.OK)
 
-    @run_in_test_environment()
     def test_build_tests(self) -> None:
         """Test that build_tests() can be called."""
         project = TestsuiteProject(
@@ -137,7 +133,6 @@ class TestTestsuiteSteps(unittest.TestCase):
         self.assertTrue(project.build_called)
         self.assertEqual(build_step.status, StepResult.OK)
 
-    @run_in_test_environment()
     def test_run_testsuite(self) -> None:
         """Test that run_testsuite() returns the expected results."""
         self.assertFalse(self.project.run_called)
@@ -166,7 +161,6 @@ class TestTestsuiteSteps(unittest.TestCase):
 
             self.assertEqual(run_step.status, StepResult.ERROR)
 
-    @run_in_test_environment()
     def test_get_test_names(self) -> None:
         """Test that get_test_names() returns the expected test names."""
         with TemporaryDirectory() as tmp_dir:
@@ -209,7 +203,6 @@ class TestInvalidProjectTypes(unittest.TestCase):
 class TestErrorSteps(unittest.TestCase):
     """Tests for error steps."""
 
-    @run_in_test_environment()
     def test_run_testsuite_error(self) -> None:
         """Tests run_testsuite() with ProcessExecutionError."""
         project = TestsuiteProject({}, error=True)
@@ -219,7 +212,6 @@ class TestErrorSteps(unittest.TestCase):
         self.assertTrue(project.run_called)
         self.assertEqual(step.status, StepResult.ERROR)
 
-    @run_in_test_environment()
     def test_prepare_test_environment_error(self) -> None:
         """Tests prepare_test_environment() with ProcessExecutionError."""
         project = TestsuiteProject({}, error=True)
@@ -229,7 +221,6 @@ class TestErrorSteps(unittest.TestCase):
         self.assertTrue(project.prepare_called)
         self.assertEqual(step.status, StepResult.ERROR)
 
-    @run_in_test_environment()
     def test_build_tests_error(self) -> None:
         """Tests build_tests() when ProcessExecutionError occurs."""
         project = TestsuiteProject({}, error=True)
@@ -239,7 +230,6 @@ class TestErrorSteps(unittest.TestCase):
         self.assertTrue(project.build_called)
         self.assertEqual(step.status, StepResult.ERROR)
 
-    @run_in_test_environment()
     def test_get_test_names_error(self) -> None:
         """Tests get_test_names() when ProcessExecutionError occurs."""
         project = TestsuiteProject({}, error=True)
