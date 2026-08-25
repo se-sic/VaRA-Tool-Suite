@@ -1,0 +1,223 @@
+"""
+Project Steps for interacting with the TestSuite protocol.
+
+This allows to prepare, build and run test suites for projects
+"""
+
+import textwrap
+import typing as tp
+from pathlib import Path
+
+from benchbuild.utils.actions import ProjectStep, StepResult
+from plumbum import ProcessExecutionError
+
+from varats.data.reports.testsuite_report import TestsuiteReport
+from varats.project.varats_project import SupportsTestSuites, VProject
+from varats.utils.testsuite_utils import TestResult
+
+
+class PrepareTestSuite(ProjectStep):  # type: ignore
+    """Experiment step to prepare the test suite for a project."""
+
+    project: VProject
+
+    NAME = "PrepareTestSuite"
+    DESCRIPTION = "Prepare the in-built test-suite of the project"
+
+    def __init__(self, project: VProject):
+        """Initializes the prepare test-suite step for a project."""
+        super().__init__(project)
+
+    def __call__(self) -> StepResult:
+        """Call the prepare test-suite step if the project supports it."""
+        if not isinstance(self.project, SupportsTestSuites):
+            raise TypeError(
+                f"Project {self.project.name} does not support testing."
+            )
+        try:
+            self.project.prepare_test_environment()
+            self.status = StepResult.OK
+        except ProcessExecutionError:
+            self.status = StepResult.ERROR
+
+        return self.status
+
+    def __str__(self, indent: int = 0) -> str:
+        """Return a string representation of the step."""
+        return textwrap.indent(
+            f"* {self.project.name}: Prepare test-suite", indent * " "
+        )
+
+
+class BuildTestSuite(ProjectStep):  # type: ignore
+    """Experiment step to build the test suite for a project."""
+
+    project: VProject
+
+    NAME = "BuildTestSuite"
+    DESCRIPTION = "Build the in-built test-suite of the project"
+
+    def __init__(self, project: VProject):
+        """Initializes the build test-suite step for a project."""
+        super().__init__(project)
+
+    def __call__(self) -> StepResult:
+        """Call the build test-suite step if the project supports it."""
+        if not isinstance(self.project, SupportsTestSuites):
+            raise TypeError(
+                f"Project {self.project.name} does not support testing."
+            )
+        try:
+            self.project.build_tests()
+            self.status = StepResult.OK
+        except ProcessExecutionError:
+            self.status = StepResult.ERROR
+
+        return self.status
+
+    def __str__(self, indent: int = 0) -> str:
+        """Return a string representation of the step."""
+        return textwrap.indent(
+            f"* {self.project.name}: Build test-suite", indent * " "
+        )
+
+
+class RunTestSuite(ProjectStep):  # type: ignore
+    """Experiment step to run the test suite on a project."""
+
+    project: VProject
+
+    NAME = "RunTestSuite"
+    DESCRIPTION = "Run the in-built test-suite of the project"
+
+    def __init__(
+        self,
+        project: VProject,
+        output_path: Path,
+        tests_to_run: tp.Iterable[str] | None = None,
+        tests_to_exclude: tp.Iterable[str] | None = None,
+        result_filter: tp.Callable[[dict[str, TestResult]], bool] | None = None,
+    ):
+        """
+        Initialize the test-suite step.
+
+        Args:
+          project: Project to run the test-suite on
+          output_path: Path to write the test report file to
+          tests_to_run: An explicit list of tests to run.
+                        If None, all tests will be run.
+          tests_to_exclude: An explicit list of tests to exclude.
+                            If None, no tests are excluded.
+          result_filter: A callable that takes the test results and returns a
+                boolean indicating whether the test-suite run was successful.
+                If None, the default filter will be used, which considers a test
+                suite run successful if all tests passed or were skipped.
+        """
+        super().__init__(project)
+        self.__output_path = output_path
+        self.__tests_to_run = tests_to_run
+        if result_filter is not None:
+            self.__result_filter = result_filter
+        else:
+            self.__result_filter = self._parse_results
+        self.__tests_to_run = tests_to_run
+        self.__tests_to_exclude = tests_to_exclude
+
+    @property
+    def output_path(self) -> Path | None:
+        """Get the output path for the test report."""
+        return self.__output_path
+
+    def set_output_path(self, output_path: Path) -> None:
+        """Set the output path for the test report."""
+        self.__output_path = output_path
+
+    @staticmethod
+    def _parse_results(result: dict[str, TestResult]) -> bool:
+        """
+        Default result filter.
+
+        Considers a test suite run successful if all tests passed, skipped,
+        or disabled.
+        """
+        result_filter = {
+            TestResult.PASSED: True,
+            TestResult.FAILED: False,
+            TestResult.SKIPPED: True,
+            TestResult.TIMEOUT: False,
+            TestResult.DISABLED: True,
+            TestResult.UNKNOWN: False,
+        }
+        return all(result_filter.get(status) for status in result.values())
+
+    def __call__(self) -> StepResult:
+        """Call the run test-suite implementation if the project supports it."""
+        if not isinstance(self.project, SupportsTestSuites):
+            raise TypeError(
+                f"Project {self.project.name} does not support testing."
+            )
+        try:
+            results = self.project.run_testsuite(
+                self.__output_path, self.__tests_to_run, self.__tests_to_exclude
+            )
+            status = self.__result_filter(results)
+            if status:
+                self.status = StepResult.OK
+            else:
+                self.status = StepResult.ERROR
+
+            # Create report for test results saved as json
+            TestsuiteReport.create_report_from_results(
+                results, self.__output_path
+            )
+
+        except ProcessExecutionError:
+            self.status = StepResult.ERROR
+
+        return self.status
+
+    def __str__(self, indent: int = 0) -> str:
+        """Return a string representation of the step."""
+        return textwrap.indent(
+            f"* {self.project.name}: Run test-suite", indent * " "
+        )
+
+
+class CollectTests(ProjectStep):  # type: ignore
+    """Experiment step to collect the test suite for a project."""
+
+    project: VProject
+
+    NAME = "CollectTests"
+    DESCRIPTION = "Collect the in-built test-suite of the project"
+
+    def __init__(self, project: VProject, output_path: Path):
+        """
+        Initializes the collect test-suite step for a project.
+
+        The collect test-suite step collects the names of the tests
+        in the test suite and writes them to a file at the specified
+        output path.
+        """
+        super().__init__(project)
+        self.__output_path = output_path
+
+    def __call__(self) -> StepResult:
+        """Call the collect test-suite step if the project supports it."""
+        if not isinstance(self.project, SupportsTestSuites):
+            raise TypeError(
+                f"Project {self.project.name} does not support testing."
+            )
+        try:
+            tests = self.project.get_test_names()
+            self.status = StepResult.OK
+        except ProcessExecutionError:
+            self.status = StepResult.ERROR
+            tests = []
+
+        print(f"Collected tests: {tests}")
+
+        with self.__output_path.open("w") as f:
+            f.writelines(f"{test}\n" for test in tests)
+
+        return self.status

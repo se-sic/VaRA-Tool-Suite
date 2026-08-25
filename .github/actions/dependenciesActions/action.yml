@@ -6,7 +6,7 @@ runs:
   steps:
     - name: Install system dependencies for CI
       run: |
-         sudo apt-get install time git libgit2-dev ninja-build libyaml-dev libgraphviz-dev
+         sudo apt-get install time git libgit2-dev ninja-build libyaml-dev libgraphviz-dev googletest libgtest-dev
       shell: bash
     - name: Install dependencies
       run: |
