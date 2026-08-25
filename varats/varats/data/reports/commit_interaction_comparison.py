@@ -228,7 +228,7 @@ def load_all_analysis_graphs(
 
 
 class GraphSummary:
-    """Graph-level summary based on deduplicated directed edges."""
+    """Graph-level summary based on directed commit-interaction edges."""
 
     nodes: int
     edges: int
@@ -332,17 +332,12 @@ class EdgeOverlap:
 def deduplicated_edges(
         graph: nx.Graph,
 ) -> tp.Set[tp.Tuple[tp.Hashable, tp.Hashable]]:
-    """Return unique valid edges, retaining direction where applicable.
+    """Return the graph's directed edge pairs.
 
-    Self-loops are excluded because a commit interacting with itself is not a
-    valid commit interaction. This also protects comparisons that receive a
-    graph constructed outside the normal report-loading path.
+    NetworkX graphs already represent each edge pair once. Self-loops are
+    removed when constructing the commit-interaction graph.
     """
-    return {
-        (source, target)
-        for source, target in graph.edges()
-        if source != target
-    }
+    return set(graph.edges())
 
 
 def unique_neighbor_degrees(
@@ -412,7 +407,7 @@ def edge_overlap(
         left_graph: nx.Graph,
         right_graph: nx.Graph,
 ) -> EdgeOverlap:
-    """Calculate common and exclusive deduplicated edge counts."""
+    """Calculate common and exclusive edge counts."""
     left_edges = deduplicated_edges(left_graph)
     right_edges = deduplicated_edges(right_graph)
     return EdgeOverlap(
@@ -528,7 +523,7 @@ def edge_weight_distribution_dataframe(
         left_name: str = "Left",
         right_name: str = "Right",
 ) -> pd.DataFrame:
-    """Collect all deduplicated edge weights for distribution comparison."""
+    """Collect all edge weights for distribution comparison."""
     rows = [
         {
             "Analysis": analysis,
@@ -714,7 +709,7 @@ def edge_weight_differences(
 
     Missing edges have weight zero.
     """
-    all_edges = deduplicated_edges(left_graph) | deduplicated_edges(right_graph)
+    all_edges = set(left_graph.edges()) | set(right_graph.edges())
 
     differences = {}
 

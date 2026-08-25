@@ -67,7 +67,7 @@ def graph_summary_dataframe(
             rows.append({
                 "Project": case_study.project_name,
                 "Analysis": analysis,
-                "Unique edges": summary.edges,
+                "Edges": summary.edges,
                 "Density": summary.density,
                 "gini coefficient": summary.gini,
             })
@@ -75,7 +75,7 @@ def graph_summary_dataframe(
     return pd.DataFrame(rows, columns=[
         "Project",
         "Analysis",
-        "Unique edges",
+        "Edges",
         "Density",
         "gini coefficient",
     ])

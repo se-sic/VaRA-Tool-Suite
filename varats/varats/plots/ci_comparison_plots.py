@@ -276,7 +276,7 @@ class CommitInteractionJaccardPlot(
         ax.set_xlim(0.0, 1.0)
         ax.set_xlabel("Share of edge union")
         ax.set_ylabel("Project")
-        ax.set_title("Deduplicated edge overlap")
+        ax.set_title("Edge overlap")
         ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3)
         ax.invert_yaxis()
 
@@ -297,7 +297,7 @@ class CommitInteractionJaccardPlotGenerator(
         REQUIRE_ANALYSIS_COMPARISON,
     ],
 ):
-    """Generate deduplicated edge-overlap composition plots."""
+    """Generate edge-overlap composition plots."""
 
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = (
@@ -541,7 +541,7 @@ class CommitInteractionEdgeWeightDistributionPlot(
     Plot,
     plot_name="edge-weight-distribution-comparison",
 ):
-    """Compare all deduplicated edge weights with empirical CDFs."""
+    """Compare all edge weights with empirical CDFs."""
 
     def plot(self, view_mode: bool) -> None:
         case_study: CaseStudy = self.plot_kwargs["case_study"]
@@ -587,7 +587,7 @@ class CommitInteractionEdgeWeightDistributionPlot(
             )
 
         axes.set_ylim(0.0, 1.0)
-        axes.set_xlabel("Deduplicated edge weight")
+        axes.set_xlabel("Edge weight")
         axes.set_ylabel("Empirical cumulative probability")
         axes.set_title(
             f"{case_study.project_name}: edge-weight distributions"
