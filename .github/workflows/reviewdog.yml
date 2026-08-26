@@ -27,17 +27,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install .
         pip install -r requirements.txt
-        pip install mypy
-        pip install ruff==0.15.2
+        pip install ruff
+        pip install ty
 
     - name: Setup reviewdog
-      run: |
-        mkdir -p $HOME/bin && curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh| sh -s -- -b $HOME/bin
-        echo "$HOME/bin" >> $GITHUB_PATH
-        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      uses: reviewdog/action-setup@d8edfce3dd5e1ec6978745e801f9c50b5ef80252 # v1.4.0
     - name: Run reviewdog
       env:
         REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        reviewdog -runners=mypy -reporter=github-pr-check -conf=.reviewdog.yml
         reviewdog -runners=ruff -reporter=github-pr-check -conf=.reviewdog.yml -filter-mode=diff_context
+        reviewdog -runners=ty -reporter=github-pr-check -conf=.reviewdog.yml -filter-mode=diff_context
