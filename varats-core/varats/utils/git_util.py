@@ -68,7 +68,7 @@ class CommitHash(abc.ABC):
         """Return the commit hash as a string."""
         return self.hash
 
-    def __eq__(self, other: tp.Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check equality based on the commit hash."""
         if isinstance(other, CommitHash):
             return self.hash == other.hash
@@ -253,7 +253,7 @@ class RepositoryHandle:
 
         return commit
 
-    def __eq__(self, other: tp.Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check equality based on the repository path."""
         if not isinstance(other, RepositoryHandle):
             return False
@@ -693,7 +693,7 @@ class CommitRepoPair:
             return self.commit_hash.hash < other.commit_hash.hash
         return False
 
-    def __eq__(self, other: tp.Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check equality based on commit hash and repository name."""
         if isinstance(other, CommitRepoPair):
             return (
