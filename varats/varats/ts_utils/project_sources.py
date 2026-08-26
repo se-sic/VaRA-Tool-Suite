@@ -43,15 +43,18 @@ class VaraTestRepoSubmodule(GitSubmodule):
         self.__vara_test_repos_git.shallow = self.shallow
         self.__vara_test_repos_git.clone = self.clone
 
+        remote = self.remote
+        assert isinstance(remote, str), "Git remote must be a string."
+
         vara_test_repos_path = Path(self.__vara_test_repos_git.fetch())
-        submodule_path = vara_test_repos_path / self.remote
+        submodule_path = vara_test_repos_path / remote
         submodule_target = Path(target_prefix()) / self.local
 
         # Extract submodule
         if not submodule_target.is_dir():
             copy_renamed_git_to_dest(submodule_path, submodule_target)
 
-        return pb.local.path(submodule_target)
+        return tp.cast("pb.LocalPath", pb.local.path(submodule_target))
 
 
 class VaraTestRepoSource(PaperConfigSpecificGit):
@@ -81,22 +84,30 @@ class VaraTestRepoSource(PaperConfigSpecificGit):
         self.__vara_test_repos_git.shallow = self.shallow
         self.__vara_test_repos_git.clone = self.clone
 
+        remote = self.remote
+        assert isinstance(remote, str), "Git remote must be a string."
+
         vara_test_repos_path = Path(self.__vara_test_repos_git.fetch())
-        main_src_path = vara_test_repos_path / self.remote
+        main_src_path = vara_test_repos_path / remote
         main_tgt_path = Path(target_prefix()) / self.local
 
         # Extract main repository
         if not main_tgt_path.is_dir():
             copy_renamed_git_to_dest(main_src_path, main_tgt_path)
 
-        return pb.local.path(main_tgt_path)
+        return tp.cast("pb.LocalPath", pb.local.path(main_tgt_path))
 
     def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
         """Create a new git worktree pointing to the requested version."""
+        remote = self.remote
+        assert isinstance(remote, str), "Git remote must be a string."
+
         main_repo_src_local = self.fetch()
-        tgt_loc = pb.local.path(target_dir) / self.local
+        tgt_loc = (
+            tp.cast("pb.LocalPath", pb.local.path(target_dir)) / self.local
+        )
         vara_test_repos_path = Path(self.__vara_test_repos_git.fetch())
-        main_repo_src_remote = vara_test_repos_path / self.remote
+        main_repo_src_remote = vara_test_repos_path / remote
 
         mkdir('-p', tgt_loc)
 
@@ -175,9 +186,12 @@ class GitFileSource(benchbuild.source.Git):
         """
         Fetches the defined files for a given version to the target directory.
 
-        :param target_dir:
-        :param version:
-        :return:
+        Args:
+            target_dir: directory to fetch the files into
+            version: revision to fetch the files at; defaults to `revision`
+
+        Returns:
+            the path where the files were fetched to
         """
         if len(version) == 0:
             version = self.revision
@@ -190,7 +204,9 @@ class GitFileSource(benchbuild.source.Git):
         with lock_file(prefix / file_lock):
             src_loc = Path(self.fetch())
             tgt_subdir = f'{self.local}@{version}/'
-            tgt_loc = pb.local.path(target_dir) / tgt_subdir
+            tgt_loc = tp.cast(
+                "pb.LocalPath", pb.local.path(target_dir) / tgt_subdir
+            )
 
             repo = RepositoryHandle(src_loc)
 

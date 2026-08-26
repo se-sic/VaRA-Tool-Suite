@@ -33,7 +33,7 @@ _SHORT_COMMIT_HASH_LENGTH = 10
 class CommitHash(abc.ABC):
     """Base class for commit hash abstractions."""
 
-    def __init__(self, short_commit_hash: str):
+    def __init__(self, short_commit_hash: str) -> None:
         """Create a commit hash object from its string form."""
         if not len(short_commit_hash) >= self.hash_length():
             raise ValueError(
@@ -181,7 +181,7 @@ class RepositoryHandle:
     Provides access using either pygit2 or commandline-git.
     """
 
-    def __init__(self, worktree_path: Path):
+    def __init__(self, worktree_path: Path) -> None:
         """Create a repository handle for the repo at `worktree_path`."""
         self.__worktree_path = worktree_path
         self.__git: BoundCommand = git["-C", str(self.__worktree_path)]
@@ -195,7 +195,7 @@ class RepositoryHandle:
 
     def __getitem__(self, *args: tp.Any) -> BoundCommand:
         """Get a callable git command with the given arguments."""
-        return self.__git.bound_command(*args)
+        return tp.cast("BoundCommand", self.__git.bound_command(*args))
 
     @property
     def repo_name(self) -> str:
@@ -510,7 +510,7 @@ def get_authors(repo: RepositoryHandle, c_start: str = "HEAD") -> set[str]:
     author_regex = re.compile(r"\s*\d+\s+(?P<author>.+)$")
 
     lines = repo("shortlog", "-s", c_start).splitlines()
-    result = set()
+    result: set[str] = set()
     for line in lines:
         match = author_regex.match(line)
         if match:

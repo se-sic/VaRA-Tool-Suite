@@ -186,6 +186,7 @@ ignore = [
   "PLR2004",  # magic-value-comparison
   "PLR5501",  # collapsible-else-if
   "FIX004",   # line-contains-hack
+  "ANN401",   # any-type
 
   # Rules incompatible with ruff formatter
   "Q",      # all flake-8 quote rules
@@ -247,6 +248,11 @@ dynamic-function-decorator-return = "error"
 missing-type-argument = "error"
 possibly-unresolved-reference = "warn"
 unsound-return-statement = "error"
+
+[[tool.ty.overrides]]
+
+[tool.ty.overrides.analysis]
+allowed-unresolved-imports = ["benchbuild.utils.cmd"]
 
 [tool.mypy]
 warn_return_any = true
