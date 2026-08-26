@@ -271,6 +271,10 @@ class RepositoryHandle:
         """Return the repository name."""
         return self.repo_name
 
+    def __hash__(self) -> int:
+        """Return the hash of the repository path."""
+        return hash(self.repo_path)
+
 
 def is_commit_hash(value: str) -> bool:
     """
@@ -541,8 +545,8 @@ class ChurnConfig:
 
         value: set[str]  # pylint: disable=invalid-name
 
-        C = {"h", "c"}
-        CPP = {"h", "hxx", "hpp", "cxx", "cpp", "cc"}
+        C = {"h", "c"}  # noqa: RUF012
+        CPP = {"h", "hxx", "hpp", "cxx", "cpp", "cc"}  # noqa: RUF012
 
     def __init__(self) -> None:
         """Create a churn config with no languages enabled."""
@@ -662,8 +666,7 @@ class ChurnConfig:
         for ext in sorted(
             {ext for lang in self.enabled_languages for ext in lang.value}
         ):
-            ext = prefix + ext + suffix
-            extensions_list.append(ext)
+            extensions_list.append(prefix + ext + suffix)
 
         return extensions_list
 
@@ -1128,7 +1131,6 @@ class GitFileSource(benchbuild.source.Git):
         super().__init__(
             remote, local, refspec=refspec, limit=None, shallow=False
         )
-        # TODO: Add possibility to specify target name by passing tuples?
         self.__files = files
         self.__revision = revision
 
@@ -1152,7 +1154,7 @@ class GitFileSource(benchbuild.source.Git):
         flat_local = self.local.replace(os.sep, '-')
         file_lock = f".{flat_local}.lock"
 
-        # Guard simultaneous access of multiple projects with the same defined local
+        # Guard simultaneous access of multiple projects with the same local
         with lock_file(pb.local.path(prefix) / file_lock):
             src_loc = self.fetch()
             tgt_subdir = f'{self.local}@{version}/'
@@ -1160,7 +1162,7 @@ class GitFileSource(benchbuild.source.Git):
 
             repo = RepositoryHandle(src_loc)
 
-            # Checkout the requested version, store current head to restore later
+            # Check out requested version, store current head to restore later
             initial_commit = repo.pygit_repo.head
             repo("checkout", version)
 
@@ -1169,7 +1171,6 @@ class GitFileSource(benchbuild.source.Git):
             cp = pb.local["cp"]
 
             with pb.local.cwd(src_loc):
-                # TODO: Add support for globs?
                 for file in self.__files:
                     flat_file = file.replace(os.sep, "-")
                     cp(file, tgt_loc / flat_file)
