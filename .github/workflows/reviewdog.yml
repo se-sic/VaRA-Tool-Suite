@@ -37,4 +37,4 @@ jobs:
         REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         reviewdog -runners=ruff -reporter=github-pr-check -conf=.reviewdog.yml -filter-mode=diff_context
-        reviewdog -runners=ty -reporter=github-pr-check -conf=.reviewdog.yml -filter-mode=diff_context
+        reviewdog -tee -runners=ty -reporter=github-pr-check -conf=.reviewdog.yml -filter-mode=diff_context
