@@ -1063,7 +1063,7 @@ class GitFileSource(benchbuild.source.Git):
         super().__init__(
             remote, local, refspec=refspec, limit=None, shallow=False
         )
-        #TODO: Add possibility to specify target name by passing tuples?
+        # TODO: Add possibility to specify target name by passing tuples?
         self.__files = files
         self.__revision = revision
 
@@ -1071,7 +1071,9 @@ class GitFileSource(benchbuild.source.Git):
     def revision(self) -> str:
         return self.__revision
 
-    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
+    def version(
+        self, target_dir: str, version: str = self.revision
+    ) -> pb.LocalPath:
         """
         Fetches the defined files for a given version to the target directory.
 
@@ -1100,7 +1102,7 @@ class GitFileSource(benchbuild.source.Git):
             cp = pb.local["cp"]
 
             with pb.local.cwd(src_loc):
-                #TODO: Add support for globs?
+                # TODO: Add support for globs?
                 for file in self.__files:
                     flat_file = file.replace(os.sep, "-")
                     cp(file, tgt_loc / flat_file)
@@ -1109,7 +1111,7 @@ class GitFileSource(benchbuild.source.Git):
 
         return tgt_loc
 
-    def versions(self) -> tp.List[benchbuild.source.base.Variant]:
+    def versions(self) -> list[benchbuild.source.base.Variant]:
         versions = super().versions()
 
         return [v for v in versions if v.version == self.__revision]
