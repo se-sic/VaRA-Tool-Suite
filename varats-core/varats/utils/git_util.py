@@ -38,6 +38,7 @@ class CommitHash(abc.ABC):
     """Base class for commit hash abstractions."""
 
     def __init__(self, short_commit_hash: str):
+        """Create a commit hash object from its string form."""
         if not len(short_commit_hash) >= self.hash_length():
             raise ValueError(
                 f"Commit hash too short, only got {short_commit_hash}"
@@ -46,15 +47,17 @@ class CommitHash(abc.ABC):
 
     @property
     def hash(self) -> str:
+        """The string representation of this commit hash."""
         return self.__commit_hash
 
     @staticmethod
     @abc.abstractmethod
     def hash_length() -> int:
-        """Required length of the CommitHash."""
+        """Length of the CommitHash."""
 
     @staticmethod
     def from_pygit_commit(commit: pygit2.Commit) -> 'FullCommitHash':
+        """Create a FullCommitHash from a pygit2 commit."""
         return FullCommitHash(str(commit.id))
 
     @abc.abstractmethod
@@ -62,17 +65,21 @@ class CommitHash(abc.ABC):
         """Return the short form of the CommitHash."""
 
     def __str__(self) -> str:
+        """Return the commit hash as a string."""
         return self.hash
 
     def __repr__(self) -> str:
+        """Return the commit hash as a string."""
         return self.hash
 
     def __eq__(self, other: tp.Any) -> bool:
+        """Check equality based on the commit hash."""
         if isinstance(other, CommitHash):
             return self.hash == other.hash
         return False
 
     def __hash__(self) -> int:
+        """Hash based on the commit hash."""
         return hash(self.hash)
 
 
@@ -80,10 +87,12 @@ class ShortCommitHash(CommitHash):
     """Shortened commit hash."""
 
     def to_short_commit_hash(self) -> 'ShortCommitHash':
+        """Return the short form of the CommitHash, i.e., itself."""
         return self
 
     @staticmethod
     def hash_length() -> int:
+        """Required length of the ShortCommitHash."""
         return _SHORT_COMMIT_HASH_LENGTH
 
 
@@ -92,17 +101,20 @@ class FullCommitHash(CommitHash):
 
     @staticmethod
     def hash_length() -> int:
+        """Required length of the FullCommitHash."""
         return _FULL_COMMIT_HASH_LENGTH
 
     @property
     def short_hash(self) -> str:
-        """Abbreviated commit hash."""
+        """Abbreviated commit hash string."""
         return self.hash[:_SHORT_COMMIT_HASH_LENGTH]
 
     def to_short_commit_hash(self) -> ShortCommitHash:
+        """Return the short form of the CommitHash."""
         return ShortCommitHash(self.hash)
 
     def startswith(self, short_hash: CommitHash) -> bool:
+        """Check if this commit hash starts with the given short hash."""
         return self.hash.startswith(short_hash.hash)
 
 
@@ -118,18 +130,47 @@ FullCH = FullCommitHash
 def commit_hashes_sorted_lexicographically(
     commit_hashes: tp.Iterable[CommitHashTy],
 ) -> tp.Iterable[CommitHashTy]:
+    """
+    Sort commit hashes lexicographically.
+
+    Args:
+        commit_hashes: commit hashes to sort
+
+    Returns:
+        the commit hashes sorted lexicographically
+    """
     return sorted(commit_hashes, key=lambda x: x.hash)
 
 
 def short_commit_hashes_sorted_by_time_id(
     commit_hashes: tp.Iterable[ShortCommitHash], commit_map: 'cm.CommitMap'
 ) -> tp.Iterable[ShortCommitHash]:
+    """
+    Sort short commit hashes by their time id.
+
+    Args:
+        commit_hashes: short commit hashes to sort
+        commit_map: commit map to look up the time id of a commit
+
+    Returns:
+        the commit hashes sorted by time id
+    """
     return sorted(commit_hashes, key=commit_map.short_time_id)
 
 
 def full_commit_hashes_sorted_by_time_id(
     commit_hashes: tp.Iterable[FullCommitHash], commit_map: 'cm.CommitMap'
 ) -> tp.Iterable[FullCommitHash]:
+    """
+    Sort full commit hashes by their time id.
+
+    Args:
+        commit_hashes: full commit hashes to sort
+        commit_map: commit map to look up the time id of a commit
+
+    Returns:
+        the commit hashes sorted by time id
+    """
     return sorted(commit_hashes, key=commit_map.time_id)
 
 
@@ -139,11 +180,13 @@ def full_commit_hashes_sorted_by_time_id(
 
 class RepositoryHandle:
     """
-    Wrapper class providing access to a git repository using either pygit2 or
-    commandline-git.
+    Wrapper class providing access to a git repository.
+
+    Provides access using either pygit2 or commandline-git.
     """
 
     def __init__(self, worktree_path: Path):
+        """Create a repository handle for the repo at `worktree_path`."""
         self.__worktree_path = worktree_path
         self.__git: BoundCommand = git["-C", str(self.__worktree_path)]
 
@@ -155,7 +198,7 @@ class RepositoryHandle:
         return self.__git(*args, **kwargs)
 
     def __getitem__(self, *args: tp.Any) -> BoundCommand:
-        """Get a bound git command with the given arguments."""
+        """Get a callable git command with the given arguments."""
         return self.__git.bound_command(*args)
 
     @property
@@ -166,8 +209,9 @@ class RepositoryHandle:
     @property
     def worktree_path(self) -> Path:
         """
-        Path to the main worktree of the repository, typically the parent of
-        the .git folder.
+        Path to the main worktree of the repository.
+
+        Typically, the parent of the .git folder.
         """
         return self.__worktree_path
 
@@ -199,7 +243,7 @@ class RepositoryHandle:
         if isinstance(commit_hash, CommitHash):
             commit_hash = commit_hash.hash
 
-        return tp.cast("pygit2.Commit", self.pygit_repo.get(commit_hash))
+        return tp.cast("pygit2.Commit | None", self.pygit_repo.get(commit_hash))
 
     def pygit_commit(self, commit_hash: CommitHash | str) -> pygit2.Commit:
         """
@@ -214,14 +258,17 @@ class RepositoryHandle:
         return commit
 
     def __eq__(self, other: tp.Any) -> bool:
+        """Check equality based on the repository path."""
         if not isinstance(other, RepositoryHandle):
             return False
         return self.repo_path == other.repo_path
 
     def __repr__(self) -> str:
+        """Return a string representation of this repository handle."""
         return f"RepositoryHandle({self.repo_path})"
 
     def __str__(self) -> str:
+        """Return the repository name."""
         return self.repo_name
 
 
@@ -292,10 +339,10 @@ def get_all_revisions_between(
     hash_type: type[CommitHashTy],
 ) -> list[CommitHashTy]:
     """
-    Returns a list of all revisions between two commits c_start and c_end (both
-    inclusive), where c_start comes before c_end.
+    Returns a list of all revisions between two commits c_start and c_end.
 
-    It is assumed that the current working directory is the git repository.
+    Both are inclusive, where c_start comes before c_end. It is assumed that
+    the current working directory is the git repository.
 
     Args:
         repo: git repository handle
@@ -385,8 +432,7 @@ def contains_source_code(
     churn_config: tp.Optional['ChurnConfig'] = None,
 ) -> bool:
     """
-    Check if a commit contains source code of any language specified with the
-    churn config.
+    Check if a commit contains source code of any specified language.
 
     Args:
         repo: git repository handle
@@ -418,8 +464,9 @@ def contains_source_code(
 
 def num_commits(repo: RepositoryHandle, c_start: str = "HEAD") -> int:
     """
-    Count the commits in a git repo starting from the given commit back to the
-    initial commit.
+    Count the commits in a git repo starting from the given commit.
+
+    Counts back to the initial commit.
 
     Args:
         repo: git repository handle
@@ -433,8 +480,9 @@ def num_commits(repo: RepositoryHandle, c_start: str = "HEAD") -> int:
 
 def num_authors(repo: RepositoryHandle, c_start: str = "HEAD") -> int:
     """
-    Count the authors in a git repo starting from the given commit back to the
-    initial commit.
+    Count the authors in a git repo starting from the given commit.
+
+    Counts back to the initial commit.
 
     Args:
         repo: git repository handle
@@ -448,8 +496,9 @@ def num_authors(repo: RepositoryHandle, c_start: str = "HEAD") -> int:
 
 def get_authors(repo: RepositoryHandle, c_start: str = "HEAD") -> set[str]:
     """
-    Get the authors in a git repo starting from the given commit back to the
-    initial commit.
+    Get the authors in a git repo starting from the given commit.
+
+    Includes authors back to the initial commit.
 
     Args:
         repo: git repository handle
@@ -485,8 +534,9 @@ class ChurnConfig:
 
     class Language(Enum):
         """
-        Enum for different languages that can be used to filter code
-        churn.
+        Enum for different languages that can be used to filter code churn.
+
+        Each language maps to a set of associated file extensions.
         """
 
         value: set[str]  # pylint: disable=invalid-name
@@ -495,21 +545,24 @@ class ChurnConfig:
         CPP = {"h", "hxx", "hpp", "cxx", "cpp", "cc"}
 
     def __init__(self) -> None:
+        """Create a churn config with no languages enabled."""
         self.__enabled_languages: list[ChurnConfig.Language] = []
 
     @staticmethod
     def create_default_config() -> 'ChurnConfig':
         """
-        Create a default configuration that includes all files in the code
-        churn, e.g., enabling all languages/file extensions.
+        Create a default configuration that includes all files in the churn.
+
+        E.g., enabling all languages/file extensions.
         """
         return ChurnConfig()
 
     @staticmethod
     def create_c_language_config() -> 'ChurnConfig':
         """
-        Create a config that only allows C related files, e.g., headers and
-        source files.
+        Create a config that only allows C related files.
+
+        E.g., headers and source files.
         """
         config = ChurnConfig()
         config.enable_language(ChurnConfig.Language.C)
@@ -517,10 +570,7 @@ class ChurnConfig:
 
     @staticmethod
     def create_c_style_languages_config() -> 'ChurnConfig':
-        """
-        Create a config that allows all files related to C-style languages,
-        i.e., C/CPP.
-        """
+        """Create a config for C-style languages, C/CPP."""
         config = ChurnConfig.create_c_language_config()
         config.enable_language(ChurnConfig.Language.CPP)
         return config
@@ -530,7 +580,7 @@ class ChurnConfig:
         config: tp.Optional['ChurnConfig'],
     ) -> 'ChurnConfig':
         """
-        Returns a default initialized config or the passed one.
+        Returns a default-initialized config or the passed one.
 
         Args:
             config: possibly initialized config
@@ -596,8 +646,9 @@ class ChurnConfig:
         self, prefix: str = "", suffix: str = ""
     ) -> list[str]:
         """
-        Returns a list that contains all file extensions from all enabled
-        languages extended with the passed pre-/suffix.
+        Returns all file extensions from all enabled languages.
+
+        Extensions are extended with the passed pre-/suffix.
 
         Args:
             prefix: prefix adding to the strings head
@@ -621,18 +672,22 @@ class CommitRepoPair:
     """Pair of a commit hash and the name of the repository it is based in."""
 
     def __init__(self, commit_hash: FullCommitHash, repo_name: str) -> None:
+        """Create a commit-repo pair from a commit hash and a repo name."""
         self.__commit_hash = commit_hash
         self.__repo_name = repo_name
 
     @property
     def commit_hash(self) -> FullCommitHash:
+        """The commit hash of this pair."""
         return self.__commit_hash
 
     @property
     def repository_name(self) -> str:
+        """The repository name of this pair."""
         return self.__repo_name
 
     def __lt__(self, other: tp.Any) -> bool:
+        """Compare pairs by commit hash, then by repository name."""
         if isinstance(other, CommitRepoPair):
             if self.commit_hash.hash == other.commit_hash.hash:
                 return self.repository_name < other.repository_name
@@ -640,6 +695,7 @@ class CommitRepoPair:
         return False
 
     def __eq__(self, other: tp.Any) -> bool:
+        """Check equality based on commit hash and repository name."""
         if isinstance(other, CommitRepoPair):
             return (
                 self.commit_hash == other.commit_hash
@@ -648,12 +704,15 @@ class CommitRepoPair:
         return False
 
     def __hash__(self) -> int:
+        """Hash based on commit hash and repository name."""
         return hash((self.commit_hash, self.repository_name))
 
     def __str__(self) -> str:
+        """Return a human-readable representation of this pair."""
         return f"{self.repository_name}[{self.commit_hash}]"
 
     def __repr__(self) -> str:
+        """Return a human-readable representation of this pair."""
         return str(self)
 
 
@@ -799,6 +858,8 @@ def calc_code_churn_range(
     Args:
         repo: git repository handle
         churn_config: churn config to customize churn generation
+        start_range: begin churn calculation at start commit
+        end_range: end churn calculation at end commit
 
     Returns:
         dict of churn triples, where the commit hash points to
@@ -1016,18 +1077,21 @@ def branch_has_upstream(
 
 class RepositoryAtCommit:
     """
-    Context manager to work with a repository at a specific revision, without
-    duplicating the repository.
+    Context manager to work with a repository at a specific revision.
+
+    Does so without duplicating the repository.
     """
 
     def __init__(
         self, repo: RepositoryHandle, revision: ShortCommitHash
     ) -> None:
+        """Create a context manager for `repo` checked out at `revision`."""
         self.__repo = repo
         self.__initial_head = get_head_commit(self.__repo)
         self.__revision = revision
 
     def __enter__(self) -> Path:
+        """Check out the requested revision and return the worktree path."""
         checkout_branch_or_commit(self.__repo, self.__revision)
         update_all_submodules(self.__repo, True, True)
         return self.__repo.repo_path.parent
@@ -1038,14 +1102,14 @@ class RepositoryAtCommit:
         exc_value: BaseException | None,
         exc_traceback: TracebackType | None,
     ) -> None:
+        """Restore the initially checked out revision."""
         checkout_branch_or_commit(self.__repo, self.__initial_head)
         update_all_submodules(self.__repo, True, True)
 
 
 class GitFileSource(benchbuild.source.Git):
     """
-    A source to provide one or multiple files that are stored in a Git
-    repository.
+    A source to provide one or multiple files stored in a Git repository.
 
     From the motivation similar to the HTTPMultiple source. Common uses may be
     the use of benchmark/example workload repositories
@@ -1059,6 +1123,7 @@ class GitFileSource(benchbuild.source.Git):
         files: tp.Iterable[str],
         refspec: str = "HEAD",
     ) -> None:
+        """Create a GitFileSource for `files` in the repo at `remote`."""
         # Initiate the project with the whole history
         super().__init__(
             remote, local, refspec=refspec, limit=None, shallow=False
@@ -1069,6 +1134,7 @@ class GitFileSource(benchbuild.source.Git):
 
     @property
     def revision(self) -> str:
+        """The revision from which the files are fetched."""
         return self.__revision
 
     def version(self, target_dir: str, version: str = "") -> pb.LocalPath:
@@ -1115,6 +1181,7 @@ class GitFileSource(benchbuild.source.Git):
         return tgt_loc
 
     def versions(self) -> list[benchbuild.source.base.Variant]:
+        """Return the variants matching this source's revision."""
         versions = super().versions()
 
         return [v for v in versions if v.version == self.__revision]
