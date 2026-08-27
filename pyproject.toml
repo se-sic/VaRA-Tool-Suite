@@ -15,6 +15,7 @@ dependencies = [
   "graphviz>=0.21",
   "ijson>=3.4.0.post0",
   "importlib_resources>=6.5.0",
+  "junitparser>=4.0.2",
   "kaleido>=1.2.0",
   "matplotlib>=3.10.8",
   "networkx>=3.6.1",
@@ -168,18 +169,19 @@ select = [
   "UP034",   # extraneous-parentheses
 
   # flake8 rules
-  "ANN",
-  "COM",    # flake8-commas
   "A",      # flake8-builtins
-  "C4",     # flake8-comprehensions
-  "RET",    # flake8-return
+  "ANN",    # flake8-annotations
   "ARG",    # flake8-unused-arguments
-  "PTH",    # flake8-use-pathlib
-  "SIM",    # flake8-simplify
-  "FIX",    # flake8-fixme
   "BLE",    # flake8-blind-except
-  "TID251", # banned-api (flake8-tidy-imports)
+  "C4",     # flake8-comprehensions
+  "COM",    # flake8-commas
+  "FIX",    # flake8-fixme
+  "PTH",    # flake8-use-pathlib
+  "PYI",    # flake8-pyi
+  "RET",    # flake8-return
+  "SIM",    # flake8-simplify
   "TC",     # flake8-type-checking
+  "TID251", # banned-api (flake8-tidy-imports)
 
   # Full Pylint coverage available in Ruff
   "PLE",    # pylint errors
@@ -194,6 +196,7 @@ ignore = [
   "PLR2004",  # magic-value-comparison
   "PLR5501",  # collapsible-else-if
   "FIX004",   # line-contains-hack
+  "ANN401",   # any-type
   "PD010",    # pandas-use-of-dot-pivot-or-unstack
 
   # Rules incompatible with ruff formatter
@@ -250,12 +253,18 @@ quote-style = "preserve"
 
 [tool.ty.environment]
 root = ["./varats-core", "./varats"]
-# FIXME: custom location; do not commit
-python = "/scratch/boehmseb/venvs/VaRA-TS-dev"
 
 [tool.ty.rules]
+dynamic-function-decorator-return = "error"
 missing-type-argument = "error"
 possibly-unresolved-reference = "warn"
+unsound-return-statement = "error"
+
+[[tool.ty.overrides]]
+include = ["**"]
+
+[tool.ty.overrides.analysis]
+allowed-unresolved-imports = ["benchbuild.utils.cmd"]
 
 [tool.mypy]
 warn_return_any = true
