@@ -250,6 +250,7 @@ possibly-unresolved-reference = "warn"
 unsound-return-statement = "error"
 
 [[tool.ty.overrides]]
+include = ["**"]
 
 [tool.ty.overrides.analysis]
 allowed-unresolved-imports = ["benchbuild.utils.cmd"]
