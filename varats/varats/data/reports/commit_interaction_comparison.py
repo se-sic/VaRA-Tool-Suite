@@ -15,7 +15,7 @@ from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
 )
 from varats.experiments.vara.blame_report_experiment import (
-    BlameReportExperimentRegion,
+    BlameReportExperiment,
 )
 from varats.experiments.vara.cfg_report_experiment import (
     CFCollectiveReportExperiment,
@@ -45,7 +45,7 @@ class AnalysisConfig:
     def __init__(self, analysis_type: AnalysisType) -> None:
         self.analysis_type = analysis_type
         self.experiment_type = {
-            AnalysisType.DF_ANALYSIS: BlameReportExperimentRegion,
+            AnalysisType.DF_ANALYSIS: BlameReportExperiment,
             AnalysisType.CF_DIRECT_ANALYSIS: CFDirectReportExperiment,
             AnalysisType.CF_COLLECTIVE_ANALYSIS: CFCollectiveReportExperiment,
         }[analysis_type]
