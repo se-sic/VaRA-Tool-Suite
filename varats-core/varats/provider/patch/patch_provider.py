@@ -6,6 +6,7 @@ applied during an experiment to alter the state of the project.
 """
 
 import os
+import time
 import typing as tp
 import warnings
 from pathlib import Path
@@ -282,8 +283,9 @@ class PatchProvider(Provider):
         shallow=False
     )
 
-    def __init__(self, project: tp.Type[Project]):
+    def __init__(self, project: tp.Type[Project], fetch_interval: int = 3600):
         super().__init__(project)
+        self.fetch_interval = fetch_interval
 
         self._update_local_patches_repo()
         repo = self._get_patches_repository()
@@ -300,7 +302,9 @@ class PatchProvider(Provider):
 
         # Update repository to have all upstream changes
         project_repo = get_local_project_repo(self.project.NAME)
-        fetch_repository(project_repo)
+
+        if project_repo.last_fetch >= self.fetch_interval:
+            fetch_repository(project_repo)
 
         for root, _, files in os.walk(patches_project_dir):
             for filename in files:
@@ -370,10 +374,11 @@ class PatchProvider(Provider):
             Path(target_prefix()) / cls.patches_source.local
         )
 
-    @classmethod
-    def _update_local_patches_repo(cls) -> None:
+    def _update_local_patches_repo(self) -> None:
         lock_path = Path(target_prefix()) / "patch_provider.lock"
 
         with lock_file(lock_path):
-            cls.patches_source.fetch()
-            pull_current_branch(cls._get_patches_repository())
+            patches_repo = self._get_patches_repository()
+            if (time.time() - patches_repo.last_fetch) >= self.fetch_interval:
+                self.patches_source.fetch()
+                pull_current_branch(patches_repo)
