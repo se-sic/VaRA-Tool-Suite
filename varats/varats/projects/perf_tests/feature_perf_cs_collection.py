@@ -50,7 +50,11 @@ def _do_feature_perf_cs_collection_compile(
 
     with local.cwd(feature_perf_repo.worktree_path / "build"):
         with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-            bb.watch(cmake)("..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON")
+            bb.watch(cmake)("..",
+                            "-G",
+                            "Unix Makefiles",
+                            f"-D{cmake_flag}=ON",
+                            "-DFPCSC_USE_LIBCXX=OFF")
 
         bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
@@ -230,6 +234,249 @@ class SynthSAFlowSensitivity(VProject):
     def recompile(self) -> None:
         """Recompile the project."""
         _do_feature_perf_cs_collection_recompile(self)
+
+
+# Create SimpleCall Project
+class LongerCallee(VProject):
+    """Main Class longer than function called."""
+
+    NAME = 'LongerCallee'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local=NAME,
+            refspec="origin/f-calculatedynamicweight",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(NAME)
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot(NAME) / RSBinary("LongerCallee"),
+                label="CompileTime-LongerCallee"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SimpleCall.NAME)
+        )
+        binary_map.specify_binary(
+            "build/bin/LongerCallee",
+            BinaryType.EXECUTABLE,
+            # check the hash commit number on f-CalcualteDynamicWeight branch
+            only_valid_in=
+            RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9",
+                                        "f-calculatedynamicweight")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_LONGERCALLEE"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+
+class LongerCaller(VProject):
+    """Main Class longer than function called."""
+
+    NAME = 'LongerCaller'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local=NAME,
+            refspec="origin/f-calculatedynamicweight",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(NAME)
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot(NAME) / RSBinary("LongerCaller"),
+                label="CompileTime-LongerCaller"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SimpleCall.NAME)
+        )
+        binary_map.specify_binary(
+            "build/bin/LongerCaller",
+            BinaryType.EXECUTABLE,
+            # check the hash commit number on f-CalcualteDynamicWeight branch
+            only_valid_in=
+            RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9",
+                          "f-calculatedynamicweight")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_LONGERCALLER"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+
+class SimpleCall(VProject):
+    """Main Class longer than function called."""
+
+    NAME = 'SimpleCall'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local=NAME,
+            refspec="origin/f-calculatedynamicweight",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(NAME)
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot(NAME) / RSBinary("SimpleCall"),
+                label="CompileTime-SimpleCall"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SimpleCall.NAME)
+        )
+        binary_map.specify_binary(
+            "build/bin/SimpleCall",
+            BinaryType.EXECUTABLE,
+            only_valid_in=
+            RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9",
+                          "f-calculatedynamicweight")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SIMPLECALL"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+
+class RecursiveCalls(VProject):
+    """Main Class longer than function called."""
+
+    NAME = 'RecursiveCalls'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local=NAME,
+            refspec="origin/f-calculatedynamicweight",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(NAME)
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot(NAME) / RSBinary("RecursiveCalls"),
+                label="CompileTime-RecursiveCalls"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SimpleCall.NAME)
+        )
+        binary_map.specify_binary(
+            "build/bin/RecursiveCalls",
+            BinaryType.EXECUTABLE,
+            only_valid_in=
+            RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9",
+                          "f-calculatedynamicweight")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_RECURSIVECALLS"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
 
 
 class SynthSAContextSensitivity(VProject):
