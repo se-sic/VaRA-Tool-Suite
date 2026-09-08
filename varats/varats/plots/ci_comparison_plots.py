@@ -277,14 +277,14 @@ class CommitInteractionJaccardPlot(
         )
 
         ax.set_xlim(0.0, 1.0)
-        ax.set_xlabel("Share of edge union", fontsize=13)
-        ax.set_ylabel("Project", fontsize=13)
-        ax.tick_params(axis="both", labelsize=11)
+        ax.set_xlabel("Share of edge union", fontsize=15)
+        ax.set_ylabel("Project", fontsize=15)
+        ax.tick_params(axis="both", labelsize=13)
         ax.legend(
             loc="lower center",
             bbox_to_anchor=(0.5, 1.01),
             ncol=3,
-            fontsize=11,
+            fontsize=13,
             handlelength=1.4,
             columnspacing=1.2,
         )
