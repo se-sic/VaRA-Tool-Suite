@@ -243,7 +243,10 @@ class CommitInteractionJaccardPlot(
         if data.empty:
             raise PlotDataEmpty()
 
-        figure_height = max(2.5, 0.5 * len(data) + 1.5)
+        # Use typography that remains readable after the figure is scaled for
+        # a paper.  The default Matplotlib sizes are too small for the many
+        # project labels and the legend above this plot.
+        figure_height = max(2.8, 0.6 * len(data) + 1.6)
         fig, ax = plt.subplots(figsize=(9, figure_height))
         projects = list(data["Project"])
         left_only = list(data["Left only"])
@@ -274,10 +277,17 @@ class CommitInteractionJaccardPlot(
         )
 
         ax.set_xlim(0.0, 1.0)
-        ax.set_xlabel("Share of edge union")
-        ax.set_ylabel("Project")
-        ax.set_title("Edge overlap")
-        ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3)
+        ax.set_xlabel("Share of edge union", fontsize=13)
+        ax.set_ylabel("Project", fontsize=13)
+        ax.tick_params(axis="both", labelsize=11)
+        ax.legend(
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.01),
+            ncol=3,
+            fontsize=11,
+            handlelength=1.4,
+            columnspacing=1.2,
+        )
         ax.invert_yaxis()
 
         fig.tight_layout()
@@ -424,9 +434,6 @@ class CommitInteractionEdgeWeightLogRatioPlot(
             raise PlotDataEmpty()
 
         ratios = data["Log2 weight ratio"]
-        median = float(ratios.median())
-        first_quartile = float(ratios.quantile(0.25))
-        third_quartile = float(ratios.quantile(0.75))
         left_higher = 100 * float((ratios > 0).mean())
         right_higher = 100 * float((ratios < 0).mean())
         equal = 100 * float((ratios == 0).mean())
@@ -460,12 +467,6 @@ class CommitInteractionEdgeWeightLogRatioPlot(
             linestyle="--",
             linewidth=1,
         )
-        axes.axvline(
-            median,
-            color=SHARED_COLOR,
-            linewidth=1.5,
-            label=f"Median: {median:.2f}",
-        )
         axes.set_xlim(-absolute_bound, absolute_bound)
         axes.set_xlabel(
             f"log₂({left_name} weight / {right_name} weight)"
@@ -481,9 +482,6 @@ class CommitInteractionEdgeWeightLogRatioPlot(
         axes.text(
             0.02,
             0.97,
-            f"n = {len(data):,}\n"
-            f"median = {median:.2f}\n"
-            f"IQR = [{first_quartile:.2f}, {third_quartile:.2f}]\n"
             f"{left_name} higher: {left_higher:.1f}%\n"
             f"{right_name} higher: {right_higher:.1f}%\n"
             f"equal: {equal:.1f}%",
@@ -500,7 +498,6 @@ class CommitInteractionEdgeWeightLogRatioPlot(
             Patch(color=RIGHT_COLOR, label=f"{right_name} higher"),
             Patch(color="#9d9d9d", label="Approximately equal"),
             Patch(color=LEFT_COLOR, label=f"{left_name} higher"),
-            axes.lines[-1],
         ])
         figure.tight_layout()
 
@@ -805,10 +802,14 @@ CommitInteractionNodeDegreeNumericalPlotGenerator = _pair_generator(CommitIntera
 
 class CommitInteractionNodeDegreeRankOnlyPlot(_PairPlot, plot_name="node-degree-comparison-rank"):
     def plot(self, view_mode: bool) -> None:
-        case_study, comparison, left, right = self._context(); data = shared_node_degree_dataframe(left, right)
+        case_study, comparison, left, right = self._context()
+        data = shared_node_degree_dataframe(left, right)
         if data.empty: raise PlotDataEmpty()
-        rho = shared_node_degree_spearman(left, right); figure, axes = plt.subplots(); axes.scatter(data["Left rank"], data["Right rank"], color="#b279a2", alpha=.6); _add_equality_line(axes, 1.0)
-        axes.set(xlabel="Left node rank", ylabel="Right node rank", title=f"{case_study.project_name}: node-degree rank ($\\rho$ = {_format_rho(rho)})"); figure.tight_layout()
+        rho = shared_node_degree_spearman(left, right); figure, axes = plt.subplots()
+        axes.scatter(data["Left rank"], data["Right rank"], color="#b279a2", alpha=.6)
+        _add_equality_line(axes, 1.0)
+        axes.set(xlabel="Left node rank", ylabel="Right node rank", title=f"{case_study.project_name}: node-degree rank ($\\rho$ = {_format_rho(rho)})")
+        figure.tight_layout()
 
 
 CommitInteractionNodeDegreeRankOnlyPlotGenerator = _pair_generator(CommitInteractionNodeDegreeRankOnlyPlot, "node-degree-comparison-rank")
