@@ -54,6 +54,16 @@ LEFT_COLOR = "#4c78a8"
 SHARED_COLOR = "#54a24b"
 RIGHT_COLOR = "#f58518"
 
+# Paper-facing comparison plots use typography five points larger than the
+# Matplotlib defaults while retaining the original figure dimensions.
+plt.rcParams.update({
+    "font.size": 15,
+    "axes.labelsize": 15,
+    "axes.titlesize": 17,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
+    "legend.fontsize": 12,
+})
 
 def _analysis_label(analysis_name: str) -> str:
     """Map an analysis name to its paper notation."""
@@ -255,10 +265,7 @@ class CommitInteractionJaccardPlot(
         if data.empty:
             raise PlotDataEmpty()
 
-        # Use typography that remains readable after the figure is scaled for
-        # a paper.  The default Matplotlib sizes are too small for the many
-        # project labels and the legend above this plot.
-        figure_height = max(2.8, 0.6 * len(data) + 1.6)
+        figure_height = max(2.5, 0.5 * len(data) + 1.5)
         fig, ax = plt.subplots(figsize=(9, figure_height))
         projects = list(data["Project"])
         left_only = list(data["Left only"])
@@ -290,7 +297,6 @@ class CommitInteractionJaccardPlot(
 
         ax.set_xlim(0.0, 1.0)
         ax.set_xlabel("Share of edge union", fontsize=15)
-        ax.set_ylabel("Project", fontsize=15)
         ax.tick_params(axis="both", labelsize=13)
         ax.legend(
             loc="lower center",
