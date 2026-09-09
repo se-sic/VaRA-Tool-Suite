@@ -269,19 +269,41 @@ class TopNodeDegreeTableGenerator(TableGenerator, generator_name="top-node-degre
         return [TopNodeDegreeTable(self.table_config, case_studies=self.table_kwargs.pop("case_study"), **self.table_kwargs)]
 
 
-def _top_overlap_data(case_studies: tp.Iterable[CaseStudy], author_metric: tp.Optional[str] = None) -> pd.DataFrame:
+def _top_overlap_data(
+        case_studies: tp.Iterable[CaseStudy],
+        comparison: AnalysisComparison,
+        author_metric: tp.Optional[str] = None,
+) -> pd.DataFrame:
     rows = []
+    left_name = comparison.left_analysis.value.lower()
+    right_name = comparison.right_analysis.value.lower()
+    comparison_name = (
+        f"{comparison.left_analysis.value}-"
+        f"{comparison.right_analysis.value}"
+    )
     for case_study in case_studies:
         try:
-            graphs = load_all_analysis_graphs(case_study)
-            if author_metric:
-                graphs = {name: create_author_interaction_graph(
-                    graph, case_study.project_name
-                ) for name, graph in graphs.items()}
+            left_graph, right_graph = load_comparison_graphs(
+                case_study,
+                comparison,
+            )
         except PlotDataEmpty:
             continue
+        graphs = {
+            left_name: left_graph,
+            right_name: right_graph,
+        }
+        if author_metric:
+            graphs = {
+                name: create_author_interaction_graph(
+                    graph, case_study.project_name
+                )
+                for name, graph in graphs.items()
+            }
+
         ranked = {}
-        for name, graph in graphs.items():
+        for name in (left_name, right_name):
+            graph = graphs[name]
             if author_metric:
                 values = dict(graph.degree(weight="amount")) if author_metric == "degree" else author_centrality_dataframe(graph, graph, "eigenvector").set_index("Author")["Left centrality"].to_dict()
             else:
@@ -289,24 +311,27 @@ def _top_overlap_data(case_studies: tp.Iterable[CaseStudy], author_metric: tp.Op
             ranked[name] = set(item for item, _ in top_ranked_items(values, 10))
         rows.append({
             "Project": case_study.project_name,
-            "CFD-CFC": f"{len(ranked['cfd'] & ranked['cfc'])}/10",
-            "CFD-DF": f"{len(ranked['cfd'] & ranked['df'])}/10",
-            "CFC-DF": f"{len(ranked['cfc'] & ranked['df'])}/10",
+            comparison_name: f"{len(ranked[left_name] & ranked[right_name])}/10",
         })
-    return pd.DataFrame(rows, columns=["Project", "CFD-CFC", "CFD-DF", "CFC-DF"])
+    return pd.DataFrame(rows, columns=["Project", comparison_name])
 
 
 class TopNodeDegreeOverlapTable(Table, table_name="top_node_degree_overlap_table"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        data = _top_overlap_data(self.table_kwargs["case_studies"])
+        data = _top_overlap_data(
+            self.table_kwargs["case_studies"],
+            self.table_kwargs["comparison"],
+        )
         if data.empty:
             raise TableDataEmpty()
         return dataframe_to_table(data, table_format, data.style.hide(axis="index"), wrap_table=wrap_table, wrap_landscape=True)
 
 
-class TopNodeDegreeOverlapTableGenerator(TableGenerator, generator_name="top-node-degree-overlap-table", options=[REQUIRE_MULTI_CASE_STUDY]):
+class TopNodeDegreeOverlapTableGenerator(TableGenerator, generator_name="top-node-degree-overlap-table", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
     def generate(self) -> tp.List[Table]:
-        return [TopNodeDegreeOverlapTable(self.table_config, case_studies=self.table_kwargs.pop("case_study"), **self.table_kwargs)]
+        case_studies = self.table_kwargs.pop("case_study")
+        comparison = parse_analysis_comparison(self.table_kwargs.pop("comparison"))
+        return [TopNodeDegreeOverlapTable(self.table_config, case_studies=case_studies, comparison=comparison, **self.table_kwargs)]
 
 
 class AuthorCentralitySpearmanTable(Table, table_name="author_centrality_spearman_table"):
@@ -418,7 +443,11 @@ class TopAuthorEigenvectorTableGenerator(TableGenerator, generator_name="top-aut
 
 class TopAuthorDegreeOverlapTable(Table, table_name="top_author_degree_overlap_table"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        data = _top_overlap_data(self.table_kwargs["case_studies"], "degree")
+        data = _top_overlap_data(
+            self.table_kwargs["case_studies"],
+            self.table_kwargs["comparison"],
+            "degree",
+        )
         if data.empty:
             raise TableDataEmpty()
         return dataframe_to_table(data, table_format, data.style.hide(axis="index"), wrap_table=wrap_table, wrap_landscape=True)
@@ -426,17 +455,25 @@ class TopAuthorDegreeOverlapTable(Table, table_name="top_author_degree_overlap_t
 
 class TopAuthorEigenvectorOverlapTable(Table, table_name="top_author_eigenvector_overlap_table"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        data = _top_overlap_data(self.table_kwargs["case_studies"], "eigenvector")
+        data = _top_overlap_data(
+            self.table_kwargs["case_studies"],
+            self.table_kwargs["comparison"],
+            "eigenvector",
+        )
         if data.empty:
             raise TableDataEmpty()
         return dataframe_to_table(data, table_format, data.style.hide(axis="index"), wrap_table=wrap_table, wrap_landscape=True)
 
 
-class TopAuthorDegreeOverlapTableGenerator(TableGenerator, generator_name="top-author-degree-overlap-table", options=[REQUIRE_MULTI_CASE_STUDY]):
+class TopAuthorDegreeOverlapTableGenerator(TableGenerator, generator_name="top-author-degree-overlap-table", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
     def generate(self) -> tp.List[Table]:
-        return [TopAuthorDegreeOverlapTable(self.table_config, case_studies=self.table_kwargs.pop("case_study"), **self.table_kwargs)]
+        case_studies = self.table_kwargs.pop("case_study")
+        comparison = parse_analysis_comparison(self.table_kwargs.pop("comparison"))
+        return [TopAuthorDegreeOverlapTable(self.table_config, case_studies=case_studies, comparison=comparison, **self.table_kwargs)]
 
 
-class TopAuthorEigenvectorOverlapTableGenerator(TableGenerator, generator_name="top-author-eigenvector-overlap-table", options=[REQUIRE_MULTI_CASE_STUDY]):
+class TopAuthorEigenvectorOverlapTableGenerator(TableGenerator, generator_name="top-author-eigenvector-overlap-table", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
     def generate(self) -> tp.List[Table]:
-        return [TopAuthorEigenvectorOverlapTable(self.table_config, case_studies=self.table_kwargs.pop("case_study"), **self.table_kwargs)]
+        case_studies = self.table_kwargs.pop("case_study")
+        comparison = parse_analysis_comparison(self.table_kwargs.pop("comparison"))
+        return [TopAuthorEigenvectorOverlapTable(self.table_config, case_studies=case_studies, comparison=comparison, **self.table_kwargs)]
