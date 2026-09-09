@@ -488,7 +488,7 @@ class CommitInteractionEdgeWeightLogRatioPlot(
             y_label += " (log scale)"
         axes.set_ylabel(y_label)
         axes.set_title(
-            f"{case_study.project_name}: shared-edge weight ratios"
+            f"{case_study.project_name}"
         )
         axes.grid(axis="y", alpha=0.2)
         axes.text(
@@ -599,7 +599,7 @@ class CommitInteractionEdgeWeightDistributionPlot(
         axes.set_xlabel("Edge weight")
         axes.set_ylabel("Empirical cumulative probability")
         axes.set_title(
-            f"{case_study.project_name}: edge-weight distributions"
+            f"{case_study.project_name}"
         )
         axes.legend()
         axes.grid(axis="y", alpha=0.25)
@@ -774,7 +774,7 @@ class CommitInteractionEdgeRankNumericalPlot(_PairPlot, plot_name="edge-rank-agr
         figure, axes = plt.subplots()
         axes.scatter(data["Left weight"], data["Right weight"], color=SHARED_COLOR, alpha=.6)
         _add_equality_line(axes, max(float(data["Left weight"].max()), float(data["Right weight"].max())))
-        axes.set(xlabel=f"{left_name} edge weight", ylabel=f"{right_name} edge weight", title=f"{case_study.project_name}: edge-rank agreement (numerical)")
+        axes.set(xlabel=f"{left_name} edge weight", ylabel=f"{right_name} edge weight", title=f"{case_study.project_name}")
         figure.tight_layout()
 
 
@@ -792,7 +792,7 @@ class CommitInteractionEdgeRankSpearmanPlot(_PairPlot, plot_name="edge-rank-agre
         figure, axes = plt.subplots()
         axes.scatter(data["Left rank"], data["Right rank"], color=SHARED_COLOR, alpha=.6)
         _add_equality_line(axes, 1.0)
-        axes.set(xlabel=f"{left_name} edge rank", ylabel=f"{right_name} edge rank", title=f"{case_study.project_name}: Spearman $\\rho$ = {_format_rho(rho)}")
+        axes.set(xlabel=f"{left_name} edge rank", ylabel=f"{right_name} edge rank", title=f"{case_study.project_name} ($\\rho$ = {_format_rho(rho)})")
         figure.tight_layout()
 
 
@@ -806,7 +806,7 @@ class CommitInteractionNodeDegreeNumericalPlot(_PairPlot, plot_name="node-degree
         figure, axes = plt.subplots(); axes.scatter(data["Left degree"], data["Right degree"], color="#b279a2", alpha=.6)
         _add_equality_line(axes, max(float(data["Left degree"].max()), float(data["Right degree"].max())))
         left_name, right_name = _analysis_names(comparison)
-        axes.set(xlabel=f"{left_name} unique-neighbor degree", ylabel=f"{right_name} unique-neighbor degree", title=f"{case_study.project_name}: node-degree comparison")
+        axes.set(xlabel=f"{left_name} unique-neighbor degree", ylabel=f"{right_name} unique-neighbor degree", title=f"{case_study.project_name}")
         figure.tight_layout()
 
 
@@ -822,7 +822,7 @@ class CommitInteractionNodeDegreeRankOnlyPlot(_PairPlot, plot_name="node-degree-
         axes.scatter(data["Left rank"], data["Right rank"], color="#b279a2", alpha=.6)
         _add_equality_line(axes, 1.0)
         left_name, right_name = _analysis_names(comparison)
-        axes.set(xlabel=f"{left_name} node rank", ylabel=f"{right_name} node rank", title=f"{case_study.project_name}: node-degree rank ($\\rho$ = {_format_rho(rho)})")
+        axes.set(xlabel=f"{left_name} node rank", ylabel=f"{right_name} node rank", title=f"{case_study.project_name} ($\\rho$ = {_format_rho(rho)})")
         figure.tight_layout()
 
 
@@ -858,7 +858,7 @@ class AuthorDegreeScatterPlot(_AuthorPairPlot, plot_name="scatter-plot-author-de
         figure, axes = plt.subplots(); axes.scatter(data["Left centrality"], data["Right centrality"], color=LEFT_COLOR, alpha=.65)
         _add_equality_line(axes, max(float(data["Left centrality"].max()), float(data["Right centrality"].max())))
         left_name, right_name = _analysis_names(comparison)
-        axes.set(xlabel=f"{left_name} weighted author degree", ylabel=f"{right_name} weighted author degree", title=f"{case_study.project_name}: author degree centrality")
+        axes.set(xlabel=f"{left_name} weighted author degree", ylabel=f"{right_name} weighted author degree", title=f"{case_study.project_name}")
         figure.tight_layout()
 
 
@@ -873,7 +873,7 @@ class AuthorEigenvectorScatterPlot(_AuthorPairPlot, plot_name="scatter-plot-auth
         figure, axes = plt.subplots(); axes.scatter(data["Left centrality"], data["Right centrality"], color=RIGHT_COLOR, alpha=.65)
         _add_equality_line(axes, max(float(data["Left centrality"].max()), float(data["Right centrality"].max())))
         left_name, right_name = _analysis_names(comparison)
-        axes.set(xlabel=f"{left_name} eigenvector centrality", ylabel=f"{right_name} eigenvector centrality", title=f"{case_study.project_name}: author eigenvector centrality")
+        axes.set(xlabel=f"{left_name} eigenvector centrality", ylabel=f"{right_name} eigenvector centrality", title=f"{case_study.project_name}")
         figure.tight_layout()
 
 
@@ -888,7 +888,7 @@ class AuthorDegreeRankPlot(_AuthorPairPlot, plot_name="spearman-plot-author-degr
         rho = spearman_rank_correlation(data["Left centrality"], data["Right centrality"])
         figure, axes = plt.subplots(); axes.scatter(data["Left rank"], data["Right rank"], color=LEFT_COLOR, alpha=.65); _add_equality_line(axes, max(float(data["Left rank"].max()), float(data["Right rank"].max()), 1.0))
         left_name, right_name = _analysis_names(comparison)
-        axes.set(xlabel=f"{left_name} author degree rank", ylabel=f"{right_name} author degree rank", title=f"{case_study.project_name}: degree rank ($\\rho$ = {_format_rho(rho)})"); figure.tight_layout()
+        axes.set(xlabel=f"{left_name} author degree rank", ylabel=f"{right_name} author degree rank", title=f"{case_study.project_name} ($\\rho$ = {_format_rho(rho)})"); figure.tight_layout()
 
 
 AuthorDegreeRankPlotGenerator = _pair_generator(AuthorDegreeRankPlot, "spearman-plot-author-degree-rank")
@@ -902,7 +902,7 @@ class AuthorEigenvectorRankPlot(_AuthorPairPlot, plot_name="spearman-plot-author
         rho = spearman_rank_correlation(data["Left centrality"], data["Right centrality"])
         figure, axes = plt.subplots(); axes.scatter(data["Left rank"], data["Right rank"], color=RIGHT_COLOR, alpha=.65); _add_equality_line(axes, max(float(data["Left rank"].max()), float(data["Right rank"].max()), 1.0))
         left_name, right_name = _analysis_names(comparison)
-        axes.set(xlabel=f"{left_name} eigenvector rank", ylabel=f"{right_name} eigenvector rank", title=f"{case_study.project_name}: eigenvector rank ($\\rho$ = {_format_rho(rho)})"); figure.tight_layout()
+        axes.set(xlabel=f"{left_name} eigenvector rank", ylabel=f"{right_name} eigenvector rank", title=f"{case_study.project_name} ($\\rho$ = {_format_rho(rho)})"); figure.tight_layout()
 
 
 AuthorEigenvectorRankPlotGenerator = _pair_generator(AuthorEigenvectorRankPlot, "spearman-plot-author-eigen-rank")
@@ -930,7 +930,7 @@ class _RankDifferencePlot(_PairPlot, plot_name=None):
         labels = [_display for _display in map(str, data["Item"])]
         figure, axes = plt.subplots(figsize=(9, max(4, .35 * len(labels))))
         y = list(range(len(labels))); axes.barh(y, data["Right rank"] - data["Left rank"], color=SHARED_COLOR); axes.axvline(0, color="#555", linewidth=.8)
-        axes.set_yticks(y, labels); axes.invert_yaxis(); axes.set(xlabel="Right rank − left rank", ylabel="Top-10 union item", title=f"{case_study.project_name}: top-10 rank difference ({comparison.display_name})"); figure.tight_layout()
+        axes.set_yticks(y, labels); axes.invert_yaxis(); axes.set(xlabel="Right rank − left rank", title=f"{case_study.project_name}"); figure.tight_layout()
 
 
 class NodeTop10RankDifferencePlot(_RankDifferencePlot, plot_name="node-rank-difference"):
