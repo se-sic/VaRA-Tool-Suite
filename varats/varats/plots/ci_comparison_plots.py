@@ -521,7 +521,7 @@ class CommitInteractionEdgeWeightLogRatioPlot(
             Patch(color="#9d9d9d", label="Approximately equal"),
             Patch(color=LEFT_COLOR, label=f"{left_name} higher")
             ],
-            fontsize=17,
+            fontsize=14,
         )
         figure.tight_layout()
 
