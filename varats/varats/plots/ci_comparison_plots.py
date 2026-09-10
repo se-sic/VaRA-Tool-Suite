@@ -33,7 +33,7 @@ from varats.plot.plots import PlotGenerator
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.exceptions import UnsupportedOperation
-from varats.utils.git_util import FullCommitHash
+from varats.utils.git_util import CommitRepoPair, FullCommitHash
 
 REQUIRE_ANALYSIS_COMPARISON: CLIOptionTy = make_cli_option(
     "--comparison",
@@ -53,6 +53,7 @@ REQUIRE_ANALYSIS_COMPARISON: CLIOptionTy = make_cli_option(
 LEFT_COLOR = "#4c78a8"
 SHARED_COLOR = "#54a24b"
 RIGHT_COLOR = "#f58518"
+SQUARE_FIGURE_SIZE = (7, 7)
 
 # Paper-facing comparison plots use typography five points larger than the
 # Matplotlib defaults while retaining the original figure dimensions.
@@ -60,9 +61,9 @@ plt.rcParams.update({
     "font.size": 17,
     "axes.labelsize": 20,
     "axes.titlesize": 25,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
-    "legend.fontsize": 15,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14,
+    "legend.fontsize": 16,
 })
 
 def _analysis_label(analysis_name: str) -> str:
@@ -103,6 +104,13 @@ def _add_equality_line(axes: plt.Axes, upper_bound: float) -> None:
 def _format_rho(rho: float) -> str:
     """Format Spearman's rho, including its undefined state."""
     return "undefined" if math.isnan(rho) else f"{rho:.3f}"
+
+
+def _rank_item_label(item: tp.Hashable) -> str:
+    """Format rank-difference items compactly for axis labels."""
+    if isinstance(item, CommitRepoPair):
+        return item.commit_hash.hash[:7]
+    return str(item)
 
 
 def _color_log_ratio_bars(bars: tp.Iterable[Rectangle]) -> None:
@@ -265,8 +273,7 @@ class CommitInteractionJaccardPlot(
         if data.empty:
             raise PlotDataEmpty()
 
-        figure_height = max(2.5, 0.5 * len(data) + 1.5)
-        fig, ax = plt.subplots(figsize=(9, figure_height))
+        fig, ax = plt.subplots(figsize=SQUARE_FIGURE_SIZE)
         projects = list(data["Project"])
         left_only = list(data["Left only"])
         shared = list(data["Shared"])
@@ -371,7 +378,7 @@ class CommitInteractionEdgeWeightDifferencePlot(
         if data.empty:
             raise PlotDataEmpty()
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=SQUARE_FIGURE_SIZE)
 
         ax.bar(
             data["Edge-weight difference"],
@@ -386,10 +393,7 @@ class CommitInteractionEdgeWeightDifferencePlot(
 
         ax.set_xlabel("Edge-weight difference")
         ax.set_ylabel("Number of edges")
-        ax.set_title(
-            f"{case_study.project_name}: "
-            f"{comparison.display_name}"
-        )
+        ax.set_title(case_study.project_name)
 
         fig.tight_layout()
 
@@ -461,7 +465,7 @@ class CommitInteractionEdgeWeightLogRatioPlot(
         if absolute_bound == 0:
             absolute_bound = 1.0
 
-        figure, axes = plt.subplots(figsize=(9, 5.5))
+        figure, axes = plt.subplots(figsize=SQUARE_FIGURE_SIZE)
         counts, _, bars = axes.hist(
             ratios,
             bins=41,
@@ -577,7 +581,7 @@ class CommitInteractionEdgeWeightDistributionPlot(
         if data.empty:
             raise PlotDataEmpty()
 
-        figure, axes = plt.subplots()
+        figure, axes = plt.subplots(figsize=SQUARE_FIGURE_SIZE)
         for analysis, color in (
                 (left_name, LEFT_COLOR),
                 (right_name, RIGHT_COLOR),
@@ -676,7 +680,9 @@ class AuthorInteractionGraphComparisonPlot(
         if not positions:
             raise PlotDataEmpty()
 
-        figure, axes = plt.subplots(1, 2, figsize=(14, 7))
+        figure, axes = plt.subplots(
+            1, 2, figsize=SQUARE_FIGURE_SIZE
+        )
         _draw_author_graph(
             axes[0],
             left_author_graph,
@@ -740,12 +746,6 @@ class AuthorInteractionGraphComparisonPlotGenerator(
         ]
 
 
-# The original comparison plots above intentionally remain available for
-# backwards compatibility.  The following focused plots are the names used
-# by the thesis report generation scripts; each generated figure represents
-# one project, so projects can be composed into a figure in LaTeX.
-
-
 class _PairPlot(Plot, plot_name=None):
     def calc_missing_revisions(
             self, boundary_gradient: float,
@@ -779,7 +779,7 @@ class CommitInteractionEdgeRankNumericalPlot(_PairPlot, plot_name="edge-rank-agr
         if data.empty:
             raise PlotDataEmpty()
         left_name, right_name = _analysis_names(comparison)
-        figure, axes = plt.subplots()
+        figure, axes = plt.subplots(figsize=SQUARE_FIGURE_SIZE)
         axes.scatter(data["Left weight"], data["Right weight"], color=SHARED_COLOR, alpha=.6)
         _add_equality_line(axes, max(float(data["Left weight"].max()), float(data["Right weight"].max())))
         axes.set(xlabel=f"{left_name} edge weight", ylabel=f"{right_name} edge weight", title=f"{case_study.project_name}")
@@ -797,7 +797,7 @@ class CommitInteractionEdgeRankSpearmanPlot(_PairPlot, plot_name="edge-rank-agre
             raise PlotDataEmpty()
         rho = shared_edge_weight_spearman(left, right)
         left_name, right_name = _analysis_names(comparison)
-        figure, axes = plt.subplots()
+        figure, axes = plt.subplots(figsize=SQUARE_FIGURE_SIZE)
         axes.scatter(data["Left rank"], data["Right rank"], color=SHARED_COLOR, alpha=.6)
         _add_equality_line(axes, 1.0)
         axes.set(xlabel=f"{left_name} edge rank", ylabel=f"{right_name} edge rank", title=f"{case_study.project_name} ($\\rho$ = {_format_rho(rho)})")
@@ -811,7 +811,7 @@ class CommitInteractionNodeDegreeNumericalPlot(_PairPlot, plot_name="node-degree
     def plot(self, view_mode: bool) -> None:
         case_study, comparison, left, right = self._context(); data = shared_node_degree_dataframe(left, right)
         if data.empty: raise PlotDataEmpty()
-        figure, axes = plt.subplots(); axes.scatter(data["Left degree"], data["Right degree"], color="#b279a2", alpha=.6)
+        figure, axes = plt.subplots(figsize=SQUARE_FIGURE_SIZE); axes.scatter(data["Left degree"], data["Right degree"], color="#b279a2", alpha=.6)
         _add_equality_line(axes, max(float(data["Left degree"].max()), float(data["Right degree"].max())))
         left_name, right_name = _analysis_names(comparison)
         axes.set(xlabel=f"{left_name} unique-neighbor degree", ylabel=f"{right_name} unique-neighbor degree", title=f"{case_study.project_name}")
@@ -826,7 +826,7 @@ class CommitInteractionNodeDegreeRankOnlyPlot(_PairPlot, plot_name="node-degree-
         case_study, comparison, left, right = self._context()
         data = shared_node_degree_dataframe(left, right)
         if data.empty: raise PlotDataEmpty()
-        rho = shared_node_degree_spearman(left, right); figure, axes = plt.subplots()
+        rho = shared_node_degree_spearman(left, right); figure, axes = plt.subplots(figsize=SQUARE_FIGURE_SIZE)
         axes.scatter(data["Left rank"], data["Right rank"], color="#b279a2", alpha=.6)
         _add_equality_line(axes, 1.0)
         left_name, right_name = _analysis_names(comparison)
@@ -863,7 +863,7 @@ class AuthorDegreeScatterPlot(_AuthorPairPlot, plot_name="scatter-plot-author-de
     def plot(self, view_mode: bool) -> None:
         case_study, comparison, data, _, _ = self._author_data()
         if data.empty: raise PlotDataEmpty()
-        figure, axes = plt.subplots(); axes.scatter(data["Left centrality"], data["Right centrality"], color=LEFT_COLOR, alpha=.65)
+        figure, axes = plt.subplots(figsize=SQUARE_FIGURE_SIZE); axes.scatter(data["Left centrality"], data["Right centrality"], color=LEFT_COLOR, alpha=.65)
         _add_equality_line(axes, max(float(data["Left centrality"].max()), float(data["Right centrality"].max())))
         left_name, right_name = _analysis_names(comparison)
         axes.set(xlabel=f"{left_name} weighted author degree", ylabel=f"{right_name} weighted author degree", title=f"{case_study.project_name}")
@@ -878,7 +878,7 @@ class AuthorEigenvectorScatterPlot(_AuthorPairPlot, plot_name="scatter-plot-auth
     def plot(self, view_mode: bool) -> None:
         case_study, comparison, data, _, _ = self._author_data()
         if data.empty: raise PlotDataEmpty()
-        figure, axes = plt.subplots(); axes.scatter(data["Left centrality"], data["Right centrality"], color=RIGHT_COLOR, alpha=.65)
+        figure, axes = plt.subplots(figsize=SQUARE_FIGURE_SIZE); axes.scatter(data["Left centrality"], data["Right centrality"], color=RIGHT_COLOR, alpha=.65)
         _add_equality_line(axes, max(float(data["Left centrality"].max()), float(data["Right centrality"].max())))
         left_name, right_name = _analysis_names(comparison)
         axes.set(xlabel=f"{left_name} eigenvector centrality", ylabel=f"{right_name} eigenvector centrality", title=f"{case_study.project_name}")
@@ -894,7 +894,7 @@ class AuthorDegreeRankPlot(_AuthorPairPlot, plot_name="spearman-plot-author-degr
         case_study, comparison, data, _, _ = self._author_data()
         if data.empty: raise PlotDataEmpty()
         rho = spearman_rank_correlation(data["Left centrality"], data["Right centrality"])
-        figure, axes = plt.subplots(); axes.scatter(data["Left rank"], data["Right rank"], color=LEFT_COLOR, alpha=.65); _add_equality_line(axes, max(float(data["Left rank"].max()), float(data["Right rank"].max()), 1.0))
+        figure, axes = plt.subplots(figsize=SQUARE_FIGURE_SIZE); axes.scatter(data["Left rank"], data["Right rank"], color=LEFT_COLOR, alpha=.65); _add_equality_line(axes, max(float(data["Left rank"].max()), float(data["Right rank"].max()), 1.0))
         left_name, right_name = _analysis_names(comparison)
         axes.set(xlabel=f"{left_name} author degree rank", ylabel=f"{right_name} author degree rank", title=f"{case_study.project_name} ($\\rho$ = {_format_rho(rho)})"); figure.tight_layout()
 
@@ -908,7 +908,7 @@ class AuthorEigenvectorRankPlot(_AuthorPairPlot, plot_name="spearman-plot-author
         case_study, comparison, data, _, _ = self._author_data()
         if data.empty: raise PlotDataEmpty()
         rho = spearman_rank_correlation(data["Left centrality"], data["Right centrality"])
-        figure, axes = plt.subplots(); axes.scatter(data["Left rank"], data["Right rank"], color=RIGHT_COLOR, alpha=.65); _add_equality_line(axes, max(float(data["Left rank"].max()), float(data["Right rank"].max()), 1.0))
+        figure, axes = plt.subplots(figsize=SQUARE_FIGURE_SIZE); axes.scatter(data["Left rank"], data["Right rank"], color=RIGHT_COLOR, alpha=.65); _add_equality_line(axes, max(float(data["Left rank"].max()), float(data["Right rank"].max()), 1.0))
         left_name, right_name = _analysis_names(comparison)
         axes.set(xlabel=f"{left_name} eigenvector rank", ylabel=f"{right_name} eigenvector rank", title=f"{case_study.project_name} ($\\rho$ = {_format_rho(rho)})"); figure.tight_layout()
 
@@ -935,10 +935,11 @@ class _RankDifferencePlot(_PairPlot, plot_name=None):
     def plot(self, view_mode: bool) -> None:
         case_study, comparison, data = self._rank_difference()
         if data.empty: raise PlotDataEmpty()
-        labels = [_display for _display in map(str, data["Item"])]
-        figure, axes = plt.subplots(figsize=(9, max(4, .35 * len(labels))))
+        left_name, right_name = _analysis_names(comparison)
+        labels = [_rank_item_label(item) for item in data["Item"]]
+        figure, axes = plt.subplots(figsize=SQUARE_FIGURE_SIZE)
         y = list(range(len(labels))); axes.barh(y, data["Right rank"] - data["Left rank"], color=SHARED_COLOR); axes.axvline(0, color="#555", linewidth=.8)
-        axes.set_yticks(y, labels); axes.invert_yaxis(); axes.set(xlabel="Right rank − left rank", title=f"{case_study.project_name}"); figure.tight_layout()
+        axes.set_yticks(y, labels); axes.invert_yaxis(); axes.set(xlabel=f"{right_name} rank − {left_name} rank", title=f"{case_study.project_name}"); figure.tight_layout()
 
 
 class NodeTop10RankDifferencePlot(_RankDifferencePlot, plot_name="node-rank-difference"):
