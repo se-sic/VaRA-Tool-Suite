@@ -57,12 +57,12 @@ RIGHT_COLOR = "#f58518"
 # Paper-facing comparison plots use typography five points larger than the
 # Matplotlib defaults while retaining the original figure dimensions.
 plt.rcParams.update({
-    "font.size": 15,
-    "axes.labelsize": 15,
-    "axes.titlesize": 17,
+    "font.size": 17,
+    "axes.labelsize": 20,
+    "axes.titlesize": 25,
     "xtick.labelsize": 12,
     "ytick.labelsize": 12,
-    "legend.fontsize": 12,
+    "legend.fontsize": 15,
 })
 
 def _analysis_label(analysis_name: str) -> str:
@@ -296,13 +296,13 @@ class CommitInteractionJaccardPlot(
         )
 
         ax.set_xlim(0.0, 1.0)
-        ax.set_xlabel("Share of edge union", fontsize=15)
-        ax.tick_params(axis="both", labelsize=13)
+        ax.set_xlabel("Share of edge union", fontsize=25)
+        ax.tick_params(axis="both", labelsize=20)
         ax.legend(
             loc="lower center",
             bbox_to_anchor=(0.5, 1.01),
             ncol=3,
-            fontsize=13,
+            fontsize=17,
             handlelength=1.4,
             columnspacing=1.2,
         )
@@ -489,7 +489,7 @@ class CommitInteractionEdgeWeightLogRatioPlot(
         axes.set_xlabel(
             f"log₂({left_name} weight / {right_name} weight)"
         )
-        y_label = "Number of shared edges"
+        y_label = "Shared edges"
         if use_log_scale:
             y_label += " (log scale)"
         axes.set_ylabel(y_label)
@@ -515,8 +515,10 @@ class CommitInteractionEdgeWeightLogRatioPlot(
         axes.legend(handles=[
             Patch(color=RIGHT_COLOR, label=f"{right_name} higher"),
             Patch(color="#9d9d9d", label="Approximately equal"),
-            Patch(color=LEFT_COLOR, label=f"{left_name} higher"),
-        ])
+            Patch(color=LEFT_COLOR, label=f"{left_name} higher")
+            ],
+            fontsize=17,
+        )
         figure.tight_layout()
 
     def calc_missing_revisions(
@@ -603,7 +605,7 @@ class CommitInteractionEdgeWeightDistributionPlot(
 
         axes.set_ylim(0.0, 1.0)
         axes.set_xlabel("Edge weight")
-        axes.set_ylabel("Empirical cumulative probability")
+        axes.set_ylabel("Cumulative probability")
         axes.set_title(
             f"{case_study.project_name}"
         )
