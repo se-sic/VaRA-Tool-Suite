@@ -516,13 +516,6 @@ class CommitInteractionEdgeWeightLogRatioPlot(
                 "edgecolor": "#cccccc",
             },
         )
-        axes.legend(handles=[
-            Patch(color=RIGHT_COLOR, label=f"{right_name} higher"),
-            Patch(color="#9d9d9d", label="Approximately equal"),
-            Patch(color=LEFT_COLOR, label=f"{left_name} higher")
-            ],
-            fontsize=14,
-        )
         figure.tight_layout()
 
     def calc_missing_revisions(
