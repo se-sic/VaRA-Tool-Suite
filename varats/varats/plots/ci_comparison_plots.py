@@ -55,8 +55,7 @@ SHARED_COLOR = "#54a24b"
 RIGHT_COLOR = "#f58518"
 SQUARE_FIGURE_SIZE = (7, 7)
 
-# Paper-facing comparison plots use typography five points larger than the
-# Matplotlib defaults while retaining the original figure dimensions.
+
 plt.rcParams.update({
     "font.size": 17,
     "axes.labelsize": 20,
@@ -240,7 +239,7 @@ def _draw_author_graph(
 
 class CommitInteractionJaccardPlot(
     Plot,
-    plot_name="jaccard-comparison-plot",
+    plot_name="cig-edge-jaccard ",
 ):
     """Plot common and exclusive edge shares across case studies."""
 
@@ -326,7 +325,7 @@ class CommitInteractionJaccardPlot(
 
 class CommitInteractionJaccardPlotGenerator(
     PlotGenerator,
-    generator_name="jaccard-comparison-plot",
+    generator_name="cig-edge-jaccard",
     options=[
         REQUIRE_MULTI_CASE_STUDY,
         REQUIRE_ANALYSIS_COMPARISON,
@@ -353,90 +352,9 @@ class CommitInteractionJaccardPlotGenerator(
         ]
 
 
-class CommitInteractionEdgeWeightDifferencePlot(
-    Plot,
-    plot_name="edge-weight-comparison",
-):
-    """Plot frequencies of pairwise edge-weight differences."""
-
-    def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
-        comparison: AnalysisComparison = (
-            self.plot_kwargs["comparison"]
-        )
-
-        left_graph, right_graph = load_comparison_graphs(
-            case_study,
-            comparison,
-        )
-
-        data = edge_weight_difference_dataframe(
-            left_graph,
-            right_graph,
-        )
-
-        if data.empty:
-            raise PlotDataEmpty()
-
-        fig, ax = plt.subplots(figsize=SQUARE_FIGURE_SIZE)
-
-        ax.bar(
-            data["Edge-weight difference"],
-            data["Frequency"],
-        )
-
-        ax.axvline(
-            0,
-            linewidth=1,
-            linestyle="--",
-        )
-
-        ax.set_xlabel("Edge-weight difference")
-        ax.set_ylabel("Number of edges")
-        ax.set_title(case_study.project_name)
-
-        fig.tight_layout()
-
-    def calc_missing_revisions(
-            self,
-            boundary_gradient: float,
-    ) -> tp.Set[FullCommitHash]:
-        raise UnsupportedOperation
-
-
-class CommitInteractionEdgeWeightDifferencePlotGenerator(
-    PlotGenerator,
-    generator_name="edge-weight-comparison-generator",
-    options=[
-        REQUIRE_MULTI_CASE_STUDY,
-        REQUIRE_ANALYSIS_COMPARISON,
-    ],
-):
-    """Generate one edge-weight-difference plot per case study."""
-
-    def generate(self) -> tp.List[Plot]:
-        case_studies: tp.List[CaseStudy] = (
-            self.plot_kwargs.pop("case_study")
-        )
-
-        comparison = parse_analysis_comparison(
-            self.plot_kwargs.pop("comparison")
-        )
-
-        return [
-            CommitInteractionEdgeWeightDifferencePlot(
-                self.plot_config,
-                case_study=case_study,
-                comparison=comparison,
-                **self.plot_kwargs,
-            )
-            for case_study in case_studies
-        ]
-
-
 class CommitInteractionEdgeWeightLogRatioPlot(
     Plot,
-    plot_name="edge-weight-log-ratio-comparison",
+    plot_name="cig-edge-weight-log",
 ):
     """Plot log2 weight ratios for positive-weight shared edges."""
 
@@ -527,7 +445,7 @@ class CommitInteractionEdgeWeightLogRatioPlot(
 
 class CommitInteractionEdgeWeightLogRatioPlotGenerator(
     PlotGenerator,
-    generator_name="edge-weight-log-ratio-comparison",
+    generator_name="cig-edge-weight-log",
     options=[
         REQUIRE_MULTI_CASE_STUDY,
         REQUIRE_ANALYSIS_COMPARISON,
@@ -551,101 +469,9 @@ class CommitInteractionEdgeWeightLogRatioPlotGenerator(
         ]
 
 
-class CommitInteractionEdgeWeightDistributionPlot(
-    Plot,
-    plot_name="edge-weight-distribution-comparison",
-):
-    """Compare all edge weights with empirical CDFs."""
-
-    def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
-        comparison: AnalysisComparison = self.plot_kwargs["comparison"]
-        left_name, right_name = _analysis_names(comparison)
-        left_graph, right_graph = load_comparison_graphs(
-            case_study,
-            comparison,
-        )
-        data = edge_weight_distribution_dataframe(
-            left_graph,
-            right_graph,
-            left_name,
-            right_name,
-        )
-        if data.empty:
-            raise PlotDataEmpty()
-
-        figure, axes = plt.subplots(figsize=SQUARE_FIGURE_SIZE)
-        for analysis, color in (
-                (left_name, LEFT_COLOR),
-                (right_name, RIGHT_COLOR),
-        ):
-            weights = sorted(
-                float(weight)
-                for weight in data.loc[
-                    data["Analysis"] == analysis,
-                    "Weight",
-                ]
-            )
-            if not weights:
-                continue
-            cumulative_probability = [
-                index / len(weights)
-                for index in range(1, len(weights) + 1)
-            ]
-            axes.step(
-                weights,
-                cumulative_probability,
-                where="post",
-                label=f"{_analysis_label(analysis)} (n={len(weights)})",
-                color=color,
-            )
-
-        axes.set_ylim(0.0, 1.0)
-        axes.set_xlabel("Edge weight")
-        axes.set_ylabel("Cumulative probability")
-        axes.set_title(
-            f"{case_study.project_name}"
-        )
-        axes.legend()
-        axes.grid(axis="y", alpha=0.25)
-        figure.tight_layout()
-
-    def calc_missing_revisions(
-            self,
-            boundary_gradient: float,
-    ) -> tp.Set[FullCommitHash]:
-        raise UnsupportedOperation
-
-
-class CommitInteractionEdgeWeightDistributionPlotGenerator(
-    PlotGenerator,
-    generator_name="edge-weight-distribution-comparison",
-    options=[
-        REQUIRE_MULTI_CASE_STUDY,
-        REQUIRE_ANALYSIS_COMPARISON,
-    ],
-):
-    """Generate one edge-weight ECDF comparison per case study."""
-
-    def generate(self) -> tp.List[Plot]:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
-        comparison = parse_analysis_comparison(
-            self.plot_kwargs.pop("comparison")
-        )
-        return [
-            CommitInteractionEdgeWeightDistributionPlot(
-                self.plot_config,
-                case_study=case_study,
-                comparison=comparison,
-                **self.plot_kwargs,
-            )
-            for case_study in case_studies
-        ]
-
-
 class AuthorInteractionGraphComparisonPlot(
     Plot,
-    plot_name="author-interaction-comparison-plot",
+    plot_name="aig-network",
 ):
     """Plot two author-interaction graphs using a shared node layout."""
 
@@ -714,7 +540,7 @@ class AuthorInteractionGraphComparisonPlot(
 
 class AuthorInteractionGraphComparisonPlotGenerator(
     PlotGenerator,
-    generator_name="author-interaction-comparison-plot",
+    generator_name="aig-network",
     options=[
         REQUIRE_MULTI_CASE_STUDY,
         REQUIRE_ANALYSIS_COMPARISON,
@@ -765,7 +591,7 @@ def _pair_generator(
     return _Generator
 
 
-class CommitInteractionEdgeRankNumericalPlot(_PairPlot, plot_name="edge-rank-agreement-numerical"):
+class CommitInteractionEdgeRankNumericalPlot(_PairPlot, plot_name="cig-edge-weight-num"):
     def plot(self, view_mode: bool) -> None:
         case_study, comparison, left, right = self._context()
         data = shared_edge_weight_dataframe(left, right)
@@ -779,10 +605,10 @@ class CommitInteractionEdgeRankNumericalPlot(_PairPlot, plot_name="edge-rank-agr
         figure.tight_layout()
 
 
-CommitInteractionEdgeRankNumericalPlotGenerator = _pair_generator(CommitInteractionEdgeRankNumericalPlot, "edge-rank-agreement-numerical")
+CommitInteractionEdgeRankNumericalPlotGenerator = _pair_generator(CommitInteractionEdgeRankNumericalPlot, "cig-edge-weight-num")
 
 
-class CommitInteractionEdgeRankSpearmanPlot(_PairPlot, plot_name="edge-rank-agreement-spearman"):
+class CommitInteractionEdgeRankSpearmanPlot(_PairPlot, plot_name="cig-edge-weight-spearman"):
     def plot(self, view_mode: bool) -> None:
         case_study, comparison, left, right = self._context()
         data = shared_edge_weight_dataframe(left, right)
@@ -797,10 +623,10 @@ class CommitInteractionEdgeRankSpearmanPlot(_PairPlot, plot_name="edge-rank-agre
         figure.tight_layout()
 
 
-CommitInteractionEdgeRankSpearmanPlotGenerator = _pair_generator(CommitInteractionEdgeRankSpearmanPlot, "edge-rank-agreement-spearman")
+CommitInteractionEdgeRankSpearmanPlotGenerator = _pair_generator(CommitInteractionEdgeRankSpearmanPlot, "cig-edge-weight-spearman")
 
 
-class CommitInteractionNodeDegreeNumericalPlot(_PairPlot, plot_name="node-degree-comparison-numerical"):
+class CommitInteractionNodeDegreeNumericalPlot(_PairPlot, plot_name="cig-node-degree-num"):
     def plot(self, view_mode: bool) -> None:
         case_study, comparison, left, right = self._context(); data = shared_node_degree_dataframe(left, right)
         if data.empty: raise PlotDataEmpty()
@@ -811,10 +637,10 @@ class CommitInteractionNodeDegreeNumericalPlot(_PairPlot, plot_name="node-degree
         figure.tight_layout()
 
 
-CommitInteractionNodeDegreeNumericalPlotGenerator = _pair_generator(CommitInteractionNodeDegreeNumericalPlot, "node-degree-comparison-numerical")
+CommitInteractionNodeDegreeNumericalPlotGenerator = _pair_generator(CommitInteractionNodeDegreeNumericalPlot, "cig-node-degree-num")
 
 
-class CommitInteractionNodeDegreeRankOnlyPlot(_PairPlot, plot_name="node-degree-comparison-rank"):
+class CommitInteractionNodeDegreeRankOnlyPlot(_PairPlot, plot_name="cig-node-degree-spearman"):
     def plot(self, view_mode: bool) -> None:
         case_study, comparison, left, right = self._context()
         data = shared_node_degree_dataframe(left, right)
@@ -827,7 +653,7 @@ class CommitInteractionNodeDegreeRankOnlyPlot(_PairPlot, plot_name="node-degree-
         figure.tight_layout()
 
 
-CommitInteractionNodeDegreeRankOnlyPlotGenerator = _pair_generator(CommitInteractionNodeDegreeRankOnlyPlot, "node-degree-comparison-rank")
+CommitInteractionNodeDegreeRankOnlyPlotGenerator = _pair_generator(CommitInteractionNodeDegreeRankOnlyPlot, "cig-node-degree-spearman")
 
 
 def _author_pair_data(
@@ -851,7 +677,7 @@ class _AuthorPairPlot(_PairPlot, plot_name=None):
         return case_study, comparison, data, left, right
 
 
-class AuthorDegreeScatterPlot(_AuthorPairPlot, plot_name="scatter-plot-author-degree"):
+class AuthorDegreeScatterPlot(_AuthorPairPlot, plot_name="aig-degree-scatter"):
     metric = "degree"
     def plot(self, view_mode: bool) -> None:
         case_study, comparison, data, _, _ = self._author_data()
@@ -863,10 +689,10 @@ class AuthorDegreeScatterPlot(_AuthorPairPlot, plot_name="scatter-plot-author-de
         figure.tight_layout()
 
 
-AuthorDegreeScatterPlotGenerator = _pair_generator(AuthorDegreeScatterPlot, "scatter-plot-author-degree")
+AuthorDegreeScatterPlotGenerator = _pair_generator(AuthorDegreeScatterPlot, "aig-degree-scatter")
 
 
-class AuthorEigenvectorScatterPlot(_AuthorPairPlot, plot_name="scatter-plot-author-eigenvector"):
+class AuthorEigenvectorScatterPlot(_AuthorPairPlot, plot_name="aig-eigen-scatter"):
     metric = "eigenvector"
     def plot(self, view_mode: bool) -> None:
         case_study, comparison, data, _, _ = self._author_data()
@@ -878,10 +704,10 @@ class AuthorEigenvectorScatterPlot(_AuthorPairPlot, plot_name="scatter-plot-auth
         figure.tight_layout()
 
 
-AuthorEigenvectorScatterPlotGenerator = _pair_generator(AuthorEigenvectorScatterPlot, "scatter-plot-author-eigenvector")
+AuthorEigenvectorScatterPlotGenerator = _pair_generator(AuthorEigenvectorScatterPlot, "aig-eigen-scatter")
 
 
-class AuthorDegreeRankPlot(_AuthorPairPlot, plot_name="spearman-plot-author-degree-rank"):
+class AuthorDegreeRankPlot(_AuthorPairPlot, plot_name="aig-degree-spearman"):
     metric = "degree"
     def plot(self, view_mode: bool) -> None:
         case_study, comparison, data, _, _ = self._author_data()
@@ -892,10 +718,10 @@ class AuthorDegreeRankPlot(_AuthorPairPlot, plot_name="spearman-plot-author-degr
         axes.set(xlabel=f"{left_name} author degree rank", ylabel=f"{right_name} author degree rank", title=f"{case_study.project_name} ($\\rho$ = {_format_rho(rho)})"); figure.tight_layout()
 
 
-AuthorDegreeRankPlotGenerator = _pair_generator(AuthorDegreeRankPlot, "spearman-plot-author-degree-rank")
+AuthorDegreeRankPlotGenerator = _pair_generator(AuthorDegreeRankPlot, "aig-degree-spearman")
 
 
-class AuthorEigenvectorRankPlot(_AuthorPairPlot, plot_name="spearman-plot-author-eigen-rank"):
+class AuthorEigenvectorRankPlot(_AuthorPairPlot, plot_name="aig-eigen-spearman"):
     metric = "eigenvector"
     def plot(self, view_mode: bool) -> None:
         case_study, comparison, data, _, _ = self._author_data()
@@ -906,7 +732,7 @@ class AuthorEigenvectorRankPlot(_AuthorPairPlot, plot_name="spearman-plot-author
         axes.set(xlabel=f"{left_name} eigenvector rank", ylabel=f"{right_name} eigenvector rank", title=f"{case_study.project_name} ($\\rho$ = {_format_rho(rho)})"); figure.tight_layout()
 
 
-AuthorEigenvectorRankPlotGenerator = _pair_generator(AuthorEigenvectorRankPlot, "spearman-plot-author-eigen-rank")
+AuthorEigenvectorRankPlotGenerator = _pair_generator(AuthorEigenvectorRankPlot, "aig-eigen-spearman")
 
 
 class _RankDifferencePlot(_PairPlot, plot_name=None):
@@ -935,22 +761,22 @@ class _RankDifferencePlot(_PairPlot, plot_name=None):
         axes.set_yticks(y, labels); axes.invert_yaxis(); axes.set(xlabel=f"{right_name} rank − {left_name} rank", title=f"{case_study.project_name}"); figure.tight_layout()
 
 
-class NodeTop10RankDifferencePlot(_RankDifferencePlot, plot_name="node-rank-difference"):
+class NodeTop10RankDifferencePlot(_RankDifferencePlot, plot_name="cig-node-rank-top10"):
     metric = "node"
 
 
-NodeTop10RankDifferencePlotGenerator = _pair_generator(NodeTop10RankDifferencePlot, "node-rank-difference")
+NodeTop10RankDifferencePlotGenerator = _pair_generator(NodeTop10RankDifferencePlot, "cig-node-rank-top10")
 
 
-class AuthorDegreeRankDifferencePlot(_RankDifferencePlot, plot_name="author-degree-rank-difference"):
+class AuthorDegreeRankDifferencePlot(_RankDifferencePlot, plot_name="aig-degree-top10"):
     metric = "degree"
 
 
-AuthorDegreeRankDifferencePlotGenerator = _pair_generator(AuthorDegreeRankDifferencePlot, "author-degree-rank-difference")
+AuthorDegreeRankDifferencePlotGenerator = _pair_generator(AuthorDegreeRankDifferencePlot, "aig-degree-top10")
 
 
-class AuthorEigenvectorRankDifferencePlot(_RankDifferencePlot, plot_name="author-eigenvector-rank-difference"):
+class AuthorEigenvectorRankDifferencePlot(_RankDifferencePlot, plot_name="aig-eigen-top10"):
     metric = "eigenvector"
 
 
-AuthorEigenvectorRankDifferencePlotGenerator = _pair_generator(AuthorEigenvectorRankDifferencePlot, "author-eigenvector-rank-difference")
+AuthorEigenvectorRankDifferencePlotGenerator = _pair_generator(AuthorEigenvectorRankDifferencePlot, "aig-eigen-top10")
