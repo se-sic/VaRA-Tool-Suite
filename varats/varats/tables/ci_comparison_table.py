@@ -9,7 +9,6 @@ from varats.data.reports.commit_interaction_comparison import (
     ALLOWED_ANALYSIS_COMPARISONS,
     AnalysisComparison,
     graph_summary,
-    load_all_analysis_graphs,
     load_comparison_graphs,
     parse_analysis_comparison,
     shared_edge_weight_spearman,
@@ -83,7 +82,7 @@ def graph_summary_dataframe(
 
 class CommitInteractionGraphSummaryTable(
     Table,
-    table_name="commit_interaction_graph_summary_table",
+    table_name="cig-graph-comparison",
 ):
     """Summarize both commit-interaction graphs for each project."""
 
@@ -115,7 +114,7 @@ class CommitInteractionGraphSummaryTable(
 
 class CommitInteractionGraphSummaryTableGenerator(
     TableGenerator,
-    generator_name="commit-interaction-graph-summary-table",
+    generator_name="cig-graph-comparison",
     options=[
         REQUIRE_MULTI_CASE_STUDY,
         REQUIRE_ANALYSIS_COMPARISON,
@@ -161,7 +160,7 @@ def _comparison_rows(
     return pd.DataFrame(rows, columns=["Project", "Comparison", label])
 
 
-class CommitInteractionJaccardTable(Table, table_name="commit_interaction_jaccard_table"):
+class CommitInteractionJaccardTable(Table, table_name="cig-edge-jaccard"):
     """Jaccard edge overlap as percentages."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
@@ -185,14 +184,14 @@ class CommitInteractionJaccardTable(Table, table_name="commit_interaction_jaccar
         return dataframe_to_table(data, table_format, style, wrap_table=wrap_table, wrap_landscape=True)
 
 
-class CommitInteractionJaccardTableGenerator(TableGenerator, generator_name="commit-interaction-jaccard-table", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
+class CommitInteractionJaccardTableGenerator(TableGenerator, generator_name="cig-edge-jaccard", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
     def generate(self) -> tp.List[Table]:
         case_studies = self.table_kwargs.pop("case_study")
         comparison = parse_analysis_comparison(self.table_kwargs.pop("comparison"))
         return [CommitInteractionJaccardTable(self.table_config, case_studies=case_studies, comparison=comparison, **self.table_kwargs)]
 
 
-class EdgeRankAgreementSpearmanTable(Table, table_name="edge_rank_agreement_spearman_table"):
+class EdgeRankAgreementSpearmanTable(Table, table_name="cig-edge-weight-spearman"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         comparison = self.table_kwargs["comparison"]
         data = _comparison_rows(self.table_kwargs["case_studies"], comparison, shared_edge_weight_spearman)
@@ -202,14 +201,14 @@ class EdgeRankAgreementSpearmanTable(Table, table_name="edge_rank_agreement_spea
         return dataframe_to_table(data, table_format, style, wrap_table=wrap_table, wrap_landscape=True)
 
 
-class EdgeRankAgreementSpearmanTableGenerator(TableGenerator, generator_name="edge-rank-agreement-spearman-table", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
+class EdgeRankAgreementSpearmanTableGenerator(TableGenerator, generator_name="cig-edge-weight-spearman", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
     def generate(self) -> tp.List[Table]:
         case_studies = self.table_kwargs.pop("case_study")
         comparison = parse_analysis_comparison(self.table_kwargs.pop("comparison"))
         return [EdgeRankAgreementSpearmanTable(self.table_config, case_studies=case_studies, comparison=comparison, **self.table_kwargs)]
 
 
-class NodeDegreeRankSpearmanTable(Table, table_name="node_degree_rank_spearman_table"):
+class NodeDegreeRankSpearmanTable(Table, table_name="cig-node-degree-spearman"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         comparison = self.table_kwargs["comparison"]
         data = _comparison_rows(self.table_kwargs["case_studies"], comparison, shared_node_degree_spearman)
@@ -219,54 +218,11 @@ class NodeDegreeRankSpearmanTable(Table, table_name="node_degree_rank_spearman_t
         return dataframe_to_table(data, table_format, style, wrap_table=wrap_table, wrap_landscape=True)
 
 
-class NodeDegreeRankSpearmanTableGenerator(TableGenerator, generator_name="node-degree-rank-spearman-table", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
+class NodeDegreeRankSpearmanTableGenerator(TableGenerator, generator_name="cig-node-degree-spearman", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
     def generate(self) -> tp.List[Table]:
         case_studies = self.table_kwargs.pop("case_study")
         comparison = parse_analysis_comparison(self.table_kwargs.pop("comparison"))
         return [NodeDegreeRankSpearmanTable(self.table_config, case_studies=case_studies, comparison=comparison, **self.table_kwargs)]
-
-
-def _display_item(item: object) -> str:
-    """Use a compact commit hash where possible, otherwise the item name."""
-    commit_hash = getattr(item, "commit_hash", None)
-    if commit_hash is not None:
-        return str(getattr(commit_hash, "hash", commit_hash))[:12]
-    return str(item)
-
-
-def _top_commit_table_data(case_studies: tp.Iterable[CaseStudy]) -> pd.DataFrame:
-    rows = []
-    for case_study in case_studies:
-        try:
-            graphs = load_all_analysis_graphs(case_study)
-        except PlotDataEmpty:
-            continue
-        ranked = {
-            name: dict(top_ranked_items(unique_neighbor_degrees(graph), 10))
-            for name, graph in graphs.items()
-        }
-        for rank in range(1, 11):
-            rows.append({
-                "Project": case_study.project_name,
-                "Rank": rank,
-                "CF-Direct": _display_item(next((n for n, r in ranked["cfd"].items() if r == rank), "—")),
-                "CF-Collective": _display_item(next((n for n, r in ranked["cfc"].items() if r == rank), "—")),
-                "Data-flow": _display_item(next((n for n, r in ranked["df"].items() if r == rank), "—")),
-            })
-    return pd.DataFrame(rows, columns=["Project", "Rank", "CF-Direct", "CF-Collective", "Data-flow"])
-
-
-class TopNodeDegreeTable(Table, table_name="top_node_degree_table"):
-    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        data = _top_commit_table_data(self.table_kwargs["case_studies"])
-        if data.empty:
-            raise TableDataEmpty()
-        return dataframe_to_table(data, table_format, data.style.hide(axis="index"), wrap_table=wrap_table, wrap_landscape=True)
-
-
-class TopNodeDegreeTableGenerator(TableGenerator, generator_name="top-node-degree-table", options=[REQUIRE_MULTI_CASE_STUDY]):
-    def generate(self) -> tp.List[Table]:
-        return [TopNodeDegreeTable(self.table_config, case_studies=self.table_kwargs.pop("case_study"), **self.table_kwargs)]
 
 
 def _top_overlap_data(
@@ -316,7 +272,7 @@ def _top_overlap_data(
     return pd.DataFrame(rows, columns=["Project", comparison_name])
 
 
-class TopNodeDegreeOverlapTable(Table, table_name="top_node_degree_overlap_table"):
+class TopNodeDegreeOverlapTable(Table, table_name="cig-node-degree-top10"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         data = _top_overlap_data(
             self.table_kwargs["case_studies"],
@@ -327,7 +283,7 @@ class TopNodeDegreeOverlapTable(Table, table_name="top_node_degree_overlap_table
         return dataframe_to_table(data, table_format, data.style.hide(axis="index"), wrap_table=wrap_table, wrap_landscape=True)
 
 
-class TopNodeDegreeOverlapTableGenerator(TableGenerator, generator_name="top-node-degree-overlap-table", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
+class TopNodeDegreeOverlapTableGenerator(TableGenerator, generator_name="cig-node-degree-top10", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
     def generate(self) -> tp.List[Table]:
         case_studies = self.table_kwargs.pop("case_study")
         comparison = parse_analysis_comparison(self.table_kwargs.pop("comparison"))
@@ -357,91 +313,33 @@ class AuthorCentralitySpearmanTable(Table, table_name="author_centrality_spearma
         return dataframe_to_table(data, table_format, data.style.hide(axis="index").format({"Spearman": "{:.3f}"}), wrap_table=wrap_table, wrap_landscape=True)
 
 
-class AuthorDegreeSpearmanTable(AuthorCentralitySpearmanTable, table_name="author_degree_spearman_table"):
+class AuthorDegreeSpearmanTable(AuthorCentralitySpearmanTable, table_name="aig-degree-spearman"):
     def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         kwargs["metric"] = "degree"
         super().__init__(*args, **kwargs)
 
 
-class AuthorEigenvectorSpearmanTable(AuthorCentralitySpearmanTable, table_name="author_eigenvector_spearman_table"):
+class AuthorEigenvectorSpearmanTable(AuthorCentralitySpearmanTable, table_name="aig-eigen-spearman"):
     def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         kwargs["metric"] = "eigenvector"
         super().__init__(*args, **kwargs)
 
 
-class AuthorDegreeSpearmanTableGenerator(TableGenerator, generator_name="author-degree-spearman-table", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
+class AuthorDegreeSpearmanTableGenerator(TableGenerator, generator_name="aig-degree-spearman", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
     def generate(self) -> tp.List[Table]:
         case_studies = self.table_kwargs.pop("case_study")
         comparison = parse_analysis_comparison(self.table_kwargs.pop("comparison"))
         return [AuthorDegreeSpearmanTable(self.table_config, case_studies=case_studies, comparison=comparison, **self.table_kwargs)]
 
 
-class AuthorEigenvectorSpearmanTableGenerator(TableGenerator, generator_name="author-eigenvector-spearman-table", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
+class AuthorEigenvectorSpearmanTableGenerator(TableGenerator, generator_name="aig-eigen-spearman", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
     def generate(self) -> tp.List[Table]:
         case_studies = self.table_kwargs.pop("case_study")
         comparison = parse_analysis_comparison(self.table_kwargs.pop("comparison"))
         return [AuthorEigenvectorSpearmanTable(self.table_config, case_studies=case_studies, comparison=comparison, **self.table_kwargs)]
 
 
-def _top_author_table_data(
-        case_studies: tp.Iterable[CaseStudy], metric: str,
-) -> pd.DataFrame:
-    rows = []
-    for case_study in case_studies:
-        try:
-            commit_graphs = load_all_analysis_graphs(case_study)
-        except PlotDataEmpty:
-            continue
-        author_graphs = {
-            name: create_author_interaction_graph(graph, case_study.project_name)
-            for name, graph in commit_graphs.items()
-        }
-        ranked = {}
-        for name, graph in author_graphs.items():
-            if metric == "degree":
-                values = dict(graph.degree(weight="amount"))
-            else:
-                values = author_centrality_dataframe(graph, graph, "eigenvector")
-                values = values.set_index("Author")["Left centrality"].to_dict()
-            ranked[name] = dict(top_ranked_items(values, 10))
-        for rank in range(1, 11):
-            rows.append({
-                "Project": case_study.project_name,
-                "Rank": rank,
-                "CF-Direct": _display_item(next((n for n, r in ranked["cfd"].items() if r == rank), "—")),
-                "CF-Collective": _display_item(next((n for n, r in ranked["cfc"].items() if r == rank), "—")),
-                "Data-flow": _display_item(next((n for n, r in ranked["df"].items() if r == rank), "—")),
-            })
-    return pd.DataFrame(rows, columns=["Project", "Rank", "CF-Direct", "CF-Collective", "Data-flow"])
-
-
-class TopAuthorDegreeTable(Table, table_name="top_author_degree_table"):
-    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        data = _top_author_table_data(self.table_kwargs["case_studies"], "degree")
-        if data.empty:
-            raise TableDataEmpty()
-        return dataframe_to_table(data, table_format, data.style.hide(axis="index"), wrap_table=wrap_table, wrap_landscape=True)
-
-
-class TopAuthorEigenvectorTable(Table, table_name="top_author_eigenvector_table"):
-    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        data = _top_author_table_data(self.table_kwargs["case_studies"], "eigenvector")
-        if data.empty:
-            raise TableDataEmpty()
-        return dataframe_to_table(data, table_format, data.style.hide(axis="index"), wrap_table=wrap_table, wrap_landscape=True)
-
-
-class TopAuthorDegreeTableGenerator(TableGenerator, generator_name="top-author-degree-table", options=[REQUIRE_MULTI_CASE_STUDY]):
-    def generate(self) -> tp.List[Table]:
-        return [TopAuthorDegreeTable(self.table_config, case_studies=self.table_kwargs.pop("case_study"), **self.table_kwargs)]
-
-
-class TopAuthorEigenvectorTableGenerator(TableGenerator, generator_name="top-author-eigenvector-table", options=[REQUIRE_MULTI_CASE_STUDY]):
-    def generate(self) -> tp.List[Table]:
-        return [TopAuthorEigenvectorTable(self.table_config, case_studies=self.table_kwargs.pop("case_study"), **self.table_kwargs)]
-
-
-class TopAuthorDegreeOverlapTable(Table, table_name="top_author_degree_overlap_table"):
+class TopAuthorDegreeOverlapTable(Table, table_name="aig-degree-top10"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         data = _top_overlap_data(
             self.table_kwargs["case_studies"],
@@ -453,7 +351,7 @@ class TopAuthorDegreeOverlapTable(Table, table_name="top_author_degree_overlap_t
         return dataframe_to_table(data, table_format, data.style.hide(axis="index"), wrap_table=wrap_table, wrap_landscape=True)
 
 
-class TopAuthorEigenvectorOverlapTable(Table, table_name="top_author_eigenvector_overlap_table"):
+class TopAuthorEigenvectorOverlapTable(Table, table_name="aig-eigen-top10"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         data = _top_overlap_data(
             self.table_kwargs["case_studies"],
@@ -465,14 +363,14 @@ class TopAuthorEigenvectorOverlapTable(Table, table_name="top_author_eigenvector
         return dataframe_to_table(data, table_format, data.style.hide(axis="index"), wrap_table=wrap_table, wrap_landscape=True)
 
 
-class TopAuthorDegreeOverlapTableGenerator(TableGenerator, generator_name="top-author-degree-overlap-table", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
+class TopAuthorDegreeOverlapTableGenerator(TableGenerator, generator_name="aig-degree-top10", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
     def generate(self) -> tp.List[Table]:
         case_studies = self.table_kwargs.pop("case_study")
         comparison = parse_analysis_comparison(self.table_kwargs.pop("comparison"))
         return [TopAuthorDegreeOverlapTable(self.table_config, case_studies=case_studies, comparison=comparison, **self.table_kwargs)]
 
 
-class TopAuthorEigenvectorOverlapTableGenerator(TableGenerator, generator_name="top-author-eigenvector-overlap-table", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
+class TopAuthorEigenvectorOverlapTableGenerator(TableGenerator, generator_name="aig-eigen-top10", options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_ANALYSIS_COMPARISON]):
     def generate(self) -> tp.List[Table]:
         case_studies = self.table_kwargs.pop("case_study")
         comparison = parse_analysis_comparison(self.table_kwargs.pop("comparison"))

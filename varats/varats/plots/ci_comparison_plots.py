@@ -239,7 +239,7 @@ def _draw_author_graph(
 
 class CommitInteractionJaccardPlot(
     Plot,
-    plot_name="cig-edge-jaccard ",
+    plot_name="cig-edge-jaccard",
 ):
     """Plot common and exclusive edge shares across case studies."""
 
