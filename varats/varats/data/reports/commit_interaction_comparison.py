@@ -2,7 +2,6 @@
 
 import math
 import typing as tp
-from collections import Counter
 
 import networkx as nx
 import numpy as np
@@ -31,7 +30,6 @@ from varats.plot.plot import PlotDataEmpty
 from varats.project.project_util import create_project_commit_lookup_helper
 from varats.utils.git_util import (
     CommitRepoPair,
-    FullCommitHash,
     UNCOMMITTED_COMMIT_HASH,
 )
 
@@ -92,11 +90,6 @@ class AnalysisComparison:
     @property
     def right_experiment_type(self) -> tp.Type[VersionExperiment]:
         return self.right.experiment_type
-
-    @property
-    def display_name(self) -> str:
-        return f"{self.left_analysis.name} vs {self.right_analysis.name}"
-
 
 def parse_analysis_comparison(value: str) -> AnalysisComparison:
     """
@@ -177,56 +170,6 @@ def load_comparison_graphs(
     return left_graph, right_graph
 
 
-def load_analysis_graph(
-        case_study: CaseStudy,
-        analysis: str,
-        revision: tp.Optional[FullCommitHash] = None,
-) -> nx.DiGraph:
-    """Load one analysis graph, optionally at an explicitly selected revision."""
-    try:
-        config = ANALYSIS_CONFIGS[analysis.lower()]
-    except KeyError as error:
-        raise ValueError(f"Unknown analysis {analysis!r}.") from error
-
-    revisions = processed_revisions_for_case_study(
-        case_study, config.experiment_type
-    )
-    if revision is None:
-        if not revisions:
-            raise PlotDataEmpty()
-        commit_map = get_commit_map(case_study.project_name)
-        revision = max(revisions, key=commit_map.time_id)
-    elif revision not in revisions:
-        raise PlotDataEmpty()
-
-    return create_blame_interaction_graph(
-        case_study.project_name,
-        revision,
-        config.experiment_type,
-    ).commit_interaction_graph()
-
-
-def load_all_analysis_graphs(
-        case_study: CaseStudy,
-) -> tp.Dict[str, nx.DiGraph]:
-    """Load DF, CFD, and CFC graphs at their newest common revision."""
-    revision_sets = {
-        name: set(processed_revisions_for_case_study(
-            case_study, config.experiment_type
-        ))
-        for name, config in ANALYSIS_CONFIGS.items()
-    }
-    common_revisions = set.intersection(*revision_sets.values())
-    if not common_revisions:
-        raise PlotDataEmpty()
-    commit_map = get_commit_map(case_study.project_name)
-    revision = max(common_revisions, key=commit_map.time_id)
-    return {
-        name: load_analysis_graph(case_study, name, revision)
-        for name in ANALYSIS_CONFIGS
-    }
-
-
 class GraphSummary:
     """Graph-level summary based on directed commit-interaction edges."""
 
@@ -263,12 +206,6 @@ class GraphSummary:
             f"GraphSummary(nodes={self.nodes!r}, edges={self.edges!r}, "
             f"density={self.density!r}, gini={self.gini!r})"
         )
-
-    @property
-    def gini_coef(self) -> float:
-        """Backward-compatible name for the graph's Gini coefficient."""
-        return self.gini
-
 
 class EdgeOverlap:
     """Counts and union-relative shares of two edge sets."""
@@ -418,14 +355,6 @@ def edge_overlap(
     )
 
 
-def edge_jaccard_similarity(
-        left_graph: nx.Graph,
-        right_graph: nx.Graph,
-) -> float:
-    """Calculate edge-set Jaccard similarity."""
-    return edge_overlap(left_graph, right_graph).jaccard
-
-
 def _edge_weight(
         graph: nx.Graph,
         edge: tp.Tuple[tp.Hashable, tp.Hashable],
@@ -515,27 +444,6 @@ def shared_edge_weight_spearman(
         data["Left weight"],
         data["Right weight"],
     )
-
-
-def edge_weight_distribution_dataframe(
-        left_graph: nx.Graph,
-        right_graph: nx.Graph,
-        left_name: str = "Left",
-        right_name: str = "Right",
-) -> pd.DataFrame:
-    """Collect all edge weights for distribution comparison."""
-    rows = [
-        {
-            "Analysis": analysis,
-            "Weight": _edge_weight(graph, edge),
-        }
-        for analysis, graph in (
-            (left_name, left_graph),
-            (right_name, right_graph),
-        )
-        for edge in deduplicated_edges(graph)
-    ]
-    return pd.DataFrame(rows, columns=["Analysis", "Weight"])
 
 
 def shared_node_degree_dataframe(
@@ -698,56 +606,6 @@ def rank_difference_dataframe(
         }
         for item in items
     ], columns=["Item", "Left rank", "Right rank", "Rank difference"])
-
-
-def edge_weight_differences(
-        left_graph: nx.DiGraph,
-        right_graph: nx.DiGraph,
-) -> tp.Dict[tp.Tuple[CommitRepoPair, CommitRepoPair], int]:
-    """
-    Calculate left edge weight minus right edge weight.
-
-    Missing edges have weight zero.
-    """
-    all_edges = set(left_graph.edges()) | set(right_graph.edges())
-
-    differences = {}
-
-    for source, target in all_edges:
-        left_weight = (
-            int(left_graph[source][target]["amount"])
-            if left_graph.has_edge(source, target)
-            else 0
-        )
-        right_weight = (
-            int(right_graph[source][target]["amount"])
-            if right_graph.has_edge(source, target)
-            else 0
-        )
-
-        differences[(source, target)] = left_weight - right_weight
-
-    return differences
-
-
-def edge_weight_difference_dataframe(
-        left_graph: nx.DiGraph,
-        right_graph: nx.DiGraph,
-) -> pd.DataFrame:
-    """Build a frequency table for edge-weight differences."""
-    differences = edge_weight_differences(
-        left_graph,
-        right_graph,
-    )
-    frequencies = Counter(differences.values())
-
-    return pd.DataFrame([
-        {
-            "Edge-weight difference": difference,
-            "Frequency": frequency,
-        }
-        for difference, frequency in sorted(frequencies.items())
-    ])
 
 
 # RQ3

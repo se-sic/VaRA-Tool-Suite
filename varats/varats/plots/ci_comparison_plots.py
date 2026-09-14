@@ -7,15 +7,13 @@ import click
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
-from matplotlib.patches import Patch, Rectangle
+from matplotlib.patches import Rectangle
 
 from varats.data.reports.commit_interaction_comparison import (
     ALLOWED_ANALYSIS_COMPARISONS,
     AnalysisComparison,
     create_author_interaction_graph,
     edge_overlap,
-    edge_weight_distribution_dataframe,
-    edge_weight_difference_dataframe,
     author_centrality_dataframe,
     load_comparison_graphs,
     parse_analysis_comparison,
