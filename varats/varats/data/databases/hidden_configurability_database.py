@@ -1,3 +1,5 @@
+"""Module for processing Hidden Configurability data."""
+
 import ast
 import math
 import typing as tp
@@ -7,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy.stats import mannwhitneyu, ttest_ind, kruskal
+from scipy.stats import kruskal, mannwhitneyu, ttest_ind
 
 from varats.data.cache_helper import cache_dataframe, load_cached_df_or_none
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
@@ -21,19 +23,27 @@ from varats.experiments.hidden_config.hidden_config_utils import (
     get_all_variations_as_dict,
 )
 from varats.experiments.vara.hidden_configurability_experiments import (
-    MPTextReport,
+    _PROJECT_WORKLOADS,
     TestPatchVariations,
     TimePatchedWorkloads,
-    variation_value_to_str, _PROJECT_WORKLOADS,
+    variation_value_to_str,
 )
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.projects.cpp_projects.duckdb import DuckDBMPReport, DuckDBBenchmarkAggregate
-from varats.projects.cpp_projects.libzmq import LibZMQMPReport, LibZMQWLAggregate
-from varats.report.gnu_time_report import WLTimeReportAggregate
+from varats.projects.cpp_projects.duckdb import (
+    DuckDBBenchmarkAggregate,
+    DuckDBMPReport,
+)
+from varats.projects.cpp_projects.libzmq import (
+    LibZMQMPReport,
+    LibZMQWLAggregate,
+)
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.testsuite_utils import TestResult
+
+if tp.TYPE_CHECKING:
+    from varats.report.gnu_time_report import WLTimeReportAggregate
 
 CACHE_DATA_ID = "hc_database"
 
@@ -45,21 +55,26 @@ ACTIVE_HV_PROJECTS = [
     "xz",
     "libzmq",
     "FastDownward",
-    #"libvpx",
+    # "libvpx",
     "mariadb",
     "postgresql",
     "cryptominisat",
-    "cadical"
+    "cadical",
 ]
 
 
-def extract_config_point(full_name: str) -> tp.Tuple[str, str]:
-    # patch names follow the pattern "patched_<len>_<config_point>=<value>_<base-name>.zip"
-    # Where <len> is the length of the <config_point>=<value>
-    # We want to extract <config_point> and <value>
-    # Example: "patched_15_opt_level=3_basefile.c.zip" -> ("opt_level", "3")
+def extract_config_point(full_name: str) -> tuple[str, str]:
+    """
+    Extract the configuration point and its value from a patch name.
+
+    Patch names follow the pattern:
+    "patched_<len>_<config_point>=<value>_<base-name>.zip"
+    where <len> is the length of the <config_point>=<value>.
+    We want to extract <config_point> and <value>.
+    Example: "patched_15_opt_level=3_basefile.c.zip" -> ("opt_level", "3")
+    """
     name_path = Path(full_name).stem
-    name_path = name_path[len("patched_"):]
+    name_path = name_path[len("patched_") :]
     split_leftover_fn = name_path.partition("_")
     shortname_length = int(split_leftover_fn[0])
     config_part = "".join(split_leftover_fn[2:])[:shortname_length]
@@ -67,15 +82,15 @@ def extract_config_point(full_name: str) -> tp.Tuple[str, str]:
     return config_point[0], config_point[1]
 
 
-def get_configuration_points(report_file: MPRTimeWLAggregate) -> tp.List[str]:
-    result = set()
+def get_configuration_points(report_file: MPRTimeWLAggregate) -> list[str]:
+    """Get the unique configuration points from a report file."""
+    return list(
+        {
+            extract_config_point(patch_name)[0]
+            for patch_name in report_file.get_patch_names()
+        }
+    )
 
-    for patch_name in report_file.get_patch_names():
-        # patch names follow the pattern "<patch_name>_<base_file_name>_<config_point>=<value>"
-        # We are interested in the unique configuration points
-        result.add(extract_config_point(patch_name)[0])
-
-    return list(result)
 
 def filter_for_significant_changes(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -85,30 +100,41 @@ def filter_for_significant_changes(df: pd.DataFrame) -> pd.DataFrame:
     - The change is statistically significant (p-value < 0.05)
     - The change has at least a small effect size (Cohen's d >= 0.2)
     """
-    return df[(df["significance"].
-               apply(lambda x: x.pvalue < 0.05)
-           ) & (df["effect_size"].
-               apply(lambda x: abs(x)
-                     >= EffectSize.SMALL)
-           )]
+    return df[
+        (df["significance"].apply(lambda x: x.pvalue < 0.05))
+        & (df["effect_size"].apply(lambda x: abs(x) >= EffectSize.SMALL))
+    ]
+
 
 def add_significance_groups(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Add a column "significant_change" to the DataFrame for inter-rater agreement analysis.
+    Add a column "significant_change" to the DataFrame.
+
+    Could be used to calculate "inter-rater agreement"
 
     We add the following groups:
     - non_significant (change is not statistically significant)
-    - significant_pos (change is statistically significant and has a positive impact on mean performance)
-    - significant_neg (change is statistically significant and has a negative impact on mean performance)
-    - error (Row has an error, e.g., missing values in significance or effect size)
+    - significant_pos (change is statistically significant and
+                       has a positive impact on mean performance)
+    - significant_neg (change is statistically significant and
+                       has a negative impact on mean performance)
+    - error (Row has an error, e.g., missing values)
     """
+
     def calculate_significance(row):
-        if isinstance(row["significance"], float) and math.isnan(row["significance"]):
+        if isinstance(row["significance"], float) and math.isnan(
+            row["significance"]
+        ):
             return "error"
-        if isinstance(row["effect_size"], float) and math.isnan(row["effect_size"]):
+        if isinstance(row["effect_size"], float) and math.isnan(
+            row["effect_size"]
+        ):
             return "error"
 
-        if not (row["significance"].pvalue < 0.05 and abs(row["effect_size"]) >= EffectSize.SMALL):
+        if not (
+            row["significance"].pvalue < 0.05
+            and abs(row["effect_size"]) >= EffectSize.SMALL
+        ):
             return "non_significant"
 
         if np.mean(row["value_relative"]) > 0:
@@ -116,15 +142,14 @@ def add_significance_groups(df: pd.DataFrame) -> pd.DataFrame:
 
         return "significant_neg"
 
-    df["significant_change"] = df.apply(
-        calculate_significance,
-        axis=1
-    )
+    df["significant_change"] = df.apply(calculate_significance, axis=1)
     return df
+
 
 def filter_baseline_rows(df: pd.DataFrame) -> pd.DataFrame:
     """Filter rows to only include baseline rows."""
     return df[df["config_opportunity"] != "__baseline__"]
+
 
 def get_data_for_single_config(
     cs: CaseStudy, config_id: int | None = None
@@ -135,12 +160,14 @@ def get_data_for_single_config(
     if result_df is None:
         # Case distinction for specific projects
         if cs.project_name == "libzmq":
-            # TODO: Update for use with multiple binaries
+            # TODO: Update for use with multiple binaries # noqa: FIX002
             df1 = _get_data_single_config_default(cs, config_id)
             # binary-wl names are "{bin}/{wl}" from this report,
             # but just "{wl}" from the libzmq-specific report,
             # so we need to adjust the binary-wl names in this
-            df1["binary-wl"] = df1["binary-wl"].apply(lambda x: x.split("/")[-1])
+            df1["binary-wl"] = df1["binary-wl"].apply(
+                lambda x: x.split("/")[-1]
+            )
 
             df2 = _get_data_single_config_libzmq(cs, config_id)
             result_df = pd.concat([df1, df2], ignore_index=True)
@@ -164,17 +191,18 @@ def get_data_for_single_config(
         for _, row in false_rows.iterrows():
             print(
                 f"Warning: {row['binary-wl']}, {row['config_opportunity']}, "
-                f"{row['variation']}, metric {row['metric']} has less than 10 measurements ({len(row['value'])} measurements)."
+                f"{row['variation']}, metric {row['metric']} has less than 10 "
+                f"measurements ({len(row['value'])} measurements)."
             )
 
     # Exclude all rows where the value column has less than 10 measurements.
     # This would be an error in our measurement setup that we should look into.
     return result_df[result_df["value"].apply(lambda x: len(x) >= 10)]
 
-def group_kruskal_wallis(df: pd.DataFrame,
-                         group_by: tp.List[str]) -> pd.DataFrame:
+
+def group_kruskal_wallis(df: pd.DataFrame, group_by: list[str]) -> pd.DataFrame:
     """
-    Group the dataframe by the specified columns and calculate the Kruskal-Wallis H-test for each group.
+    Group-wise kruskal-wallis H-test.
 
     Args:
         df: The input dataframe containing the data.
@@ -184,18 +212,25 @@ def group_kruskal_wallis(df: pd.DataFrame,
         A new dataframe with the Kruskal-Wallis H-test results for each group.
     """
 
-    # Group by binary-wl, metric, and config_id, then calculate the Kruskal-Wallis H-test
+    # Group by binary-wl, metric, and config_id
+    # then calculate the Kruskal-Wallis H-test
     def kruskal_wallis(group):
         # Get identifier of the current group from the first row of the group
-        group_id = group[group_by].iloc[0].to_dict()
-        group_id = "_".join([str(group_id[col]) for col in group_by])
+        group_id = group.name
+
+        if isinstance(group_id, tuple):
+            group_id = "_".join([str(col) for col in group_by])
 
         if len(group) < 2:
-            return pd.Series({"kruskal_statistic": np.nan,
-                              "kruskal_pvalue": np.nan,
-                              "effect_size": np.nan,
-                              "mean_values_relative": [],
-                              "id": group_id})
+            return pd.Series(
+                {
+                    "kruskal_statistic": np.nan,
+                    "kruskal_pvalue": np.nan,
+                    "effect_size": np.nan,
+                    "mean_values_relative": [],
+                    "id": group_id,
+                }
+            )
 
         # Extract the value_relative lists for each variation
         data = [row["value_relative"] for _, row in group.iterrows()]
@@ -206,30 +241,54 @@ def group_kruskal_wallis(df: pd.DataFrame,
         # Calculate eta-squared as a measure of effect size
         # eta^2 = (H- k + 1) / (n - k), where H is the Kruskal-Wallis statistic,
         # k is the number of groups, and n is the total number of observations
-        eta_squared = (statistic - len(data) + 1) / (sum(len(d) for d in data) - len(data))
+        eta_squared = (statistic - len(data) + 1) / (
+            sum(len(d) for d in data) - len(data)
+        )
 
-        return pd.Series({"kruskal_statistic": statistic,
-                          "kruskal_pvalue": pvalue,
-                          "effect_size": eta_squared,
-                          "mean_values_relative": [np.mean(d) for d in data],
-                          "id": group_id
-                          })
+        return pd.Series(
+            {
+                "kruskal_statistic": statistic,
+                "kruskal_pvalue": pvalue,
+                "effect_size": eta_squared,
+                "mean_values_relative": [np.mean(d) for d in data],
+                "id": group_id,
+            }
+        )
 
     def means_min_max(group):
         if len(group) == 0:
-            return pd.Series({"min_value_relative_mean": np.nan,
-                              "max_value_relative_mean": np.nan})
+            return pd.Series(
+                {
+                    "min_value_relative_mean": np.nan,
+                    "max_value_relative_mean": np.nan,
+                }
+            )
 
         lists = [vr for vr in group["value_relative"] if vr is not None]
         if len(lists) == 0:
-            return pd.Series({"min_value_relative_mean": np.nan,
-                              "max_value_relative_mean": np.nan})
+            return pd.Series(
+                {
+                    "min_value_relative_mean": np.nan,
+                    "max_value_relative_mean": np.nan,
+                }
+            )
 
-        means = [np.mean(l) if len(l) > 0 else np.nan for l in lists]
-        return pd.Series({"min_value_relative_mean": np.nanmin(means),
-                          "max_value_relative_mean": np.nanmax(means)})
+        means = [
+            np.mean(values_rel) if len(values_rel) > 0 else np.nan
+            for values_rel in lists
+        ]
+        return pd.Series(
+            {
+                "min_value_relative_mean": np.nanmin(means),
+                "max_value_relative_mean": np.nanmax(means),
+            }
+        )
 
-    summary = df[df["config_opportunity"]!="__baseline__"].groupby(group_by).apply(kruskal_wallis)
+    summary = (
+        df[df["config_opportunity"] != "__baseline__"]
+        .groupby(group_by)
+        .apply(kruskal_wallis)
+    )
     minmax_summary = df.groupby(group_by).apply(means_min_max)
 
     return pd.concat([summary, minmax_summary], axis=1)
@@ -237,18 +296,20 @@ def group_kruskal_wallis(df: pd.DataFrame,
 
 def filter_significant_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Get the significant Kruskal-Wallis H-test results for the specified grouping.
+    Get significant Kruskal-Wallis H-test results for specified grouping.
 
     Args:
         df: The input dataframe containing the data.
         p_value: The significance level for the Kruskal-Wallis test.
-        min_effect_size: The minimum effect size to consider a result significant.
+        min_effect_size: The minimum effect size to consider a result
+                         significant.
 
     Returns:
-        A filtered dataframe containing only the significant Kruskal-Wallis H-test results.
+        A filtered dataframe containing only the significant Kruskal-Wallis
+        H-test results.
     """
-    return df[(df["kruskal_pvalue"] < 0.05)
-              & (df["effect_size"] >= 0.06)]
+    return df[(df["kruskal_pvalue"] < 0.05) & (df["effect_size"] >= 0.06)]
+
 
 def calculate_kruskal_wallis_summary(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -257,13 +318,15 @@ def calculate_kruskal_wallis_summary(df: pd.DataFrame) -> pd.DataFrame:
     Calculates for two dimensions:
         1. Fixing a setting (Combination of binary-wl, metric, and config_id)
           --> are there differences between the variations of this setting?
-        2. Fixing a configuration alternative (Combination of config_opportunity and variation)
+        2. Fixing a configuration alternative
+        (Combination of config_opportunity and variation)
          --> are there differences between the different binary-wl, config_id
             and metric combinations for this configuration alternative?
     Receives as input the full dataframe including data for all projects.
     Returns a summary dataframe with the columns:
-        - project: Project name
-        - num_settings: Number of settings with at least two variations that are significantly different from the baseline
+        - project:      Project name
+        - num_settings: Number of settings with at least two variations that
+                        are significantly different from the baseline
         - num_sig
     """
     result_df = df.copy().fillna(-1)
@@ -271,18 +334,22 @@ def calculate_kruskal_wallis_summary(df: pd.DataFrame) -> pd.DataFrame:
     # Filter out baseline rows
     filtered_df = filter_baseline_rows(result_df)
 
-    # Get total number of settings and configuration alternatives for each project
-    base_data = pd.DataFrame.from_records([
-        {
-            "project": p,
-            "num_settings": filtered_df[filtered_df["project"] == p].groupby(
-                ["binary-wl", "metric", "config_id"]
-            ).ngroups,
-            "num_config_alts": filtered_df[filtered_df["project"] == p].groupby(
-                ["config_opportunity", "variation"]
-            ).ngroups,
-        } for p in df["project"].unique()
-    ])
+    # Get total number of settings and configuration alternatives for each
+    # project
+    base_data = pd.DataFrame.from_records(
+        [
+            {
+                "project": p,
+                "num_settings": filtered_df[filtered_df["project"] == p]
+                .groupby(["binary-wl", "metric", "config_id"])
+                .ngroups,
+                "num_config_alts": filtered_df[filtered_df["project"] == p]
+                .groupby(["config_opportunity", "variation"])
+                .ngroups,
+            }
+            for p in df["project"].unique()
+        ]
+    )
 
     # Select only significant changes
     significant_df = filter_for_significant_changes(filtered_df)
@@ -296,55 +363,74 @@ def calculate_kruskal_wallis_summary(df: pd.DataFrame) -> pd.DataFrame:
         project_df = significant_df[significant_df["project"] == p]
 
         if project_df.empty:
-            print(f"No significant changes found for project {p}, skipping Kruskal-Wallis H-test.")
+            print(
+                f"No significant changes found for project {p}, "
+                f"skipping Kruskal-Wallis H-test."
+            )
             continue
 
         setting_summary = project_df.groupby(
-            ["binary-wl", "metric", "config_id"])
+            ["binary-wl", "metric", "config_id"]
+        )
 
         num_settings = setting_summary.ngroups
-        num_settings_total = base_data[base_data["project"] == p]["num_settings"].array[0]
-        setting_results = group_kruskal_wallis(project_df, group_by=["binary-wl", "metric", "config_id"])
-        setting_results["mean_diff"] = setting_results["max_value_relative_mean"] - setting_results[
-            "min_value_relative_mean"]
+        num_settings_total = base_data[base_data["project"] == p][
+            "num_settings"
+        ].array[0]
+        setting_results = group_kruskal_wallis(
+            project_df, group_by=["binary-wl", "metric", "config_id"]
+        )
+        setting_results["mean_diff"] = (
+            setting_results["max_value_relative_mean"]
+            - setting_results["min_value_relative_mean"]
+        )
 
         sig_settings = filter_significant_kruskal_wallis(setting_results)
 
         num_sig_settings = sig_settings.shape[0]
 
         # Repeat for configuration alternatives
-        config_alt_summary = project_df.groupby(["config_opportunity", "variation"])
+        config_alt_summary = project_df.groupby(
+            ["config_opportunity", "variation"]
+        )
 
         num_conf_alts = config_alt_summary.ngroups
-        num_conf_alts_total = base_data[base_data["project"]==p]["num_config_alts"].values[0]
+        num_conf_alts_total = base_data[base_data["project"] == p][
+            "num_config_alts"
+        ].to_numpy()[0]
 
-        config_alt_results = group_kruskal_wallis(project_df, ["config_opportunity", "variation"])
-        config_alt_results["mean_diff"] = config_alt_results["max_value_relative_mean"] - config_alt_results["min_value_relative_mean"]
+        config_alt_results = group_kruskal_wallis(
+            project_df, ["config_opportunity", "variation"]
+        )
+        config_alt_results["mean_diff"] = (
+            config_alt_results["max_value_relative_mean"]
+            - config_alt_results["min_value_relative_mean"]
+        )
 
         sig_alts = filter_significant_kruskal_wallis(config_alt_results)
 
         num_sig_config_alts = sig_alts.shape[0]
 
-        data_rows.append({
-            "project": p,
-            "num_settings": num_settings,
-            "num_sig_settings": num_sig_settings,
-            "min_setting_range": sig_settings["mean_diff"].min(),
-            "max_setting_range": sig_settings["mean_diff"].max(),
-            "num_config_alts": num_conf_alts,
-            "num_sig_config_alts": num_sig_config_alts,
-            "min_config_alt_range": sig_alts["mean_diff"].min(),
-            "max_config_alt_range": sig_alts["mean_diff"].max(),
-            "num_settings_total": num_settings_total,
-            "num_config_alts_total": num_conf_alts_total,
-        })
+        data_rows.append(
+            {
+                "project": p,
+                "num_settings": num_settings,
+                "num_sig_settings": num_sig_settings,
+                "min_setting_range": sig_settings["mean_diff"].min(),
+                "max_setting_range": sig_settings["mean_diff"].max(),
+                "num_config_alts": num_conf_alts,
+                "num_sig_config_alts": num_sig_config_alts,
+                "min_config_alt_range": sig_alts["mean_diff"].min(),
+                "max_config_alt_range": sig_alts["mean_diff"].max(),
+                "num_settings_total": num_settings_total,
+                "num_config_alts_total": num_conf_alts_total,
+            }
+        )
 
     return pd.DataFrame.from_records(data_rows)
 
-def _add_testsuite_info(
-    df: pd.DataFrame,
-    cs: CaseStudy
-) -> pd.DataFrame:
+
+def _add_testsuite_info(df: pd.DataFrame, cs: CaseStudy) -> pd.DataFrame:
     result_files = get_processed_revisions_files(
         cs.project_name,
         TestPatchVariations,
@@ -364,27 +450,32 @@ def _add_testsuite_info(
             # We are mostly interested in cases where the base test passed,
             # but the patched test failed in some way
             if base_status == TestResult.PASSED and patched_status in {
-                TestResult.FAILED, TestResult.TIMEOUT, TestResult.UNKNOWN
+                TestResult.FAILED,
+                TestResult.TIMEOUT,
+                TestResult.UNKNOWN,
             }:
                 return False
 
         return True
 
     if len(result_files) != 1:
-        print(f"More than one result for {cs.project_name}. Using the first one.")
+        print(
+            f"More than one result for {cs.project_name}. Using the first one."
+        )
 
     report: MPTestReport = MPTestReport(result_files[0].full_path())
 
-    __TEST_TO_IGNORE: tp.Dict[str, tp.List[str]] = {
+    __test_to_ignore: dict[str, list[str]] = {
         "libzmq": ["(empty).test_hwm", "(empty).test_hwm_pubsub"],
         "brotli": [],
         "libvpx": [],
         "FastDownward": [],
-        "DunePerfRegression": []
+        "DunePerfRegression": [],
     }
-    def _cleanup(results: tp.Dict[str, TestResult]) -> tp.Dict[str, TestResult]:
-        if cs.project_name in __TEST_TO_IGNORE:
-            for test_name in __TEST_TO_IGNORE[cs.project_name]:
+
+    def _cleanup(results: dict[str, TestResult]) -> dict[str, TestResult]:
+        if cs.project_name in __test_to_ignore:
+            for test_name in __test_to_ignore[cs.project_name]:
                 if test_name in results:
                     results.pop(test_name)
 
@@ -399,20 +490,22 @@ def _add_testsuite_info(
         patched_report = report.get_report_for_patch(patch_name)
         patched_results = _cleanup(patched_report.results)
 
-        opportunity, variation = extract_config_point(patched_report.filename.filename)
+        opportunity, variation = extract_config_point(
+            patched_report.filename.filename
+        )
 
         # Add a column for the testsuite result
         df.loc[
-            (df["config_opportunity"] == opportunity) &
-            (df["variation"] == variation),
-            "testsuite_equivalent"
+            (df["config_opportunity"] == opportunity)
+            & (df["variation"] == variation),
+            "testsuite_equivalent",
         ] = _is_equivalent(base_results, patched_results)
 
     return df
 
 
 def _get_data_single_config_libzmq(
-    cs, config_id: tp.Optional[int] = None
+    cs, config_id: int | None = None
 ) -> pd.DataFrame:
     # Load all result files from RunAllWorkloads experiment
     result_files = get_processed_revisions_files(
@@ -431,49 +524,60 @@ def _get_data_single_config_libzmq(
     data_rows = []
     base_values = {}
 
-    def _extract_baselines_from_report(report: LibZMQWLAggregate,
-                                       metric: str,
-                                       config_id: tp.Optional[int],
-                                       base_values):
-        result = [{
-                    "binary-wl": f"{wl}",
-                    "config_opportunity": "__baseline__",
-                    "variation": None,
-                    "metric": metric,
-                    "value": report.metrics[metric][wl],
-                    "config_id": config_id,
-                } for wl in report.workload_names()]
+    def _extract_baselines_from_report(
+        report: LibZMQWLAggregate,
+        metric: str,
+        config_id: int | None,
+        base_values,
+    ):
+        result = [
+            {
+                "binary-wl": f"{wl}",
+                "config_opportunity": "__baseline__",
+                "variation": None,
+                "metric": metric,
+                "value": report.metrics[metric][wl],
+                "config_id": config_id,
+            }
+            for wl in report.workload_names()
+        ]
 
-        base_values[metric] = { wl: np.mean(report.metrics[metric][wl])
-                                for wl in report.workload_names() }
-
-        return result
-
-    def _extract_patched_values_from_report(report: LibZMQWLAggregate,
-                                            metric: str,
-                                            config_id: tp.Optional[int],
-                                            config_opportunity: str,
-                                            variation: str,
-                                            base_values,
-                                            negate_relative: bool = False):
-        metric_values = {
-            wl: report.metrics[metric][wl]
+        base_values[metric] = {
+            wl: np.mean(report.metrics[metric][wl])
             for wl in report.workload_names()
         }
 
-        return [{
-                    "binary-wl": f"{wl}",
-                    "config_opportunity": config_opportunity,
-                    "variation": variation,
-                    "metric": metric,
-                    "value": metric_values[wl],
-                    "value_relative": [float((t / base_values[metric][wl]) - 1)
-                                       * (-1 if negate_relative else 1)
-                                       for t in metric_values[wl]],
-                    "config_id": config_id,
-                } for wl in report.workload_names()]
+        return result
 
+    def _extract_patched_values_from_report(
+        report: LibZMQWLAggregate,
+        metric: str,
+        config_id: int | None,
+        config_opportunity: str,
+        variation: str,
+        base_values,
+        negate_relative: bool = False,
+    ):
+        metric_values = {
+            wl: report.metrics[metric][wl] for wl in report.workload_names()
+        }
 
+        return [
+            {
+                "binary-wl": f"{wl}",
+                "config_opportunity": config_opportunity,
+                "variation": variation,
+                "metric": metric,
+                "value": metric_values[wl],
+                "value_relative": [
+                    float((t / base_values[metric][wl]) - 1)
+                    * (-1 if negate_relative else 1)
+                    for t in metric_values[wl]
+                ],
+                "config_id": config_id,
+            }
+            for wl in report.workload_names()
+        ]
 
     for result_file in result_files:
         # Load report as LibZMQMPReport
@@ -483,46 +587,46 @@ def _get_data_single_config_libzmq(
             base_report = report.baseline(binary)
             if "inproc_lat" in base_report.filename.filename:
                 metric = "latency"
-                new_rows = _extract_baselines_from_report(base_report,
-                                                          metric,
-                                                          config_id,
-                                                          base_values)
+                new_rows = _extract_baselines_from_report(
+                    base_report, metric, config_id, base_values
+                )
                 data_rows.extend(new_rows)
 
             elif "inproc_thr" in base_report.filename.filename:
-                new_rows = _extract_baselines_from_report(base_report,
-                                                            "throughput_mb",
-                                                            config_id,
-                                                            base_values)
+                new_rows = _extract_baselines_from_report(
+                    base_report, "throughput_mb", config_id, base_values
+                )
                 data_rows.extend(new_rows)
 
             elif "benchmark_radix_tree" in base_report.filename.filename:
-                new_rows = _extract_baselines_from_report(base_report,
-                                                            "trie_lookup_time",
-                                                            config_id,
-                                                            base_values)
+                new_rows = _extract_baselines_from_report(
+                    base_report, "trie_lookup_time", config_id, base_values
+                )
                 data_rows.extend(new_rows)
 
-                new_rows = _extract_baselines_from_report(base_report,
-                                                            "radix_tree_time",
-                                                            config_id,
-                                                            base_values)
+                new_rows = _extract_baselines_from_report(
+                    base_report, "radix_tree_time", config_id, base_values
+                )
                 data_rows.extend(new_rows)
 
             for patch_name in report.get_patch_names():
                 patched_report = report.patched(binary, patch_name)
-                opportunity, variation = extract_config_point(patched_report.filename.filename)
+                opportunity, variation = extract_config_point(
+                    patched_report.filename.filename
+                )
 
                 if "inproc_lat" in patched_report.filename.filename:
-                    data_rows.extend(_extract_patched_values_from_report(
-                        patched_report,
+                    data_rows.extend(
+                        _extract_patched_values_from_report(
+                            patched_report,
                             metric,
                             config_id,
                             opportunity,
                             variation,
                             base_values,
-                            negate_relative=True
-                    ))
+                            negate_relative=True,
+                        )
+                    )
                 elif "inproc_thr" in patched_report.filename.filename:
                     data_rows.extend(
                         _extract_patched_values_from_report(
@@ -531,7 +635,7 @@ def _get_data_single_config_libzmq(
                             config_id,
                             opportunity,
                             variation,
-                            base_values
+                            base_values,
                         )
                     )
                 elif "benchmark_radix_tree" in patched_report.filename.filename:
@@ -543,7 +647,7 @@ def _get_data_single_config_libzmq(
                             opportunity,
                             variation,
                             base_values,
-                            negate_relative=True
+                            negate_relative=True,
                         )
                     )
 
@@ -555,14 +659,15 @@ def _get_data_single_config_libzmq(
                             opportunity,
                             variation,
                             base_values,
-                            negate_relative=True
+                            negate_relative=True,
                         )
                     )
 
     return pd.DataFrame.from_records(data_rows)
 
+
 def _get_data_single_config_duckdb(
-    cs, config_id: tp.Optional[int] = None
+    cs, config_id: int | None = None
 ) -> pd.DataFrame:
     result_files = get_processed_revisions_files(
         "duckdb",
@@ -586,38 +691,51 @@ def _get_data_single_config_duckdb(
             base_report: DuckDBBenchmarkAggregate = report.baseline(binary)
 
             for wl in base_report.benchmarks:
-                data_rows.extend([{
-                    "binary-wl": f"{binary}/{wl}",
-                    "config_opportunity": "__baseline__",
-                    "variation": None,
-                    "metric": "runtime",
-                    "value": base_report.measurements(wl),
-                    "value_relative": None,
-                    "config_id": report.filename.config_id,
-                }])
+                data_rows.extend(
+                    [
+                        {
+                            "binary-wl": f"{binary}/{wl}",
+                            "config_opportunity": "__baseline__",
+                            "variation": None,
+                            "metric": "runtime",
+                            "value": base_report.measurements(wl),
+                            "value_relative": None,
+                            "config_id": report.filename.config_id,
+                        }
+                    ]
+                )
 
                 base_values[wl] = np.mean(base_report.measurements(wl))
 
             for patch_name in report.get_patch_names():
                 patched_report = report.patched(binary, patch_name)
-                opportunity, variation = extract_config_point(patched_report.filename.filename)
+                opportunity, variation = extract_config_point(
+                    patched_report.filename.filename
+                )
 
                 for wl in patched_report.benchmarks:
-                    data_rows.extend([{
-                        "binary-wl": f"{binary}/{wl}",
-                        "config_opportunity": opportunity,
-                        "variation": variation,
-                        "metric": "runtime",
-                        "value": patched_report.measurements(wl),
-                        "value_relative": [float((t / base_values[wl]) - 1) * -1
-                                           for t in patched_report.measurements(wl)],
-                        "config_id": report.filename.config_id,
-                    }])
+                    data_rows.extend(
+                        [
+                            {
+                                "binary-wl": f"{binary}/{wl}",
+                                "config_opportunity": opportunity,
+                                "variation": variation,
+                                "metric": "runtime",
+                                "value": patched_report.measurements(wl),
+                                "value_relative": [
+                                    float((t / base_values[wl]) - 1) * -1
+                                    for t in patched_report.measurements(wl)
+                                ],
+                                "config_id": report.filename.config_id,
+                            }
+                        ]
+                    )
 
     return pd.DataFrame.from_records(data_rows)
 
+
 def _get_data_single_config_default(
-    cs: CaseStudy, config_id: tp.Optional[int] = None
+    cs: CaseStudy, config_id: int | None = None
 ) -> pd.DataFrame:
     result_files = get_processed_revisions_files(
         cs.project_name,
@@ -643,23 +761,30 @@ def _get_data_single_config_default(
             base_report: WLTimeReportAggregate = report.baseline(binary)
 
             for wl in base_report.workload_names():
-                data_rows.extend([{
-                    "binary-wl": f"{binary}/{wl}",
-                    "config_opportunity": "__baseline__",
-                    "variation": None,
-                    "metric": "wall_clock_time",
-                    "value": base_report.measurements_wall_clock_time(wl),
-                    "value_relative": None,
-                    "config_id": report.filename.config_id,
-                }, {
-                    "binary-wl": f"{binary}/{wl}",
-                    "config_opportunity": "__baseline__",
-                    "variation": None,
-                    "metric": "max_resident_size",
-                    "value": base_report.max_resident_sizes(wl),
-                    "value_relative": None,
-                    "config_id": report.filename.config_id,
-                }])
+                data_rows.extend(
+                    [
+                        {
+                            "binary-wl": f"{binary}/{wl}",
+                            "config_opportunity": "__baseline__",
+                            "variation": None,
+                            "metric": "wall_clock_time",
+                            "value": base_report.measurements_wall_clock_time(
+                                wl
+                            ),
+                            "value_relative": None,
+                            "config_id": report.filename.config_id,
+                        },
+                        {
+                            "binary-wl": f"{binary}/{wl}",
+                            "config_opportunity": "__baseline__",
+                            "variation": None,
+                            "metric": "max_resident_size",
+                            "value": base_report.max_resident_sizes(wl),
+                            "value_relative": None,
+                            "config_id": report.filename.config_id,
+                        },
+                    ]
+                )
 
                 base_times[wl] = np.mean(
                     base_report.measurements_wall_clock_time(wl)
@@ -671,36 +796,44 @@ def _get_data_single_config_default(
                 cp = extract_config_point(patch_report.filename.filename)
 
                 for wl in patch_report.workload_names():
-                    data_rows.extend([{
-                        "binary-wl": f"{binary}/{wl}",
-                        "config_opportunity": f"{cp[0]}",
-                        "variation": cp[1].strip("_"),
-                        "metric": "wall_clock_time",
-                        "value": patch_report.measurements_wall_clock_time(wl),
-                        "value_relative": [
-                            float((t / base_times[wl]) - 1) * -1
-                            for t in patch_report.measurements_wall_clock_time(wl)
-                        ],
-                        "config_id": report.filename.config_id,
-                    }, {
-                        "binary-wl": f"{binary}/{wl}",
-                        "config_opportunity": f"{cp[0]}",
-                        "variation": cp[1].strip("_"),
-                        "metric": "max_resident_size",
-                        "value": patch_report.max_resident_sizes(wl),
-                        "value_relative": [
-                            float((t / base_rss[wl]) - 1) * -1
-                            for t in patch_report.max_resident_sizes(wl)
-                        ],
-                        "config_id": report.filename.config_id,
-                    }])
-
+                    data_rows.extend(
+                        [
+                            {
+                                "binary-wl": f"{binary}/{wl}",
+                                "config_opportunity": f"{cp[0]}",
+                                "variation": cp[1].strip("_"),
+                                "metric": "wall_clock_time",
+                                "value": patch_report.measurements_wall_clock_time(  # noqa: E501
+                                    wl
+                                ),
+                                "value_relative": [
+                                    float((t / base_times[wl]) - 1) * -1
+                                    for t in patch_report.measurements_wall_clock_time(  # noqa: E501
+                                        wl
+                                    )
+                                ],
+                                "config_id": report.filename.config_id,
+                            },
+                            {
+                                "binary-wl": f"{binary}/{wl}",
+                                "config_opportunity": f"{cp[0]}",
+                                "variation": cp[1].strip("_"),
+                                "metric": "max_resident_size",
+                                "value": patch_report.max_resident_sizes(wl),
+                                "value_relative": [
+                                    float((t / base_rss[wl]) - 1) * -1
+                                    for t in patch_report.max_resident_sizes(wl)
+                                ],
+                                "config_id": report.filename.config_id,
+                            },
+                        ]
+                    )
 
     return pd.DataFrame.from_records(data_rows)
 
 
 def _get_data_single_config_benchbase(
-    cs: CaseStudy, config_id: tp.Optional[int] = None
+    cs: CaseStudy, config_id: int | None = None
 ) -> pd.DataFrame:
     result_files = get_processed_revisions_files(
         cs.project_name,
@@ -733,36 +866,38 @@ def _get_data_single_config_benchbase(
             if baseline_report is None:
                 continue
 
-            base_latencies = [l.average_latency for l in
-                              baseline_report.summary(base_name).latencies]
+            base_latencies = [
+                lat.average_latency
+                for lat in baseline_report.summary(base_name).latencies
+            ]
 
-            data_rows.extend([
-                {
-                    "binary-wl": f"{binary}/{base_name}",
-                    "config_opportunity": "__baseline__",
-                    "variation": None,
-                    "metric": "throughput",
-                    "value": baseline_report.summary(base_name).throughput,
-                    "value_relative": None,
-                    "config_id": report.filename.config_id,
-                },
-                {
-                    "binary-wl": f"{binary}/{base_name}",
-                    "config_opportunity": "__baseline__",
-                    "variation": None,
-                    "metric": "latency_avg",
-                    "value": base_latencies,
-                    "value_relative": None,
-                    "config_id": report.filename.config_id,
-                }
-            ])
+            data_rows.extend(
+                [
+                    {
+                        "binary-wl": f"{binary}/{base_name}",
+                        "config_opportunity": "__baseline__",
+                        "variation": None,
+                        "metric": "throughput",
+                        "value": baseline_report.summary(base_name).throughput,
+                        "value_relative": None,
+                        "config_id": report.filename.config_id,
+                    },
+                    {
+                        "binary-wl": f"{binary}/{base_name}",
+                        "config_opportunity": "__baseline__",
+                        "variation": None,
+                        "metric": "latency_avg",
+                        "value": base_latencies,
+                        "value_relative": None,
+                        "config_id": report.filename.config_id,
+                    },
+                ]
+            )
 
             base_data["throughput"][base_name] = np.mean(
                 baseline_report.summary(base_name).throughput
             )
-            base_data["latency_avg"][base_name] = np.mean(
-                base_latencies
-            )
+            base_data["latency_avg"][base_name] = np.mean(base_latencies)
 
             for patch_name in patch_names:
                 patched_report = report.get_patched_for(base_name, patch_name)
@@ -772,40 +907,57 @@ def _get_data_single_config_benchbase(
 
                 cp = patch_name.split("=")[0], patch_name.split("=")[-1]
 
-                latencies = [l.average_latency for l in patched_report.summary(base_name).latencies]
+                latencies = [
+                    lat.average_latency
+                    for lat in patched_report.summary(base_name).latencies
+                ]
 
-                data_rows.extend([{
-                    "binary-wl": f"{binary}/{base_name}",
-                    "config_opportunity": f"{cp[0]}",
-                    "variation": cp[1],
-                    "metric": "throughput",
-                    "value": patched_report.summary(base_name).throughput,
-                    "value_relative": [
-                        float((t / base_data["throughput"][base_name]) - 1)
-                        for t in patched_report.summary(base_name).throughput
-                    ],
-                    "config_id": report.filename.config_id,
-                }, {
-                    "binary-wl": f"{binary}/{base_name}",
-                    "config_opportunity": f"{cp[0]}",
-                    "variation": cp[1],
-                    "metric": "latency_avg",
-                    "value": latencies,
-                    "value_relative": [
-                        # For latency, lower is better
-                        float((t / base_data["latency_avg"][base_name]) - 1) * -1
-                        for t in latencies
-                    ],
-                    "config_id": report.filename.config_id,
-                }])
+                data_rows.extend(
+                    [
+                        {
+                            "binary-wl": f"{binary}/{base_name}",
+                            "config_opportunity": f"{cp[0]}",
+                            "variation": cp[1],
+                            "metric": "throughput",
+                            "value": patched_report.summary(
+                                base_name
+                            ).throughput,
+                            "value_relative": [
+                                float(
+                                    (t / base_data["throughput"][base_name]) - 1
+                                )
+                                for t in patched_report.summary(
+                                    base_name
+                                ).throughput
+                            ],
+                            "config_id": report.filename.config_id,
+                        },
+                        {
+                            "binary-wl": f"{binary}/{base_name}",
+                            "config_opportunity": f"{cp[0]}",
+                            "variation": cp[1],
+                            "metric": "latency_avg",
+                            "value": latencies,
+                            "value_relative": [
+                                # For latency, lower is better
+                                float(
+                                    (t / base_data["latency_avg"][base_name])
+                                    - 1
+                                )
+                                * -1
+                                for t in latencies
+                            ],
+                            "config_id": report.filename.config_id,
+                        },
+                    ]
+                )
 
     return pd.DataFrame.from_records(data_rows)
 
 
 def _load_cached_df(
-    project_name: str,
-    config_id: tp.Optional[int] = None
-) -> tp.Optional[pd.DataFrame]:
+    project_name: str, config_id: int | None = None
+) -> pd.DataFrame | None:
     dtypes = {
         "binary-wl": "str",
         "config_opportunity": "str",
@@ -832,22 +984,23 @@ def _load_cached_df(
 
 
 def _cache_df(
-    df: pd.DataFrame,
-    project_name: str,
-    config_id: tp.Optional[int] = None
+    df: pd.DataFrame, project_name: str, config_id: int | None = None
 ) -> None:
     df_copy = df.copy()
-    # Convert columns "value" and "value_relative" to string to store lists in csv
+    # Convert columns "value" and "value_relative" to string
+    # to store lists in csv
     df_copy["value"] = df_copy["value"].apply(str)
     df_copy["value_relative"] = df_copy["value_relative"].apply(str)
 
     cache_dataframe(f"{CACHE_DATA_ID}-{config_id}", project_name, df_copy)
 
+
 def get_all_data() -> pd.DataFrame:
     """
     Get all data for all projects and configuration IDs.
 
-    This function is used to aggregate all data for all projects and configuration IDs into a single DataFrame.
+    This function is used to aggregate all data for all projects and
+     configuration IDs into a single DataFrame.
     """
     result_df = pd.DataFrame()
 
@@ -867,9 +1020,20 @@ def get_all_data() -> pd.DataFrame:
 
     return result_df.fillna({"config_id": -1})
 
+
 def aggregate_data_for_cs(
-    cs: CaseStudy, config_ids: tp.Optional[tp.List[int]]
+    cs: CaseStudy, config_ids: list[int] | None
 ) -> pd.DataFrame:
+    """
+    Aggregate data for a single case study.
+
+    Args:
+        cs: The case study to aggregate data for.
+        config_ids: A list of configuration IDs to include in the aggregation.
+
+    Returns:
+        A DataFrame containing the aggregated data.
+    """
     result_df = pd.DataFrame()
 
     if config_ids is None:
@@ -885,45 +1049,66 @@ def aggregate_data_for_cs(
 
     result_df = add_significance_values(result_df)
 
-    if cs.project_name not in ["libzmq"]:
+    try:
         result_df = _add_testsuite_info(result_df, cs)
-    else:
-        print(f"Could not add testsuite information for {cs.project_name}. Filling with None.")
+    except:  # noqa: E722
+        print(
+            f"Could not add testsuite information for {cs.project_name}. "
+            f"Filling with None."
+        )
         result_df["testsuite_equivalent"] = True
 
     # DEBUG: Print the number of rows where testsuite_equivalent is False
-    num_false = result_df[result_df["testsuite_equivalent"] == False].shape[0]
+    num_false = result_df[not result_df["testsuite_equivalent"]].shape[0]
     print(f"Number of rows where testsuite_equivalent is False: {num_false}")
 
-    num_none = result_df[(result_df["testsuite_equivalent"].isna()) & (result_df["config_opportunity"] != "__baseline__")].shape[0]
-    print(f"Number of none-baseline rows where testsuite_equivalent is None: {num_none}")
+    num_none = result_df[
+        (result_df["testsuite_equivalent"].isna())
+        & (result_df["config_opportunity"] != "__baseline__")
+    ].shape[0]
+    print(
+        f"Number of none-baseline rows where testsuite_equivalent is None:"
+        f" {num_none}"
+    )
 
-    num_true = result_df[result_df["testsuite_equivalent"] == True].shape[0]
+    num_true = result_df[result_df["testsuite_equivalent"]].shape[0]
     print(f"Number of rows where testsuite_equivalent is True: {num_true}")
 
     # Convert config_id to int and fill NaN with -1 for projects without configs
     result_df["config_id"] = result_df["config_id"].fillna(-1)
 
     # Filter out non-baseline rows where testsuite_equivalent is None
-    # This indicates a failure in the testsuite run which leads to no results being available for comparison.
-    result_df = result_df[~((result_df["testsuite_equivalent"].isna()) & (result_df["config_opportunity"] != "__baseline__"))]
+    # This indicates a failure in the testsuite run which leads to no results
+    # being available for comparison.
+    result_df = result_df[
+        ~(
+            (result_df["testsuite_equivalent"].isna())
+            & (result_df["config_opportunity"] != "__baseline__")
+        )
+    ]
 
-    # Generate a numeric setting_id column based on binary-wl, metric, and config_id
-    result_df["setting_id"] = result_df.groupby(["binary-wl", "metric", "config_id"]).ngroup()
+    # Generate a numeric setting_id columns
+    result_df["setting_id"] = result_df.groupby(
+        ["binary-wl", "metric", "config_id"]
+    ).ngroup()
 
-    # Generate numeric config_alt_id column based on config_opportunity and variation
-    result_df["config_alt_id"] = result_df.groupby(["config_opportunity", "variation"]).ngroup()
+    # Generate numeric config_alt_id columns
+    result_df["config_alt_id"] = result_df.groupby(
+        ["config_opportunity", "variation"]
+    ).ngroup()
 
     # Baseline rows have None as config_alt_id, so we can fill them with -1
-    result_df["config_alt_id"] = result_df["config_alt_id"].fillna(-1).astype(int)
+    result_df["config_alt_id"] = (
+        result_df["config_alt_id"].fillna(-1).astype(int)
+    )
 
     # Only return rows where testsuite_equivalent is True or None (not False)
     return result_df[result_df["testsuite_equivalent"].isin([True, None])]
 
 
 def create_config_opportunities_value_map(
-    cs: CaseStudy
-) -> tp.Dict[str, tp.Dict[str, float]]:
+    cs: CaseStudy,
+) -> dict[str, dict[str, float]]:
     """Create a mapping of configuration opportunities to their values."""
     result = {}
 
@@ -945,7 +1130,7 @@ def create_config_opportunities_value_map(
             }
 
     if cs.project_name == "FastDownward":
-        # Special case for FastDownward where we have multiple config opportunities
+        # Rename the key for FD
         result["preconditions"] = result["preconditions_to_test"]
 
     if cs.project_name == "libvpx":
@@ -964,42 +1149,51 @@ def add_significance_values(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
     # First identify all baseline rows
-    baseline_df = df[df["config_opportunity"] == "__baseline__"].set_index([
-        "binary-wl", "metric", "config_id"
-    ])["value"]
+    baseline_df = df[df["config_opportunity"] == "__baseline__"].set_index(
+        ["binary-wl", "metric", "config_id"]
+    )["value"]
 
     def is_significant(row):
-        if (row["config_opportunity"] == "__baseline__"):
+        if row["config_opportunity"] == "__baseline__":
             return None
-        baseline_value = baseline_df.loc[row["binary-wl"], row["metric"],
-                                         row["config_id"]].copy()
+        baseline_value = baseline_df.loc[
+            row["binary-wl"], row["metric"], row["config_id"]
+        ].copy()
         return mannwhitneyu(baseline_value, row["value"])
 
     df["significance"] = df.apply(is_significant, axis=1)
 
     def cohens_d(row):
-        if (row["config_opportunity"] == "__baseline__"):
+        if row["config_opportunity"] == "__baseline__":
             return None
-        baseline_value = baseline_df.loc[row["binary-wl"], row["metric"],
-                                         row["config_id"]]
+        baseline_value = baseline_df.loc[
+            row["binary-wl"], row["metric"], row["config_id"]
+        ]
 
         def s(x1, x2):
-            return np.sqrt(((len(x1) - 1) * np.std(x1, ddof=1)**2 +
-                            (len(x2) - 1) * np.std(x2, ddof=1)**2) /
-                           (len(x1) + len(x2) - 2))
+            return np.sqrt(
+                (
+                    (len(x1) - 1) * np.std(x1, ddof=1) ** 2
+                    + (len(x2) - 1) * np.std(x2, ddof=1) ** 2
+                )
+                / (len(x1) + len(x2) - 2)
+            )
 
-        return (np.mean(row["value"]) -
-                np.mean(baseline_value)) / s(row["value"], baseline_value)
+        return (np.mean(row["value"]) - np.mean(baseline_value)) / s(
+            row["value"], baseline_value
+        )
 
     df["cohens_d"] = df.apply(cohens_d, axis=1)
 
     def r(row):
-        if (row["config_opportunity"] == "__baseline__"):
+        if row["config_opportunity"] == "__baseline__":
             return None
         return row["significance"].statistic / np.sqrt(
-            len(row["value"]) + len(
-                baseline_df.loc[row["binary-wl"], row["metric"],
-                                row["config_id"]]
+            len(row["value"])
+            + len(
+                baseline_df.loc[
+                    row["binary-wl"], row["metric"], row["config_id"]
+                ]
             )
         )
 
@@ -1011,9 +1205,29 @@ def add_significance_values(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+
 def get_regressing_configs(
-    cs: CaseStudy
-) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[str, str, float]]]]:
+    cs: CaseStudy,
+) -> dict[str, dict[int, list[tuple[str, str, float]]]]:
+    """
+    Identifies all configurations that regress.
+
+    Returns a dictionary with the following structure:
+    {
+        {metric}: {
+            {config_id}: [
+                ({binary-wl}, {config_opportunity}, {variation}),
+                ...
+            ],
+            ...
+        },
+        ...
+    }
+
+    That is:
+    For each metric, per config_id, a list of tuples containing the binary-wl,
+     config_opportunity, and variation that regress.
+    """
     str_val_map = create_config_opportunities_value_map(cs)
 
     full_data = aggregate_data_for_cs(cs, None)
@@ -1023,31 +1237,36 @@ def get_regressing_configs(
     result = {}
 
     for metrics in full_data["metric"].unique():
-
         result[metrics] = defaultdict(dict)
 
         for config_id in config_ids:
             result[metrics][config_id] = []
 
-            config_data = full_data[(full_data["config_id"] == config_id) &
-                                    (full_data["metric"] == metrics)]
+            config_data = full_data[
+                (full_data["config_id"] == config_id)
+                & (full_data["metric"] == metrics)
+            ]
 
             for wl in config_data["binary-wl"].unique():
                 wl_data = config_data[config_data["binary-wl"] == wl]
 
-                baseline_data = wl_data[wl_data["config_opportunity"] ==
-                                        "__baseline__"]["value"].tolist()[0]
+                baseline_data = wl_data[
+                    wl_data["config_opportunity"] == "__baseline__"
+                ]["value"].tolist()[0]
 
-                for config_opportunity in wl_data["config_opportunity"].unique(
-                ):
+                for config_opportunity in wl_data[
+                    "config_opportunity"
+                ].unique():
                     if config_opportunity == "__baseline__":
                         continue
 
                     config_opportunity_data = wl_data[
-                        wl_data["config_opportunity"] == config_opportunity]
+                        wl_data["config_opportunity"] == config_opportunity
+                    ]
 
-                    for variation in config_opportunity_data["variation"
-                                                            ].unique():
+                    for variation in config_opportunity_data[
+                        "variation"
+                    ].unique():
                         variation_data = config_opportunity_data[
                             config_opportunity_data["variation"] == variation
                         ]["value"].tolist()[0]
@@ -1057,26 +1276,29 @@ def get_regressing_configs(
                         if ttest_res.pvalue > 0.05:
                             continue
 
-                        print(
-                            f"{metrics} {config_id} {wl} {config_opportunity} {variation} {ttest_res.pvalue}"
+                        # rel_data = config_opportunity_data[
+                        #    config_opportunity_data["variation"] == variation
+                        # ]["value_relative"].tolist()[0]
+
+                        result[metrics][config_id].append(
+                            (
+                                wl,
+                                config_opportunity,
+                                str_val_map[config_opportunity][variation],
+                            )
                         )
-                        print(f"{baseline_data} {variation_data}")
-
-                        rel_data = config_opportunity_data[
-                            config_opportunity_data["variation"] == variation
-                        ]["value_relative"].tolist()[0]
-
-                        print(f"{rel_data}")
-
-                        result[metrics][config_id].append((
-                            wl, config_opportunity,
-                            str_val_map[config_opportunity][variation]
-                        ))
 
     return result
 
 
 class EffectSize(float, Enum):
+    """
+    Enum for effect size interpretation according to Sawilowsky [1].
+
+    [1] Sawilowsky, S. S. (2009). "New effect size rules of thumb"
+    Journal of Modern Applied Statistical Methods, 8(2), 597-599.
+    """
+
     NONE = 0.0
     VERY_SMALL = 0.01
     SMALL = 0.2
@@ -1087,18 +1309,19 @@ class EffectSize(float, Enum):
 
     @staticmethod
     def interpret(effect_size: float) -> 'EffectSize':
+        """Interprets a float as an effect size."""
         effect_size = abs(effect_size)
+        result = EffectSize.HUGE
         if effect_size < EffectSize.VERY_SMALL.value:
-            return EffectSize.NONE
+            result = EffectSize.NONE
         if effect_size < EffectSize.SMALL.value:
-            return EffectSize.VERY_SMALL
+            result = EffectSize.VERY_SMALL
         if effect_size < EffectSize.MEDIUM.value:
-            return EffectSize.SMALL
+            result = EffectSize.SMALL
         if effect_size < EffectSize.LARGE.value:
-            return EffectSize.MEDIUM
+            result = EffectSize.MEDIUM
         if effect_size < EffectSize.VERY_LARGE.value:
-            return EffectSize.LARGE
+            result = EffectSize.LARGE
         if effect_size < EffectSize.HUGE.value:
-            return EffectSize.VERY_LARGE
-        else:
-            return EffectSize.HUGE
+            result = EffectSize.VERY_LARGE
+        return result
