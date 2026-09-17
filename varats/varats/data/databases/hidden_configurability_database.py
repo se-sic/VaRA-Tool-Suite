@@ -1059,7 +1059,7 @@ def aggregate_data_for_cs(
         result_df["testsuite_equivalent"] = True
 
     # DEBUG: Print the number of rows where testsuite_equivalent is False
-    num_false = result_df[not result_df["testsuite_equivalent"]].shape[0]
+    num_false = (~result_df["testsuite_equivalent"]).sum()
     print(f"Number of rows where testsuite_equivalent is False: {num_false}")
 
     num_none = result_df[
@@ -1071,7 +1071,7 @@ def aggregate_data_for_cs(
         f" {num_none}"
     )
 
-    num_true = result_df[result_df["testsuite_equivalent"]].shape[0]
+    num_true = result_df["testsuite_equivalent"].sum()
     print(f"Number of rows where testsuite_equivalent is True: {num_true}")
 
     # Convert config_id to int and fill NaN with -1 for projects without configs
