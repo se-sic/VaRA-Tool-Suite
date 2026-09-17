@@ -105,15 +105,20 @@ class BenchBuildConfig(unittest.TestCase):
     def test_change_value_kwargs(self):
         """Test if the change_value function updates the config correctly."""
         with bb_cfg(tmp_dir="/new/tmp/dir") as cfg:
-            self.assertEqual(cfg["tmp_dir"], "/new/tmp/dir")
+            self.assertEqual(str(cfg["tmp_dir"]), "/new/tmp/dir")
+
+    def test_change_value_kwargs_without_obj(self):
+        """Test config update without using the context manager object."""
+        with bb_cfg(tmp_dir="/new/tmp/dir"):
+            self.assertEqual(str(bb_cfg()["tmp_dir"]), "/new/tmp/dir")
 
     def test_value_restored_after_context(self):
         """Test if the config value is restored after the context manager."""
         original_tmp_dir = str(bb_cfg()["tmp_dir"])
         temporary_tmp_dir = str(settings.Path(original_tmp_dir) / "new/tmp/dir")
 
-        with bb_cfg(tmp_dir=temporary_tmp_dir) as cfg:
-            self.assertEqual(str(cfg["tmp_dir"]), temporary_tmp_dir)
+        with bb_cfg(tmp_dir=temporary_tmp_dir):
+            self.assertEqual(str(bb_cfg()["tmp_dir"]), temporary_tmp_dir)
 
         self.assertEqual(str(bb_cfg()["tmp_dir"]), original_tmp_dir)
 
@@ -121,7 +126,9 @@ class BenchBuildConfig(unittest.TestCase):
         """Test context managers restore nested config values correctly."""
         original_vara_ver = str(bb_cfg()["container"])
 
-        with bb_cfg(container={"runroot": "new_directory"}) as cfg1:
-            self.assertEqual(str(cfg1["container"]["runroot"]), "new_directory")
+        with bb_cfg(container={"runroot": "new_directory"}):
+            self.assertEqual(
+                str(bb_cfg()["container"]["runroot"]), "new_directory"
+            )
 
         self.assertEqual(str(bb_cfg()["container"]), original_vara_ver)
