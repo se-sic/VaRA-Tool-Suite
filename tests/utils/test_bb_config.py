@@ -116,3 +116,12 @@ class BenchBuildConfig(unittest.TestCase):
             self.assertEqual(str(cfg["tmp_dir"]), temporary_tmp_dir)
 
         self.assertEqual(str(bb_cfg()["tmp_dir"]), original_tmp_dir)
+
+    def test_nested_value_change(self):
+        """Test context managers restore nested config values correctly."""
+        original_vara_ver = str(bb_cfg()["vara"])
+
+        with bb_cfg(vara={"version": 160}) as cfg1:
+            self.assertEqual(str(cfg1["vara"]["version"]), 160)
+
+        self.assertEqual(str(bb_cfg()["vara"]), original_vara_ver)
