@@ -119,9 +119,9 @@ class BenchBuildConfig(unittest.TestCase):
 
     def test_nested_value_change(self):
         """Test context managers restore nested config values correctly."""
-        original_vara_ver = str(bb_cfg()["vara"])
+        original_vara_ver = str(bb_cfg()["container"])
 
-        with bb_cfg(vara={"version": 160}) as cfg1:
-            self.assertEqual(str(cfg1["vara"]["version"]), 160)
+        with bb_cfg(container={"runroot": "new_directory"}) as cfg1:
+            self.assertEqual(str(cfg1["container"]["runroot"]), "new_directory")
 
-        self.assertEqual(str(bb_cfg()["vara"]), original_vara_ver)
+        self.assertEqual(str(bb_cfg()["container"]), original_vara_ver)
