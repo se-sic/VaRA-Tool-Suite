@@ -4,14 +4,16 @@ Settings module for VaRA.
 All settings are stored in a simple dictionary. Each setting should be
 modifiable via environment variable.
 """
-import os
+
+import copy
 import sys
 import typing as tp
-from os import makedirs, path
 from pathlib import Path
+from typing import Self
 
 import benchbuild.utils.settings as s
-from plumbum import local, LocalPath
+from benchbuild.utils.settings import Configuration
+from plumbum import LocalPath, local
 
 
 def create_new_varats_config() -> s.Configuration:
@@ -33,45 +35,41 @@ def create_new_varats_config() -> s.Configuration:
             },
             "benchbuild_root": {
                 "desc": "Root folder to run BenchBuild in",
-                "default": os.getcwd() + "/benchbuild",
+                "default": Path.cwd() / "benchbuild",
             },
             "data_cache": {
                 "desc": "Local data cache to store preprocessed files.",
-                "default": os.getcwd() + "/data_cache",
+                "default": Path.cwd() / "data_cache",
             },
             "result_dir": {
                 "desc": "Result folder for collected results",
-                "default": os.getcwd() + "/results",
+                "default": Path.cwd() / "results",
             },
-        }
+        },
     )
 
     cfg["container"] = {
         "research_tool": {
-            "desc":
-                "The currently active research tool."
-                "Base containers come with this tool preinstalled.",
-            "default": None
+            "desc": "The currently active research tool."
+            "Base containers come with this tool preinstalled.",
+            "default": None,
         },
         "from_source": {
-            "desc":
-                "Whether to install varats in the container from a local "
-                "source checkout or pip.",
-            "default": False
+            "desc": "Whether to install varats in the container from a local "
+            "source checkout or pip.",
+            "default": False,
         },
         "dev_mode": {
-            "desc":
-                "If enabled, install varats in editable mode."
-                "Implies `from_source=True` and `varats_source` must be "
-                "mountable inside the container.",
-            "default": False
+            "desc": "If enabled, install varats in editable mode."
+            "Implies `from_source=True` and `varats_source` must be "
+            "mountable inside the container.",
+            "default": False,
         },
         "varats_source": {
-            "desc":
-                "Path to the local checkout of varats to use for the source"
-                "install.",
-            "default": None
-        }
+            "desc": "Path to the local checkout of varats to use for the source"
+            "install.",
+            "default": None,
+        },
     }
 
     cfg["vara"] = {
@@ -102,14 +100,8 @@ def create_new_varats_config() -> s.Configuration:
     }
 
     cfg["phasar"] = {
-        "source_dir": {
-            "desc": "Phasar source directory",
-            "default": None
-        },
-        "install_dir": {
-            "desc": "Phasar install directory",
-            "default": None
-        },
+        "source_dir": {"desc": "Phasar source directory", "default": None},
+        "install_dir": {"desc": "Phasar install directory", "default": None},
         "developer_version": {
             "desc": "Setup phasar as development build.",
             "default": True,
@@ -119,18 +111,18 @@ def create_new_varats_config() -> s.Configuration:
     cfg["szzunleashed"] = {
         "source_dir": {
             "desc": "SZZUnleashed source directory",
-            "default": None
+            "default": None,
         },
         "install_dir": {
             "desc": "SZZUnleashed install directory",
-            "default": None
+            "default": None,
         },
     }
 
     cfg["paper_config"] = {
         "folder": {
             "desc": "Folder with paper configs.",
-            "default": os.getcwd() + "/paper_configs",
+            "default": Path.cwd() / "paper_configs",
         },
         "current_config": {
             "desc": "Paper config file to load.",
@@ -140,75 +132,72 @@ def create_new_varats_config() -> s.Configuration:
 
     cfg["env"] = {
         "default": {},
-        "desc": "The environment benchbuild's commands should operate in."
+        "desc": "The environment benchbuild's commands should operate in.",
     }
 
     cfg['db'] = {
         "connect_string": {
             "desc": "sqlalchemy connect string",
-            "default": "sqlite://"
+            "default": "sqlite://",
         },
         "rollback": {
             "desc": "Rollback all operations after benchbuild completes.",
-            "default": False
+            "default": False,
         },
         "create_functions": {
             "default": False,
-            "desc": "Should we recreate our SQL functions from scratch?"
-        }
+            "desc": "Should we recreate our SQL functions from scratch?",
+        },
     }
 
     cfg['experiment'] = {
         "only_missing": {
             "default": True,
-            "desc":
-                "Only run missing version [Deprecated]"
-                "This option is replaced by file_status_blacklist = [Success]"
+            "desc": "Only run missing version [Deprecated]"
+            "This option is replaced by file_status_blacklist = [Success]",
         },
         "file_status_blacklist": {
             "default": ['Success', 'Blocked'],
-            "desc":
-                "Do not include revision with these file status for benchbuild "
-                "processing"
+            "desc": "Do not include revision with these file status for "
+            "benchbuild processing",
         },
         "file_status_whitelist": {
             "default": [],
-            "desc":
-                "Only include revision with these file status for benchbuild "
-                "processing"
+            "desc": "Only include revision with these file status for "
+            "benchbuild processing",
         },
         "random_order": {
             "default": False,
-            "desc": "Randomize the order of versions to explore."
+            "desc": "Randomize the order of versions to explore.",
         },
         "sample_limit": {
             "default": None,
-            "desc": "Randomize the order of versions to explore."
+            "desc": "Randomize the order of versions to explore.",
         },
         "workloads_base_location": {
             "default": str(Path.home()),
-            "desc": "Location of directory containing workloads for binaries."
+            "desc": "Location of directory containing workloads for binaries.",
         },
     }
 
     cfg['plots'] = {
         "plot_dir": {
             "desc": "Folder for generated plots",
-            "default": os.getcwd() + "/plots",
+            "default": Path.cwd() / "plots",
         },
     }
 
     cfg['tables'] = {
         "table_dir": {
             "desc": "Folder for generated tables",
-            "default": os.getcwd() + "/tables",
+            "default": Path.cwd() / "tables",
         },
     }
 
     cfg['artefacts'] = {
         "artefacts_dir": {
             "desc": "Folder for generated artefacts",
-            "default": os.getcwd() + "/artefacts",
+            "default": Path.cwd() / "artefacts",
         },
     }
 
@@ -225,13 +214,13 @@ def create_new_varats_config() -> s.Configuration:
     return cfg
 
 
-_CFG: tp.Optional[s.Configuration] = None
-_BB_CFG: tp.Optional[s.Configuration] = None
+_CFG: s.Configuration | None = None
+_BB_CFG: s.Configuration | None = None
 
 
 def vara_cfg() -> s.Configuration:
     """Get the current vara config."""
-    global _CFG  # pylint: disable=global-statement
+    global _CFG  # noqa: PLW0603
     if not _CFG:
         _CFG = create_new_varats_config()
         s.setup_config(
@@ -250,46 +239,85 @@ def add_vara_experiment_options(
         "outfile": {
             "default": "",
             "desc": "Path to store results of VaRA CFR analysis.",
-            "value": str(varats_config["result_dir"])
+            "value": str(varats_config["result_dir"]),
         },
         "result": {
-            "default":
-                "missingPath/annotatedResults",
-            "desc":
-                "Path to store already annotated projects.",
-            "value":
-                os.path.join(str(vara_cfg()["benchbuild_root"]), "BC_files")
-        }
+            "default": "missingPath/annotatedResults",
+            "desc": "Path to store already annotated projects.",
+            "value": Path(str(vara_cfg()["benchbuild_root"])) / "BC_files",
+        },
     }
 
 
-def __is_benchbuild_process() -> bool:
-    """Check whether we are running in a benchbuild process."""
-    script_name = sys.argv[0]
-    return script_name.endswith("benchbuild")
+class __BBCFG:
+    """Singleton class to manage the benchbuild config."""
+
+    def __init__(self) -> None:
+        self.__overrides: dict[str, tp.Any] = {}
+        self.__config: s.Configuration | None = None
+        self.__saved_config: s.Configuration | None = None
+
+    def __call__(self, **overrides: tp.Any) -> Self | Configuration:
+        """Get the current config or create a temporary override context."""
+        global _BB_CFG  # noqa: PLW0603
+        if not _BB_CFG:
+            from benchbuild.settings import CFG as BB_CFG  # noqa: PLC0415
+
+            add_vara_experiment_options(BB_CFG, vara_cfg())
+            bb_root = str(vara_cfg()["benchbuild_root"])
+
+            if not self.__is_benchbuild_process() and bb_root:
+                bb_cfg_path = Path(bb_root) / ".benchbuild.yml"
+                if bb_cfg_path.exists():
+                    BB_CFG.load(local.path(bb_cfg_path))
+
+            BB_CFG.init_from_env()
+            _BB_CFG = BB_CFG
+            create_missing_bb_folders()
+
+        self.__config = _BB_CFG
+        self.__overrides = overrides
+
+        if overrides:
+            return self
+
+        assert _BB_CFG is not None
+        return _BB_CFG
+
+    def __enter__(self) -> s.Configuration:
+        """Apply this context's overrides and return the configuration."""
+        assert self.__config is not None
+        self.__saved_config = copy.deepcopy(self.__config)
+        self.__apply_overrides(self.__config, self.__overrides)
+        return self.__config
+
+    def __exit__(
+        self, exc_type: tp.Any, exc_value: tp.Any, traceback: tp.Any
+    ) -> bool:
+        """Restore the configuration state that existed before entry."""
+        if self.__saved_config is not None:
+            self.__config.__dict__ = self.__saved_config.__dict__
+            self.__saved_config = None
+        return False
+
+    def __apply_overrides(
+        self, config: s.Configuration, overrides: dict[str, tp.Any]
+    ) -> None:
+        """Apply nested overrides."""
+        for key, value in overrides.items():
+            config_node = config[key]
+            if isinstance(value, dict) and not config_node.is_leaf():
+                self.__apply_overrides(config_node, value)
+            else:
+                config[key] = value
+
+    def __is_benchbuild_process(self) -> bool:
+        """Check whether we are running in a benchbuild process."""
+        script_name = sys.argv[0]
+        return script_name.endswith("benchbuild")
 
 
-def bb_cfg() -> s.Configuration:
-    """Get the current benchbuild config."""
-    global _BB_CFG  # pylint: disable=global-statement
-    if not _BB_CFG:
-        from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
-        add_vara_experiment_options(BB_CFG, vara_cfg())
-        bb_root = str(vara_cfg()["benchbuild_root"])
-
-        # load benchbuild config specified by varats config
-        # if available and not running in a benchbuild process
-        if not __is_benchbuild_process() and bb_root:
-            bb_cfg_path = Path(bb_root) / ".benchbuild.yml"
-            if bb_cfg_path.exists():
-                BB_CFG.load(local.path(bb_cfg_path))
-
-        # Environment should always override config files
-        BB_CFG.init_from_env()
-
-        _BB_CFG = BB_CFG
-        create_missing_bb_folders()
-    return _BB_CFG
+bb_cfg = __BBCFG()
 
 
 def get_value_or_default(
@@ -314,12 +342,13 @@ def create_missing_folders() -> None:
         cfg_varname: str, local_cfg: s.Configuration = vara_cfg()
     ) -> None:
         """Create missing folders for a specific config path."""
-
         config_node = local_cfg[cfg_varname]
-        if config_node.has_value() and\
-                config_node.value is not None and\
-                not path.isdir(config_node.value):
-            makedirs(config_node.value, exist_ok=True)
+        if (
+            config_node.has_value()
+            and config_node.value is not None
+            and not Path(str(config_node.value)).is_dir()
+        ):
+            Path(str(config_node.value)).mkdir(parents=True, exist_ok=True)
 
     create_missing_folder_for_cfg("benchbuild_root")
     create_missing_folder_for_cfg("result_dir")
@@ -337,12 +366,13 @@ def create_missing_bb_folders() -> None:
         cfg_varname: str, local_cfg: s.Configuration = bb_cfg()
     ) -> None:
         """Create missing folders for a specific config path."""
-
         config_node = local_cfg[cfg_varname]
-        if config_node.has_value() and\
-                config_node.value is not None and\
-                not path.isdir(str(config_node.value)):
-            makedirs(str(config_node.value), exist_ok=True)
+        if (
+            config_node.has_value()
+            and config_node.value is not None
+            and not Path(str(config_node.value)).is_dir()
+        ):
+            Path(str(config_node.value)).mkdir(parents=True, exist_ok=True)
 
     create_missing_folder_for_cfg("outfile", bb_cfg()["varats"])
     create_missing_folder_for_cfg("result", bb_cfg()["varats"])
@@ -363,19 +393,19 @@ def save_config() -> None:
     else:
         config_file = str(vara_cfg()["config_file"])
 
-    vara_cfg()["config_file"] = path.abspath(config_file)
+    vara_cfg()["config_file"] = Path(config_file).resolve()
     create_missing_folders()
     vara_cfg().store(LocalPath(config_file))
 
 
-def save_bb_config(benchbuild_cfg: tp.Optional[s.Configuration] = None) -> None:
+def save_bb_config(benchbuild_cfg: s.Configuration | None = None) -> None:
     """Persist BenchBuild config to a yaml file."""
     if not benchbuild_cfg:
         benchbuild_cfg = bb_cfg()
 
-    config_file = local.path(
-        str(vara_cfg()["benchbuild_root"])
-    ) / ".benchbuild.yml"
+    config_file = (
+        local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
+    )
     benchbuild_cfg["config_file"] = str(config_file)
     create_missing_bb_folders()
     benchbuild_cfg.store(config_file)
@@ -383,11 +413,13 @@ def save_bb_config(benchbuild_cfg: tp.Optional[s.Configuration] = None) -> None:
 
 def get_varats_base_folder() -> Path:
     """
+    Return VaRATS base folder.
+
     Returns the path to the tool suite base folder, i.e., the folder that
     contains the config file.
 
     Returns:
-        path to base folder
+        path to base folder.
     """
     cfg_config_file = vara_cfg()["config_file"].value
     if cfg_config_file is None:
