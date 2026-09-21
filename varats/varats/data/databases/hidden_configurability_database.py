@@ -1307,21 +1307,12 @@ class EffectSize(float, Enum):
     VERY_LARGE = 1.2
     HUGE = 2.0
 
-    @staticmethod
-    def interpret(effect_size: float) -> 'EffectSize':
+    @classmethod
+    def interpret(cls, effect_size: float) -> 'EffectSize':
         """Interprets a float as an effect size."""
-        effect_size = abs(effect_size)
-        result = EffectSize.HUGE
-        if effect_size < EffectSize.VERY_SMALL.value:
-            result = EffectSize.NONE
-        if effect_size < EffectSize.SMALL.value:
-            result = EffectSize.VERY_SMALL
-        if effect_size < EffectSize.MEDIUM.value:
-            result = EffectSize.SMALL
-        if effect_size < EffectSize.LARGE.value:
-            result = EffectSize.MEDIUM
-        if effect_size < EffectSize.VERY_LARGE.value:
-            result = EffectSize.LARGE
-        if effect_size < EffectSize.HUGE.value:
-            result = EffectSize.VERY_LARGE
-        return result
+        abs_effect_size = abs(effect_size)
+
+        for effect in reversed(cls):
+            if abs_effect_size >= effect.value:
+                return effect
+        return cls.NONE
