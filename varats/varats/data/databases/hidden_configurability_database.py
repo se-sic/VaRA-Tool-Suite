@@ -73,7 +73,7 @@ def extract_config_point(full_name: str) -> tuple[str, str]:
     We want to extract <config_point> and <value>.
     Example: "patched_15_opt_level=3_basefile.c.zip" -> ("opt_level", "3")
     """
-    name_path = Path(full_name).stem
+    name_path = Path(full_name).name.removesuffix(".zip")
     name_path = name_path[len("patched_") :]
     split_leftover_fn = name_path.partition("_")
     shortname_length = int(split_leftover_fn[0])
@@ -1059,7 +1059,7 @@ def aggregate_data_for_cs(
         result_df["testsuite_equivalent"] = True
 
     # DEBUG: Print the number of rows where testsuite_equivalent is False
-    num_false = (~result_df["testsuite_equivalent"]).sum()
+    num_false = (result_df[result_df["testsuite_equivalent"] == False]).shape[0]  # noqa: E712
     print(f"Number of rows where testsuite_equivalent is False: {num_false}")
 
     num_none = result_df[
@@ -1148,7 +1148,7 @@ def add_significance_values(df: pd.DataFrame) -> pd.DataFrame:
     """Add significance values to the DataFrame."""
     if df.empty:
         return df
-    # First identify all baseline rows
+    # First, identify all baseline rows
     baseline_df = df[df["config_opportunity"] == "__baseline__"].set_index(
         ["binary-wl", "metric", "config_id"]
     )["value"]
