@@ -8,8 +8,8 @@ modifiable via environment variable.
 import copy
 import sys
 import typing as tp
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Self
 
 import benchbuild.utils.settings as s
 from benchbuild.utils.settings import Configuration
@@ -249,20 +249,19 @@ def add_vara_experiment_options(
         "result": {
             "default": "missingPath/annotatedResults",
             "desc": "Path to store already annotated projects.",
-            "value": str(Path(str(vara_cfg()["benchbuild_root"])) / "BC_files"),
+            "value": str(
+                Path(str(varats_config["benchbuild_root"])) / "BC_files"
+            ),
         },
     }
 
 
 class __BBCFG:
-    """Singleton class to manage the benchbuild config."""
+    """Singleton class that provides the BenchBuild configuration."""
 
-    def __init__(self) -> None:
-        self.__overrides: dict[str, tp.Any] = {}
-        self.__config: s.Configuration | None = None
-        self.__saved_config: s.Configuration | None = None
-
-    def __call__(self, **overrides: tp.Any) -> Self | Configuration:
+    def __call__(
+        self, **overrides: tp.Any
+    ) -> tp.ContextManager[Configuration] | Configuration:
         """Get the current config or create a temporary override context."""
         global _BB_CFG  # noqa: PLW0603
         if not _BB_CFG:
@@ -280,30 +279,24 @@ class __BBCFG:
             _BB_CFG = BB_CFG
             create_missing_bb_folders()
 
-        self.__config = _BB_CFG
-        self.__overrides = overrides
-
         if overrides:
-            return self
+            assert _BB_CFG is not None
+            return self.__override_context(_BB_CFG, overrides)
 
         assert _BB_CFG is not None
         return _BB_CFG
 
-    def __enter__(self) -> s.Configuration:
-        """Apply this context's overrides and return the configuration."""
-        assert self.__config is not None
-        self.__saved_config = copy.deepcopy(self.__config)
-        self.__apply_overrides(self.__config, self.__overrides)
-        return self.__config
-
-    def __exit__(
-        self, exc_type: tp.Any, exc_value: tp.Any, traceback: tp.Any
-    ) -> bool:
-        """Restore the configuration state that existed before entry."""
-        if self.__saved_config is not None:
-            self.__config.__dict__ = self.__saved_config.__dict__
-            self.__saved_config = None
-        return False
+    @contextmanager
+    def __override_context(
+        self, config: s.Configuration, overrides: dict[str, tp.Any]
+    ) -> tp.Iterator[s.Configuration]:
+        """Temporarily apply overrides and restore the original config."""
+        saved_config = copy.deepcopy(config)
+        try:
+            self.__apply_overrides(config, overrides)
+            yield config
+        finally:
+            config.__dict__ = saved_config.__dict__
 
     def __apply_overrides(
         self, config: s.Configuration, overrides: dict[str, tp.Any]
