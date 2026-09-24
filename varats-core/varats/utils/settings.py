@@ -8,11 +8,9 @@ modifiable via environment variable.
 import copy
 import sys
 import typing as tp
-from contextlib import contextmanager
 from pathlib import Path
 
 import benchbuild.utils.settings as s
-from benchbuild.utils.settings import Configuration
 from plumbum import LocalPath, local
 
 
@@ -259,9 +257,11 @@ def add_vara_experiment_options(
 class __BBCFG:
     """Singleton class that provides the BenchBuild configuration."""
 
-    def __call__(
-        self, **overrides: tp.Any
-    ) -> tp.ContextManager[Configuration] | Configuration:
+    def __init__(self) -> None:
+        self.__overrides: list[dict[str, tp.Any]] = []
+        self.__saved_configs: list[s.Configuration] = []
+
+    def __call__(self, **overrides: tp.Any) -> tp.Self | s.Configuration:
         """Get the current config or create a temporary override context."""
         global _BB_CFG  # noqa: PLW0603
         if not _BB_CFG:
@@ -280,23 +280,20 @@ class __BBCFG:
             create_missing_bb_folders()
 
         if overrides:
-            assert _BB_CFG is not None
-            return self.__override_context(_BB_CFG, overrides)
-
-        assert _BB_CFG is not None
+            self.__overrides.append(overrides)
+            return self
         return _BB_CFG
 
-    @contextmanager
-    def __override_context(
-        self, config: s.Configuration, overrides: dict[str, tp.Any]
-    ) -> tp.Iterator[s.Configuration]:
-        """Temporarily apply overrides and restore the original config."""
-        saved_config = copy.deepcopy(config)
-        try:
-            self.__apply_overrides(config, overrides)
-            yield config
-        finally:
-            config.__dict__ = saved_config.__dict__
+    def __enter__(self) -> s.Configuration:
+        config = bb_cfg()
+        self.__saved_configs.append(copy.deepcopy(config))
+        self.__apply_overrides(config, self.__overrides[-1])
+        return config
+
+    def __exit__(self, exc_type, exc_value, traceback) -> bool:
+        bb_cfg().__dict__ = self.__saved_configs.pop().__dict__
+        self.__overrides.pop()
+        return False
 
     def __apply_overrides(
         self, config: s.Configuration, overrides: dict[str, tp.Any]
