@@ -291,7 +291,8 @@ class __BBCFG:
         return config
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:
-        bb_cfg().__dict__ = self.__saved_configs.pop().__dict__
+        global _BB_CFG  # noqa: PLW0603
+        _BB_CFG = self.__saved_configs.pop()
         self.__overrides.pop()
         return False
 
