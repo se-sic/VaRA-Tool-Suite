@@ -4,7 +4,6 @@ import importlib
 import re
 import unittest
 from pathlib import Path
-from unittest import mock
 
 from click.testing import CliRunner
 
