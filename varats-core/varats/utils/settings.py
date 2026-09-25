@@ -290,7 +290,7 @@ class __BBCFG:
         self.__apply_overrides(config, self.__overrides[-1])
         return config
 
-    def __exit__(self, exc_type, exc_value, traceback) -> bool:
+    def __exit__(self, exc_type, exc_value, traceback) -> bool:  # noqa: ANN001
         global _BB_CFG  # noqa: PLW0603
         _BB_CFG = self.__saved_configs.pop()
         self.__overrides.pop()
