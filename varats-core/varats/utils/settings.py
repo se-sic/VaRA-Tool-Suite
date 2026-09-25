@@ -5,6 +5,7 @@ All settings are stored in a simple dictionary. Each setting should be
 modifiable via environment variable.
 """
 
+import copy
 import sys
 import typing as tp
 from pathlib import Path
@@ -246,39 +247,73 @@ def add_vara_experiment_options(
         "result": {
             "default": "missingPath/annotatedResults",
             "desc": "Path to store already annotated projects.",
-            "value": str(Path(str(vara_cfg()["benchbuild_root"])) / "BC_files"),
+            "value": str(
+                Path(str(varats_config["benchbuild_root"])) / "BC_files"
+            ),
         },
     }
 
 
-def __is_benchbuild_process() -> bool:
-    """Check whether we are running in a benchbuild process."""
-    script_name = sys.argv[0]
-    return script_name.endswith("benchbuild")
+class __BBCFG:
+    """Singleton class that provides the BenchBuild configuration."""
+
+    def __init__(self) -> None:
+        self.__overrides: list[dict[str, tp.Any]] = []
+        self.__saved_configs: list[s.Configuration] = []
+
+    def __call__(self, **overrides: tp.Any) -> tp.Self | s.Configuration:
+        """Get the current config or create a temporary override context."""
+        global _BB_CFG  # noqa: PLW0603
+        if not _BB_CFG:
+            from benchbuild.settings import CFG as BB_CFG  # noqa: PLC0415
+
+            add_vara_experiment_options(BB_CFG, vara_cfg())
+            bb_root = str(vara_cfg()["benchbuild_root"])
+
+            if not self.__is_benchbuild_process() and bb_root:
+                bb_cfg_path = Path(bb_root) / ".benchbuild.yml"
+                if bb_cfg_path.exists():
+                    BB_CFG.load(local.path(bb_cfg_path))
+
+            BB_CFG.init_from_env()
+            _BB_CFG = BB_CFG
+            create_missing_bb_folders()
+
+        if overrides:
+            self.__overrides.append(overrides)
+            return self
+        return _BB_CFG
+
+    def __enter__(self) -> s.Configuration:
+        config = bb_cfg()
+        self.__saved_configs.append(copy.deepcopy(config))
+        self.__apply_overrides(config, self.__overrides[-1])
+        return config
+
+    def __exit__(self, exc_type, exc_value, traceback) -> bool:  # noqa: ANN001
+        global _BB_CFG  # noqa: PLW0603
+        _BB_CFG = self.__saved_configs.pop()
+        self.__overrides.pop()
+        return False
+
+    def __apply_overrides(
+        self, config: s.Configuration, overrides: dict[str, tp.Any]
+    ) -> None:
+        """Apply nested overrides."""
+        for key, value in overrides.items():
+            config_node = config[key]
+            if isinstance(value, dict) and not config_node.is_leaf():
+                self.__apply_overrides(config_node, value)
+            else:
+                config[key] = value
+
+    def __is_benchbuild_process(self) -> bool:
+        """Check whether we are running in a benchbuild process."""
+        script_name = sys.argv[0]
+        return script_name.endswith("benchbuild")
 
 
-def bb_cfg() -> s.Configuration:
-    """Get the current benchbuild config."""
-    global _BB_CFG  # noqa: PLW0603
-    if not _BB_CFG:
-        from benchbuild.settings import CFG as BB_CFG  # noqa: PLC0415
-
-        add_vara_experiment_options(BB_CFG, vara_cfg())
-        bb_root = str(vara_cfg()["benchbuild_root"])
-
-        # load benchbuild config specified by varats config
-        # if available and not running in a benchbuild process
-        if not __is_benchbuild_process() and bb_root:
-            bb_cfg_path = Path(bb_root) / ".benchbuild.yml"
-            if bb_cfg_path.exists():
-                BB_CFG.load(local.path(bb_cfg_path))
-
-        # Environment should always override config files
-        BB_CFG.init_from_env()
-
-        _BB_CFG = BB_CFG
-        create_missing_bb_folders()
-    return _BB_CFG
+bb_cfg = __BBCFG()
 
 
 def get_value_or_default(
