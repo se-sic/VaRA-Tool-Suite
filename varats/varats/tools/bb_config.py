@@ -52,6 +52,7 @@ def update_projects(
         'varats.projects.c_projects.htop',
         'varats.projects.c_projects.hypre',
         'varats.projects.c_projects.irssi',
+        'varats.projects.c_projects.jq',
         'varats.projects.c_projects.libjpeg_turbo',
         'varats.projects.c_projects.libpng',
         'varats.projects.c_projects.libsigrok',
