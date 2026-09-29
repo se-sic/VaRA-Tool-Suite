@@ -68,12 +68,8 @@ class BlameReportGeneration(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "--enable-new-pm=0", "-vara-BD", "-vara-BR",
-                "-vara-init-commits", "-vara-rewriteMD",
-                "-vara-git-mappings=" + ",".join([
-                    f'{repo_name}:{repo.repo_path}' for repo_name, repo in
-                    get_local_project_repos(self.project.name).items()
-                ]), "-vara-use-phasar",
+                "-passes=vara-BR",
+                "-vara-init-commits", "-vara-use-phasar",
                 f"-vara-blame-taint-scope={self.__blame_taint_scope.name}",
                 f"-vara-report-outfile={result_file}",
                 get_cached_bc_file_path(
