@@ -44,7 +44,7 @@ exec 2>&1
 node_dir=$(dirname "{{ prefix }}")
 
 # set environment for buildah/podman
-export XDG_RUNTIME_DIR=${node_dir}
+export XDG_RUNTIME_DIR=/tmp/slurm-runtime-${SLURM_JOBID}
 export HOME=${node_dir}
 export BB_CONTAINER_ROOT="${node_dir}/containers/lib"
 export BB_CONTAINER_RUNROOT="${node_dir}/containers/run"
@@ -55,6 +55,7 @@ flock -x 9 && {
   if [ ! -d "{{ prefix }}" ]; then
     echo "$(date) [$(hostname)] prepare local node"
     mkdir -p "{{ prefix }}"
+    mkdir -p ${XDG_RUNTIME_DIR}
   fi
   rm "{{ lockfile }}"
 }
@@ -81,7 +82,7 @@ file=$(mktemp -q) && {
 #!/bin/sh
 #SBATCH --nice={{ nice_clean }}
 #SBATCH -o /dev/null
-export XDG_RUNTIME_DIR=$INFOSAAR_LOCAL
+export XDG_RUNTIME_DIR=/tmp/slurm-runtime-${SLURM_JOBID}
 export HOME=$INFOSAAR_LOCAL
 exec 1>> {{ log }}-$_project
 exec 2>&1
@@ -89,6 +90,7 @@ echo "$(date) [$(hostname)] node cleanup begin"
 buildah --root ${BB_CONTAINER_ROOT} --runroot ${BB_CONTAINER_RUNROOT} unshare -- rm -r ${BB_CONTAINER_ROOT}
 buildah --root ${BB_CONTAINER_ROOT} --runroot ${BB_CONTAINER_RUNROOT} unshare -- rm -r ${BB_CONTAINER_RUNROOT}
 rm -r "{{ prefix }}"
+rm -r ${XDG_RUNTIME_DIR}
 rm "{{ clean_lockfile }}"
 echo "$(date) [$(hostname)] node cleanup end"
 EOF
