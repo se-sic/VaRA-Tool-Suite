@@ -1,4 +1,5 @@
-import typing as tp
+"""Module for plotting distributions of HC Data."""
+
 from enum import Enum
 
 import numpy as np
@@ -19,6 +20,7 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.ts_utils.cli_util import make_cli_option
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
 
@@ -28,12 +30,15 @@ class SignificantAlternativesSharePlot(
     """Plot the density of significant differences across all comparisons."""
 
     def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        pass
+        self,
+        boundary_gradient: float,  # noqa: ARG002
+    ) -> set[FullCommitHash]:
+        """Unsupported."""
+        raise UnsupportedOperation()
 
     @property
     def name(self) -> str:
+        """Generates the name based on arguments."""
         name = self.NAME
         if self.plot_kwargs["case_studies"]:
             name += f"_{self.plot_kwargs['case_studies']}"
@@ -43,17 +48,18 @@ class SignificantAlternativesSharePlot(
             name += f"_{self.plot_kwargs['workload']}"
         return name.replace("/", "+")
 
-    def __dummy_data(self):
+    @staticmethod
+    def __dummy_data():
         table_rows = []
         for _ in range(1000):
-            # Generate dummy data for the plot with random shares of significant differences
+            # Generate dummy data with random shares of significant differences
             new_row = {
                 "project": "dummy_project",
                 "metric": "dummy_metric",
                 "wl": "dummy_workload",
                 "co": "dummy_confopp",
                 # Generate random value 0,1
-                "share": np.random.rand(),
+                "share": np.random.default_rng().uniform(0, 1),
             }
             table_rows.append(new_row)
 
@@ -66,11 +72,9 @@ class SignificantAlternativesSharePlot(
             "binary-wl": "str",
             "metric": "str",
             "config_opportunity": "str",
-            "share": "float"
+            "share": "float",
         }
-        df = load_cached_df_or_none(
-            "HC-SIG-PLOT", "ALL", dtypes
-        )
+        df = load_cached_df_or_none("HC-SIG-PLOT", "ALL", dtypes)
 
         if df is None:
             return None
@@ -78,6 +82,7 @@ class SignificantAlternativesSharePlot(
         return df
 
     def load_data(self):
+        """Load the data for the plot."""
         case_studies = self.plot_kwargs.get("case_study", None)
 
         if not case_studies:
@@ -86,18 +91,19 @@ class SignificantAlternativesSharePlot(
         if self.plot_kwargs["case_studies"]:
             selected_case_studies = self.plot_kwargs["case_studies"].split(",")
             case_studies = [
-                cs for cs in case_studies
+                cs
+                for cs in case_studies
                 if cs.project_name in selected_case_studies
             ]
 
         table_rows = []
 
-        cached_df = self._load_cached_data()
-        if cached_df is not None:
+        if (cached_df := self._load_cached_data()) is not None:
             print("Using cached data for significant alternatives share plot.")
             return cached_df
 
         for cs in case_studies:
+            print(f"Processing {cs.project_name}")
             if cs.project_name not in _PROJECT_WORKLOADS:
                 print(
                     f"Skipping {cs.project_name} as it is not "
@@ -114,9 +120,11 @@ class SignificantAlternativesSharePlot(
             # Filter based on selected workloads and metrics
             if self.plot_kwargs["workload"]:
                 selected_workloads = self.plot_kwargs["workload"].split(",")
-                cs_df = cs_df[cs_df["binary-wl"].apply(
-                    lambda x: any(wl in x for wl in selected_workloads)
-                )]
+                cs_df = cs_df[
+                    cs_df["binary-wl"].apply(
+                        lambda x: any(wl in x for wl in selected_workloads)
+                    )
+                ]
 
             if self.plot_kwargs["metrics"]:
                 selected_metrics = self.plot_kwargs["metrics"].split(",")
@@ -126,28 +134,41 @@ class SignificantAlternativesSharePlot(
                 lambda x: 1 if x.pvalue < 0.05 else 0
             )
 
-            # The same opportunity occurs multiple times (with the same variations) for multiple combinations of binary and workload.
-            # We want separate rows/statistics for each workload/metric combination, so we group by these and the configuration opportunity and calculate the share of significant differences for each group.
-            cs_df = cs_df.groupby(["binary-wl", "metric",
-                                   "config_opportunity"]).agg(
-                                       total_variations=pd.NamedAgg(
-                                           column="variation", aggfunc="count"
-                                       ),
-                                       significant_variations=pd.NamedAgg(
-                                           column="significant", aggfunc="sum"
-                                       )
-                                   ).reset_index()
+            # The same opportunity occurs multiple times (with the same
+            # variations) for multiple combinations of binary and workload.
+            # We want separate rows/statistics for each workload/metric
+            # combination, so we group by these and the configuration
+            # opportunity and calculate the share of significant
+            # differences for each group.
+            cs_df = (
+                cs_df.groupby(["binary-wl", "metric", "config_opportunity"])
+                .agg(
+                    total_variations=pd.NamedAgg(
+                        column="variation", aggfunc="count"
+                    ),
+                    significant_variations=pd.NamedAgg(
+                        column="significant", aggfunc="sum"
+                    ),
+                )
+                .reset_index()
+            )
 
             # Convert to table rows
-            cs_df["share"
-                 ] = cs_df["significant_variations"] / cs_df["total_variations"]
+            cs_df["share"] = (
+                cs_df["significant_variations"] / cs_df["total_variations"]
+            )
             cs_df["project"] = cs.project_name
 
             table_rows.extend(
-                cs_df[[
-                    "project", "binary-wl", "metric", "config_opportunity",
-                    "share"
-                ]].to_dict("records")
+                cs_df[
+                    [
+                        "project",
+                        "binary-wl",
+                        "metric",
+                        "config_opportunity",
+                        "share",
+                    ]
+                ].to_dict("records")
             )
 
         df = pd.DataFrame.from_records(table_rows)
@@ -175,9 +196,9 @@ class SignificantAlternativesSharePlot(
 
         # Remove ticks for y-axis,
         # Instead draw the domain name in the middle of the violin plot
-        #tick_names = [item.get_text() for item in ax.get_yticklabels()]
-        #ax.set_yticklabels([])
-        #for i, tick_name in enumerate(tick_names):
+        # tick_names = [item.get_text() for item in ax.get_yticklabels()]
+        # ax.set_yticklabels([])
+        # for i, tick_name in enumerate(tick_names):
         #    ax.text(
         #        0.5,
         #        i+0.525,
@@ -189,10 +210,10 @@ class SignificantAlternativesSharePlot(
         #    )
 
         # remove y-ticks
-        #ax.tick_params(axis='y', which='both', length=0)
+        # ax.tick_params(axis='y', which='both', length=0)
 
-        # Sligthly extend y-axis of plt to the bottom to make space for domain label
-        #ax.margins(y=0.025)
+        # Extend y-axis of plt to the bottom to make space for domain label
+        # ax.margins(y=0.025)
         # Change font size of y-ticks
         ax.tick_params(axis='y', labelsize=5, which='both', length=0)
         # Rotate y-tick labels by 90 degrees and on the right side of the axis
@@ -203,28 +224,24 @@ class SignificantAlternativesSharePlot(
         # Change font size of x-ticks
         ax.tick_params(axis='x', labelsize=6)
 
-    def _add_quartile_lines(self, ax: plt.Axes, q1: float, q2: float, q3: float) -> None:
+    @staticmethod
+    def _add_quartile_lines(
+        ax: plt.Axes, q1: float, q2: float, q3: float
+    ) -> None:
         for q in [q1, q3]:
             ax.axvline(
-                q,
-                color="red",
-                linestyle=":",
-                alpha=0.5,
-                zorder=0,
-                lw=0.75
+                q, color="red", linestyle=":", alpha=0.5, zorder=0, lw=0.75
             )
         ax.axvline(
-            q2,
-            color="red",
-            linestyle="--",
-            alpha=0.5,
-            zorder=0,
-            lw=0.75
+            q2, color="red", linestyle="--", alpha=0.5, zorder=0, lw=0.75
         )
 
         # Add labels for the quartiles
-        # Add them on the left side of the axis, centered on the quartile lines, with a small offset to the left
-        for q, label in zip([q1, q2, q3], ["Q1 (All)", "Median (All)", "Q3 (All)"]):
+        # Add them on the left side of the axis, centered on the quartile lines,
+        # with a small offset to the left
+        for q, label in zip(
+            [q1, q2, q3], ["Q1 (All)", "Median (All)", "Q3 (All)"]
+        ):
             plt.text(
                 q,
                 -0.55,
@@ -233,7 +250,7 @@ class SignificantAlternativesSharePlot(
                 fontsize=5,
                 ha="center",
                 va="bottom",
-                alpha=0.5
+                alpha=0.5,
             )
 
     def _plot_violin_vstack(self) -> None:
@@ -248,7 +265,9 @@ class SignificantAlternativesSharePlot(
             project.project_cls.NAME: str(project.project_cls.DOMAIN)
             for project in get_loaded_paper_config().get_all_case_studies()
         }
-        data["domain"] = data["project"].apply(lambda x: domain_mapping.get(x, "other"))
+        data["domain"] = data["project"].apply(
+            lambda x: domain_mapping.get(x, "other")
+        )
 
         def _add_dummy_row(df, domain: str, side: str) -> pd.DataFrame:
             dummy_row = {
@@ -258,19 +277,23 @@ class SignificantAlternativesSharePlot(
                 "config_opportunity": "dummy_config_opportunity",
                 "share": -1,
                 "domain": domain,
-                "side": side
+                "side": side,
             }
-            return pd.concat([df, pd.DataFrame.from_records([dummy_row])], ignore_index=True)
+            return pd.concat(
+                [df, pd.DataFrame.from_records([dummy_row])], ignore_index=True
+            )
 
         # Multiple violin plots
         # We want one overall violin plot with a left half violin
-        # Then for each domain we want a separate right half violin plot, all on the same axis
+        # Then for each domain we want a separate right half-violin plot
+        # all on the same axis
         # We can achieve this by preparing the data in the right way
-        #   - Add a column "domain" to the data, which contains the domain of the project
-        #   - Duplicate each row with a domain "all" for the overall density plot
-        #   - Include a side column that is either "left" for the overall plot or "right" for the domain plots
+        #   - Add a column "domain", which contains the project domain
+        #   - Duplicate each row with domain "all" for the overall density plot
+        #   - Include a side column that is either "left" for the overall plot
+        #     or "right" for the domain plots
         # We then use violinplot with x="domain", y="share", hue="side"
-            # Add group column for multiple plots
+        # Add group column for multiple plots
         data["side"] = "right2"
 
         # Add one dummy entry per domain for the right side
@@ -282,7 +305,7 @@ class SignificantAlternativesSharePlot(
         all_data["domain"] = "All"
         all_data["side"] = "right1"
 
-        vals = all_data["share"].values
+        vals = all_data["share"].to_numpy()
 
         q1, q2, q3 = np.percentile(vals, [25, 50, 75])
 
@@ -295,20 +318,27 @@ class SignificantAlternativesSharePlot(
         # Set figure width based on number of domains
         plt.figure(figsize=(5, len(data["domain"].unique()) * 1.2))
 
-        ax = sns.violinplot(data=data,
-                       x="share",
-                       y="domain",
-                       hue="side",
-                       split=True,
-                       inner="quart",
-                       bw_method=0.2,
-                       order=sorted(data["domain"].unique().tolist()),
-                       hue_order=["right1", "left1","right2", "left2"],
-                       palette={"left1":"lightgray", "right1":sns.color_palette()[0], "left2":"lightgray", "right2":sns.color_palette()[1]},
-                       width=0.9,
-                       dodge=False,
-                            density_norm="width",
-                       orient="h")
+        ax = sns.violinplot(
+            data=data,
+            x="share",
+            y="domain",
+            hue="side",
+            split=True,
+            inner="quart",
+            bw_method=0.2,
+            order=sorted(data["domain"].unique().tolist()),
+            hue_order=["right1", "left1", "right2", "left2"],
+            palette={
+                "left1": "lightgray",
+                "right1": sns.color_palette()[0],
+                "left2": "lightgray",
+                "right2": sns.color_palette()[1],
+            },
+            width=0.9,
+            dodge=False,
+            density_norm="width",
+            orient="h",
+        )
 
         self._add_quartile_lines(ax, q1, q2, q3)
         self._add_axis_formatting(ax)
@@ -325,7 +355,9 @@ class SignificantAlternativesSharePlot(
             project.project_cls.NAME: str(project.project_cls.DOMAIN)
             for project in get_loaded_paper_config().get_all_case_studies()
         }
-        data["domain"] = data["project"].apply(lambda x: domain_mapping.get(x, "other"))
+        data["domain"] = data["project"].apply(
+            lambda x: domain_mapping.get(x, "other")
+        )
 
         all_data = data.copy()
         all_data["domain"] = "All"
@@ -340,10 +372,14 @@ class SignificantAlternativesSharePlot(
         match variant:
             case Variant.DoubleColumn:
                 fig = plt.figure(figsize=(10, 2))
-                # Variant B: Double-column mode. All domains as 2x2 on the left, then three domains per row on the right
+                # Variant B: Double-column mode. All domains as 2x2 on the left,
+                # then three domains per row on the right
                 grid_spec = fig.add_gridspec(nrows=2, ncols=5)
                 all_axis = fig.add_subplot(grid_spec[0:2, 0:2])
-                domain_axes = [fig.add_subplot(grid_spec[i // 3, 2 + (i % 3)]) for i in range(len(data["domain"].unique()))]
+                domain_axes = [
+                    fig.add_subplot(grid_spec[i // 3, 2 + (i % 3)])
+                    for i in range(len(data["domain"].unique()))
+                ]
             case Variant.Funky:
                 # A bit of a funky grid:
                 #
@@ -357,19 +393,29 @@ class SignificantAlternativesSharePlot(
                 grid_spec = fig.add_gridspec(nrows=3, ncols=4, wspace=0.2)
                 all_axis = fig.add_subplot(grid_spec[0:2, 0:3])
 
-                domain_axes = [fig.add_subplot(grid_spec[0, 3]), fig.add_subplot(grid_spec[1, 3]), fig.add_subplot(grid_spec[2, 0]), fig.add_subplot(grid_spec[2, 1]), fig.add_subplot(grid_spec[2, 2]), fig.add_subplot(grid_spec[2, 3])]
+                domain_axes = [
+                    fig.add_subplot(grid_spec[0, 3]),
+                    fig.add_subplot(grid_spec[1, 3]),
+                    fig.add_subplot(grid_spec[2, 0]),
+                    fig.add_subplot(grid_spec[2, 1]),
+                    fig.add_subplot(grid_spec[2, 2]),
+                    fig.add_subplot(grid_spec[2, 3]),
+                ]
             case Variant.SingleColumn:
                 fig = plt.figure()
-                # Variant A: All domains at top, then three domains per row below
+                # Variant A: All at top, then three projects per row
                 grid_spec = fig.add_gridspec(nrows=3, ncols=3)
                 all_axis = fig.add_subplot(grid_spec[0, :])
-                domain_axes = [fig.add_subplot(grid_spec[1 + (i // 3), i % 3]) for i in range(len(data["domain"].unique()))]
+                domain_axes = [
+                    fig.add_subplot(grid_spec[1 + (i // 3), i % 3])
+                    for i in range(len(data["domain"].unique()))
+                ]
 
         def _format_axis(ax: plt.Axes) -> None:
             # Hide legend
             ax.legend([], [], frameon=False)
             # Cut off x at 0,1
-            ax.set_xlim(0,1)
+            ax.set_xlim(0, 1)
             ax.set_ylabel("")
             ax.set_xlabel("")
 
@@ -382,17 +428,18 @@ class SignificantAlternativesSharePlot(
             ax.tick_params(axis='x', labelsize=8)
             ax.tick_params(axis='y', which='both', length=0)
 
-
-        sns.violinplot(data=data,
-                       x="share",
-                       split=True,
-                       inner="quart",
-                       bw_method=0.2,
-                       width=0.9,
-                       dodge=False,
-                       density_norm="width",
-                       orient="h",
-                       ax=all_axis)
+        sns.violinplot(
+            data=data,
+            x="share",
+            split=True,
+            inner="quart",
+            bw_adjust=0.25,
+            bw_method="silverman",
+            width=0.9,
+            dodge=False,
+            orient="h",
+            ax=all_axis,
+        )
 
         all_axis.set_title("All Domains", fontsize=16, y=1.0, pad=-18)
 
@@ -401,25 +448,28 @@ class SignificantAlternativesSharePlot(
         for i, domain in enumerate(data["domain"].unique()):
             domain_axis = domain_axes[i]
 
-            sns.violinplot(data=data[data["domain"] == domain],
-                           x="share",
-                           split=True,
-                           inner="quart",
-                           bw_method=0.2,
-                           width=0.9,
-                           dodge=False,
-                           density_norm="width",
-                           orient="h",
-                           ax=domain_axis,
-                           color=sns.color_palette()[1])
+            sns.violinplot(
+                data=data[data["domain"] == domain],
+                x="share",
+                split=True,
+                inner="quart",
+                bw_adjust=0.25,
+                bw_method="silverman",
+                width=0.9,
+                dodge=False,
+                density_norm="area",
+                orient="h",
+                ax=domain_axis,
+                color=sns.color_palette()[1],
+            )
             _format_axis(domain_axis)
 
             domain_axis.set_title(domain, fontsize=11, y=1.0, pad=-13)
 
-
-
-    def plot(self, view_mode: bool) -> None:
+    def plot(self, view_mode: bool) -> None:  # noqa: ARG002
+        """Plot the data."""
         self._plot_sven()
+
 
 class SignificantAlternativesSharePlotGenerator(
     PlotGenerator,
@@ -427,30 +477,31 @@ class SignificantAlternativesSharePlotGenerator(
     options=[
         make_cli_option(
             "--metrics",
-            help=
-            "Comma-separated list of metrics to include in the plot. If not specified, all metrics are included.",
+            help="Comma-separated list of metrics to include in the plot."
+            " If not specified, all metrics are included.",
             type=str,
-            default=None
+            default=None,
         ),
         make_cli_option(
             "--case-studies",
-            help=
-            "Comma-separated list of case studies to include in the plot. If not specified, all case studies are included.",
+            help="Comma-separated list of case studies to include in the plot."
+            " If not specified, all case studies are included.",
             type=str,
-            default=None
+            default=None,
         ),
         make_cli_option(
             "--workload",
-            help=
-            "Comma-separated list of workloads to include in the plot. If not specified, all workloads are included.",
+            help="Comma-separated list of workloads to include in the plot."
+            " If not specified, all workloads are included.",
             type=str,
-            default=None
-        )
-    ]
+            default=None,
+        ),
+    ],
 ):
     """Generator for SignificantAlternativesSharePlot."""
 
-    def generate(self) -> tp.List[Plot]:
+    def generate(self) -> list[Plot]:
+        """Generate the plot."""
         return [
             SignificantAlternativesSharePlot(
                 self.plot_config, **self.plot_kwargs
@@ -461,8 +512,10 @@ class SignificantAlternativesSharePlotGenerator(
 class GenerateAllSharesPlot(
     PlotGenerator, generator_name="hc_all_significant_alts_shares", options=[]
 ):
+    """Creates the plots for all case studies, workloads, and metrics."""
 
     def generate(self) -> list[Plot]:
+        """Generate the plot."""
         all_cs = get_loaded_paper_config().get_all_case_studies()
         plots = []
         for cs in all_cs:
@@ -475,11 +528,8 @@ class GenerateAllSharesPlot(
                 config_id = __cs_configs[cs.project_name][0]
             else:
                 config_id = None
-            try:
-                cs_df = aggregate_data_for_cs(cs, [config_id])
-            except Exception as e:
-                print(f"Error processing {cs.project_name}: {e}")
-                continue
+
+            cs_df = aggregate_data_for_cs(cs, [config_id])
 
             workloads = cs_df["binary-wl"].unique()
             metrics = cs_df["metric"].unique()
@@ -490,8 +540,10 @@ class GenerateAllSharesPlot(
                     **self.plot_kwargs,
                     case_studies=cs.project_name,
                     workload=w,
-                    metrics=m
-                ) for w in workloads for m in metrics
+                    metrics=m,
+                )
+                for w in workloads
+                for m in metrics
             ]
 
         return plots

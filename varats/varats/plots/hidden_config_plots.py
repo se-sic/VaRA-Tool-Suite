@@ -82,9 +82,22 @@ class PerfChangeSummaryPlot(Plot, plot_name="hc-perf-change-summary"):
         # adding a project column for later grouping
         plot_data = _load_data_for_case_studies(case_studies)
 
+        plot_color = self.plot_kwargs.get("color", "orange")
+
+        # Increase vertical size if total range of y-axis is too large
+        diff = (
+            plot_data["value_relative_mean"].max()
+            - plot_data["value_relative_mean"].min()
+        )
+        if diff > 3:
+            plt.figure(figsize=(6.4, 4.8 * (1 + int(diff / 1.5))))
+
         # Create box plot
         sns.boxplot(
-            x="project", y="value_relative_mean", data=plot_data, color="orange"
+            x="project",
+            y="value_relative_mean",
+            data=plot_data,
+            color=plot_color,
         )
 
         # light gray dashed horizontal line at y=0
@@ -107,6 +120,11 @@ class PerfChangeSummaryPlot(Plot, plot_name="hc-perf-change-summary"):
         # Increase font size of ticks
         plt.xticks(fontsize=11.5)
         plt.yticks(fontsize=11.5)
+
+        # Rotate xticks if specified
+        if self.plot_kwargs.get("rotate_xticks"):
+            plt.xticks(rotation=self.plot_kwargs.get("rotate_xticks"))
+
         # Increase font size of y-label
         plt.gca().yaxis.label.set_size(14)
         plt.tight_layout()
@@ -121,7 +139,19 @@ class PerfChangeSummaryPlotGenerator(
             type=create_multi_case_study_choice(),
             required=False,
             help="Case study to plot",
-        )
+        ),
+        make_cli_option(
+            "--color",
+            type=str,
+            required=False,
+            help="Color for the plot",
+        ),
+        make_cli_option(
+            "--rotate_xticks",
+            type=int,
+            required=False,
+            help="Rotate x-ticks by given angle",
+        ),
     ],
 ):
     """Generator for performance change summary plots."""
@@ -164,6 +194,11 @@ class PerfChangeInSettingPlot(Plot, plot_name="hc-setting-kw"):
         # Concat all CS data into one dataframe,
         # adding a project column for later grouping
         setting_data = _load_data_for_case_studies([case_study])
+
+        if setting_data.empty:
+            print(f"No data for {case_study.project_name}, skipping.")
+            return
+
         sig_data = group_kruskal_wallis(setting_data, group_by)
         sig_data = filter_significant_kruskal_wallis(sig_data)
 

@@ -1,3 +1,5 @@
+"""Plots for configuration opportunities and their alternatives."""
+
 import typing as tp
 from functools import cmp_to_key
 
@@ -8,11 +10,9 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.axes import Axes
 from matplotlib.colors import to_rgba
-from matplotlib.figure import SubFigure
 from matplotlib.ticker import PercentFormatter
 
 from varats.data.databases.hidden_configurability_database import (
-    EffectSize,
     aggregate_data_for_cs,
     create_config_opportunities_value_map,
     extract_config_point,
@@ -34,9 +34,12 @@ from varats.ts_utils.click_param_types import (
     create_multi_case_study_choice,
     create_single_case_study_choice,
 )
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
 if tp.TYPE_CHECKING:
+    from matplotlib.figure import SubFigure
+
     from varats.paper.case_study import CaseStudy
     from varats.report.gnu_time_report import TimeReportAggregate
 
@@ -49,8 +52,10 @@ def _prepare_data(plot_kwargs, df: pd.DataFrame) -> pd.DataFrame:
     df["config_id"] = df["config_id"].fillna(value=-1)
     if plot_kwargs["config_opportunity"] is not None:
         config_opportunity = plot_kwargs["config_opportunity"]
-        df = df[(df["config_opportunity"] == config_opportunity) |
-                (df["config_opportunity"] == "__baseline__")]
+        df = df[
+            (df["config_opportunity"] == config_opportunity)
+            | (df["config_opportunity"] == "__baseline__")
+        ]
 
     # Filter data based on argument selection
     df = df[(df["metric"] == metric)]
@@ -80,21 +85,27 @@ def _prepare_data(plot_kwargs, df: pd.DataFrame) -> pd.DataFrame:
 class OpportunitiesStackedDistPlot(
     Plot, plot_name="opportunities_stacked_dist"
 ):
+    """Plot that shows the distribution of configuration opportunities."""
 
     @property
     def name(self) -> str:
         """Returns the name of the plot."""
         name = f"{self.NAME}_{self.plot_kwargs['metric']}"
         if self.plot_kwargs["config_opportunity"] is not None:
-            name += f"_{self.plot_kwargs['config_opportunity'].replace('/', '+')}"
+            name += (
+                f"_{self.plot_kwargs['config_opportunity'].replace('/', '+')}"
+            )
         if self.plot_kwargs["significant_only"]:
             name += "_significant"
         return name
 
-    def plot(self, view_mode: bool) -> None:
+    def plot(self, view_mode: bool) -> None:  # noqa: ARG002
+        """Creates the plot."""
         case_study: CaseStudy = self.plot_kwargs["case_study"]
         print(
-            f"Plotting {self.plot_kwargs['metric']} for {self.plot_kwargs['case_study'].project_name} with opportunity {self.plot_kwargs['config_opportunity']}..."
+            f"Plotting {self.plot_kwargs['metric']} for "
+            f"{self.plot_kwargs['case_study'].project_name} with opportunity "
+            f"{self.plot_kwargs['config_opportunity']}..."
         )
 
         df = aggregate_data_for_cs(case_study, None)
@@ -108,17 +119,24 @@ class OpportunitiesStackedDistPlot(
         if self.plot_kwargs["config_opportunity"] is not None:
             category_col = "variation"
 
-        # Get all combinations of config_opportunity and variation that exist in the df
-        elems = df[["config_id",
-                    "binary-wl"]].drop_duplicates().apply(tuple,
-                                                          axis=1).tolist()
+        # Get all combinations of config_opportunity and variation
+        elems = (
+            df[["config_id", "binary-wl"]]
+            .drop_duplicates()
+            .apply(tuple, axis=1)
+            .tolist()
+        )
 
         # Drop all combinations for which only the baseline exists
-        elems = [(config_id, workload)
-                 for config_id, workload in elems
-                 if not df[(df["config_id"] == config_id) &
-                           (df["binary-wl"] == workload) &
-                           (df["config_opportunity"] != "__baseline__")].empty]
+        elems = [
+            (config_id, workload)
+            for config_id, workload in elems
+            if not df[
+                (df["config_id"] == config_id)
+                & (df["binary-wl"] == workload)
+                & (df["config_opportunity"] != "__baseline__")
+            ].empty
+        ]
 
         max_cols = 5
         # Use subfigures for better layout control
@@ -130,7 +148,7 @@ class OpportunitiesStackedDistPlot(
         fheight = 24
         fig = plt.figure(
             figsize=(fwidth * max_cols, nrows * fheight),
-            constrained_layout=False
+            constrained_layout=False,
         )
         fig.suptitle(
             f"{case_study.project_name} - {self.plot_kwargs['metric']}"
@@ -143,8 +161,9 @@ class OpportunitiesStackedDistPlot(
         for i, (config_id, workload) in enumerate(elems):
             ax1 = splots[i // 5, i % 5]
 
-            fig_df = df[(df["config_id"] == config_id) &
-                        (df["binary-wl"] == workload)]
+            fig_df = df[
+                (df["config_id"] == config_id) & (df["binary-wl"] == workload)
+            ]
 
             # Absolute mode
             base = np.mean(
@@ -154,7 +173,7 @@ class OpportunitiesStackedDistPlot(
             # Add the secondary x-axis for relative change
             ax1.set_xlabel("Absolute Value")
 
-            # Keep Baseline row only for plots that show the config opportunity explicitly
+            # Keep Baseline row only for plots that show the config opportunity
             if self.plot_kwargs["config_opportunity"] is not None:
                 fig_df.loc[:, "variation"] = fig_df["variation"].fillna(value=0)
 
@@ -171,13 +190,14 @@ class OpportunitiesStackedDistPlot(
             # y_ticks = [l.get_text for l in ax1.get_yticklabels()]
             # y_ticks = [l if l != "0.0" else "Base" for l in y_ticks]
 
-            #ax1.set_yticklabels(y_ticks)
+            # ax1.set_yticklabels(y_ticks)
 
             secax = ax1.secondary_xaxis(
                 'top',
                 functions=(
-                    lambda x, b=base: (x - b) / b, lambda x, b=base: x * b + b
-                )
+                    lambda x, b=base: (x - b) / b,
+                    lambda x, b=base: x * b + b,
+                ),
             )
             secax.set_xlabel("Relative Change")
             secax.xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
@@ -187,7 +207,8 @@ class OpportunitiesStackedDistPlot(
 
     def calc_missing_revisions(
         self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
+    ) -> set[FullCommitHash]:
+        """Unsupported."""
         pass
 
 
@@ -218,14 +239,15 @@ class OpportunitiesStackedDistGenerator(
             "--config-opportunity",
             type=str,
             required=False,
-            help=
-            "Show a detailed view for a specific config_opportunity. Will plot bars for each variation of the config_opportunity.",
-        )
-    ]
+            help="Show a detailed view for a specific config_opportunity. "
+            "Will plot bars for each variation of the config_opportunity.",
+        ),
+    ],
 ):
     """Generates the configuration opportunities distribution plot."""
 
-    def generate(self) -> tp.List[Plot]:
+    def generate(self) -> list[Plot]:
+        """Generates the configuration opportunities distribution plot."""
         case_studies = self.plot_kwargs["case_studies"]
         self.plot_kwargs.pop("case_studies", None)
         self.plot_kwargs.pop("metric", None)
@@ -243,7 +265,7 @@ class OpportunitiesStackedDistGenerator(
                     **self.plot_kwargs,
                     case_study=cs,
                     config_opportunity=opportunity,
-                    metric=m
+                    metric=m,
                 )
                 for opportunity in opportunities
                 for m in ["wall_clock_time", "max_resident_size"]
@@ -254,12 +276,15 @@ class OpportunitiesStackedDistGenerator(
 class SignificantOpportunitiesDistPlot(
     Plot, plot_name="significant_opportunities_dist"
 ):
+    """Plot that shows the distribution of significant conf opps."""
 
     @property
     def name(self) -> str:
+        """Returns the name of the plot."""
         return f"{self.NAME}_{self.plot_kwargs['metric']}"
 
-    def plot(self, view_mode: bool) -> None:
+    def plot(self, view_mode: bool) -> None:  # noqa: ARG002
+        """Creates the plot."""
         case_study: CaseStudy = self.plot_kwargs["case_study"]
         metric: str = self.plot_kwargs["metric"]
         print(f"Plotting case study {case_study.project_name} with {metric}")
@@ -272,11 +297,13 @@ class SignificantOpportunitiesDistPlot(
 
         # Select metric and filter out baseline data
         metric_df = full_data[
-            (full_data["metric"] == metric) &
-            (full_data["config_opportunity"] != "__baseline__")]
+            (full_data["metric"] == metric)
+            & (full_data["config_opportunity"] != "__baseline__")
+        ]
 
         sig_df = metric_df[
-            metric_df.apply(lambda x: x["significance"].pvalue < 0.05, axis=1)]
+            metric_df.apply(lambda x: x["significance"].pvalue < 0.05, axis=1)
+        ]
         sig_df = sig_df.explode("value_relative", ignore_index=True)
 
         extra_args = {}
@@ -295,8 +322,10 @@ class SignificantOpportunitiesDistPlot(
             ax.tick_params(labelbottom=True)
 
     def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
+        self,
+        boundary_gradient: float,  # noqa: ARG002
+    ) -> set[FullCommitHash]:
+        """Unsupported."""
         return set()
 
 
@@ -314,8 +343,8 @@ class SignificantOpportunitiesDistGenerator(
             "--explode",
             is_flag=True,
             default=False,
-            help=
-            "Explodes the plot into multiple subplots for each config_id and configuration opportunity",
+            help="Explodes the plot into multiple subplots for each config_id "
+            "and configuration opportunity",
         ),
         make_cli_option(
             "--metrics",
@@ -323,16 +352,18 @@ class SignificantOpportunitiesDistGenerator(
             required=True,
             help="Metric to plot (e.g. wall_clock_time,max_resident_size)",
         ),
-    ]
+    ],
 ):
+    """Generator class for significant distributions."""
 
-    def generate(self) -> tp.List[Plot]:
+    def generate(self) -> list[Plot]:
+        """Generates plots for selected case-studies and metrics."""
         return [
             SignificantOpportunitiesDistPlot(
                 self.plot_config,
                 case_study=cs,
                 metric=metric,
-                **self.plot_kwargs
+                **self.plot_kwargs,
             )
             for cs in self.plot_kwargs["case_studies"]
             for metric in self.plot_kwargs["metrics"].split(",")
@@ -342,21 +373,27 @@ class SignificantOpportunitiesDistGenerator(
 class ConfigurationAlternativesAggPlot(
     Plot, plot_name="configuration_opportunities_alternatives_agg"
 ):
-    """Plot that provides a concise overview of configuration alternatives for
-    all configurations, workloads and binaries."""
+    """
+    Plot that provides a concise overview of configuration alternatives.
+
+    Includes all configurations, workloads and binaries.
+    """
 
     @property
     def name(self) -> str:
+        """Metric specific name."""
         return f"{self.NAME}_{self.plot_kwargs['metric']}"
 
     def calc_missing_revisions(
         self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        return set()
+    ) -> set[FullCommitHash]:
+        """Unsupported."""
+        pass
 
+    @staticmethod
     def __create_palettes(
-        self, df: pd.DataFrame
-    ) -> tp.Dict[str, tp.Tuple[float, float, float]]:
+        df: pd.DataFrame,
+    ) -> dict[str, tuple[float, float, float]]:
         # Create a color palette for the variations
         configs = df['config_opportunity'].unique()
 
@@ -367,30 +404,36 @@ class ConfigurationAlternativesAggPlot(
         # Generate variation-level palette
         variation_palette = {}
         for config in configs:
-            variations = df[df['config_opportunity'] == config
-                           ]['variation'].unique()
+            variations = df[df['config_opportunity'] == config][
+                'variation'
+            ].unique()
             base = to_rgba(config_to_basecolor[config])
             num_variations = len(variations)
 
-            # Set alpha values to stay within the range [0.6, 1.0], based on the number of variations
+            # Set alpha values to stay within the range [0.6, 1.0], based on the
+            # number of variations
             for i, var in enumerate(variations):
-                alpha = 1 - (
-                    i / num_variations
-                ) * 0.4  # Ensure alpha is in the range [0.6, 1.0]
-                variation_palette[
-                    (config, var)
-                ] = base[:3] + (alpha,)  # Modify alpha but keep the RGB part
+                alpha = (
+                    1 - (i / num_variations) * 0.4
+                )  # Ensure alpha is in the range [0.6, 1.0]
+                variation_palette[(config, var)] = (
+                    *base[:3],
+                    alpha,
+                )  # Modify alpha but keep the RGB part
 
         return variation_palette
 
-    def plot(self, view_mode: bool) -> None:
+    def plot(self, view_mode: bool) -> None:  # noqa: ARG002
+        """Creates the plot."""
         case_study: CaseStudy = self.plot_kwargs["case_study"]
         metric: str = self.plot_kwargs["metric"]
 
         if "config_ids" in self.plot_kwargs:
-            configs = [
-                int(i) for i in self.plot_kwargs["config_ids"].split(",")
-            ] if self.plot_kwargs["config_ids"] else [None]
+            configs = (
+                [int(i) for i in self.plot_kwargs["config_ids"].split(",")]
+                if self.plot_kwargs["config_ids"]
+                else [None]
+            )
         else:
             configs = case_study.get_config_ids_for_revision(
                 case_study.revisions[0]
@@ -420,7 +463,7 @@ class ConfigurationAlternativesAggPlot(
 
             metric_palette = self.__create_palettes(df[df["metric"] == metric])
 
-            #df["value"] = df["value"].apply(np.mean)
+            # df["value"] = df["value"].apply(np.mean)
             df = df.explode("value")
 
             df["config_var"] = list(
@@ -430,11 +473,15 @@ class ConfigurationAlternativesAggPlot(
             for bin_idx, binary in enumerate(binaries):
                 print(f"Processing {binary} ({config_id=})")
 
-                baseline_df = df[(df["binary-wl"] == binary) &
-                                 (df["config_opportunity"] == "__baseline__")]
+                baseline_df = df[
+                    (df["binary-wl"] == binary)
+                    & (df["config_opportunity"] == "__baseline__")
+                ]
 
-                binary_df = df[(df["binary-wl"] == binary) &
-                               (df["config_opportunity"] != "__baseline__")]
+                binary_df = df[
+                    (df["binary-wl"] == binary)
+                    & (df["config_opportunity"] != "__baseline__")
+                ]
 
                 metric_df = binary_df[binary_df["metric"] == metric]
 
@@ -453,9 +500,7 @@ class ConfigurationAlternativesAggPlot(
 
                 if bin_idx == 0:
                     subfig.suptitle(
-                        f"Config ID: {config_id}",
-                        size="x-large",
-                        weight="bold"
+                        f"Config ID: {config_id}", size="x-large", weight="bold"
                     )
 
                 # Create strip plot for absolute values
@@ -476,7 +521,7 @@ class ConfigurationAlternativesAggPlot(
                     color='red',
                     linestyle='--',
                     linewidth=1,
-                    label="Baseline"
+                    label="Baseline",
                 )
 
                 # Create the strip plot for relative change below
@@ -532,18 +577,24 @@ class ConfigurationAlternativesAggGenerator(
             type=str,
             required=True,
             help="Metrics to plot (e.g. wall_clock_time,max_resident_size)",
-        )
-    ]
+        ),
+    ],
 ):
     """Generates the configuration opportunities runtime plot."""
 
-    def generate(self) -> tp.List[Plot]:
+    def generate(self) -> list[Plot]:
+        """
+        Generates the all configuration alternatives plots.
+
+        Creates a plot for each case study and metric specified in the
+         command line arguments.
+        """
         return [
             ConfigurationAlternativesAggPlot(
                 self.plot_config,
                 case_study=cs,
                 metric=metric,
-                **self.plot_kwargs
+                **self.plot_kwargs,
             )
             for cs in self.plot_kwargs["case_studies"]
             for metric in self.plot_kwargs["metrics"].split(",")
@@ -553,11 +604,21 @@ class ConfigurationAlternativesAggGenerator(
 class ConfigurationOpportunitiesRuntimePlot(
     Plot, plot_name="configuration_opportunities_variation"
 ):
-    """Plot that compares base runtimes for configuration opportunities with
-    alternative values."""
+    """
+    Plot that compares base runtimes with configration alternatives.
 
-    def plot(self, view_mode: bool) -> None:
-        df = self.tabulate()
+    Can be restricted to a specific configuration opportunity and metric.
+    """
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> set[FullCommitHash]:
+        """Unsupported."""
+        pass
+
+    def plot(self, view_mode: bool) -> None:  # noqa: ARG002
+        """Creates the plot."""
+        df = self.prepare_data()
 
         if df.empty:
             return
@@ -566,33 +627,36 @@ class ConfigurationOpportunitiesRuntimePlot(
             df, y="performance", x="config_opportunity", hue="variation"
         )
 
-        baseline_performance = df[df["variation"] == "baseline"
-                                 ]["performance"].mean()
+        baseline_performance = df[df["variation"] == "baseline"][
+            "performance"
+        ].mean()
         plt.axhline(
             y=baseline_performance,
             color='red',
             linestyle='--',
             linewidth=1,
-            label="Baseline"
+            label="Baseline",
         )
         plt.legend().remove()
         plt.xticks(rotation=90)
         plt.ylabel("Runtime (s)")
 
-    def tabulate(self) -> pd.DataFrame:
+    def prepare_data(self) -> pd.DataFrame:
+        """Creates the dataframe for the plot."""
         case_study: CaseStudy = self.plot_kwargs['case_study']
 
         result_files = get_processed_revisions_files(
-            case_study.project_name, TimePatchedWorkloads,
+            case_study.project_name,
+            TimePatchedWorkloads,
             TimePatchedWorkloads.report_spec().main_report,
-            get_case_study_file_name_filter(case_study)
+            get_case_study_file_name_filter(case_study),
         )
 
         if len(result_files) == 0:
             print(f"No results found for {case_study.project_name}")
             return pd.DataFrame()
 
-        # TODO: Properly handle multiple binaries/configurations
+        # Later: Properly handle multiple binaries/configurations
         if len(result_files) > 1:
             print(f"More than one result for {case_study.project_name}")
 
@@ -606,62 +670,70 @@ class ConfigurationOpportunitiesRuntimePlot(
 
         df: pd.DataFrame = pd.DataFrame()
 
-        #TODO: Handle different workloads
+        # Later: Handle different workloads
         base_runtime = base_report.measurements_wall_clock_time
 
         table_rows = []
 
         for cp in configuration_points:
-            table_rows.append({
-                "config_opportunity": cp,
-                "variation": "baseline",
-                "performance": base_runtime
-            })
+            table_rows.append(
+                {
+                    "config_opportunity": cp,
+                    "variation": "baseline",
+                    "performance": base_runtime,
+                }
+            )
 
         for patch_report in report.get_patched_reports():
             cp = extract_config_point(patch_report.filename.filename)
-            table_rows.append({
-                "config_opportunity": cp[0],
-                "variation": cp[1],
-                "performance": patch_report.measurements_wall_clock_time
-            })
+            table_rows.append(
+                {
+                    "config_opportunity": cp[0],
+                    "variation": cp[1],
+                    "performance": patch_report.measurements_wall_clock_time,
+                }
+            )
 
         df = pd.DataFrame.from_records(table_rows)
-        df = df.explode('performance')
-
-        return df
+        return df.explode('performance')
 
 
 class ConfigurationOpportunitiesRuntimeGenerator(
     PlotGenerator,
     generator_name="configuration-opportunities-variation",
-    options=[]
+    options=[],
 ):
-    """Generates the configuration opportunities runtime plot."""
+    """Generator for configuration opportunities runtime plot."""
 
-    def generate(self) -> tp.List[Plot]:
+    def generate(self) -> list[Plot]:
+        """Generates the configuration opportunities runtime plot."""
         return [
             ConfigurationOpportunitiesRuntimePlot(
                 self.plot_config, case_study=cs, **self.plot_kwargs
-            ) for cs in get_loaded_paper_config().get_all_case_studies()
+            )
+            for cs in get_loaded_paper_config().get_all_case_studies()
         ]
 
 
 class MinMaxAlternativesPlot(Plot, plot_name="min_max_alternatives"):
+    """Min-Max plots for configuration alternatives and performance impact."""
 
     @property
     def name(self) -> str:
         """Returns the name of the plot."""
         name = f"{self.NAME}_{self.plot_kwargs['metric']}"
         if self.plot_kwargs["config_opportunity"] is not None:
-            name += f"_config_{self.plot_kwargs['config_opportunity'].replace('/', '+')}"
+            name += f"_config_{self.plot_kwargs['config_opportunity'].replace('/', '+')}"  # noqa: E501
         if self.plot_kwargs["significant_only"]:
             name += "_significant"
         return name
 
-    def plot(self, view_mode: bool) -> None:
+    def plot(self, view_mode: bool) -> None:  # noqa: ARG002
+        """Creates the plot."""
         print(
-            f"Plotting {self.plot_kwargs['metric']} for {self.plot_kwargs['case_study'].project_name} with opportunity {self.plot_kwargs['config_opportunity']}..."
+            f"Plotting {self.plot_kwargs['metric']} for "
+            f"{self.plot_kwargs['case_study'].project_name}"
+            f" with opportunity {self.plot_kwargs['config_opportunity']}..."
         )
         if self.plot_kwargs["config_opportunity"] is not None:
             print(f"({self.plot_kwargs['config_opportunity']})")
@@ -683,17 +755,24 @@ class MinMaxAlternativesPlot(Plot, plot_name="min_max_alternatives"):
             category_col = "variation"
             draw_means = False
 
-        # Get all combinations of config_opportunity and variation that exist in the df
-        elems = df[["config_id",
-                    "binary-wl"]].drop_duplicates().apply(tuple,
-                                                          axis=1).tolist()
+        # Get all combinations of config_opportunity and variation in the df
+        elems = (
+            df[["config_id", "binary-wl"]]
+            .drop_duplicates()
+            .apply(tuple, axis=1)
+            .tolist()
+        )
 
         # Drop all combinations for which only the baseline exists
-        elems = [(config_id, workload)
-                 for config_id, workload in elems
-                 if not df[(df["config_id"] == config_id) &
-                           (df["binary-wl"] == workload) &
-                           (df["config_opportunity"] != "__baseline__")].empty]
+        elems = [
+            (config_id, workload)
+            for config_id, workload in elems
+            if not df[
+                (df["config_id"] == config_id)
+                & (df["binary-wl"] == workload)
+                & (df["config_opportunity"] != "__baseline__")
+            ].empty
+        ]
 
         # Use subfigures for better layout control
         nrows = (
@@ -714,8 +793,9 @@ class MinMaxAlternativesPlot(Plot, plot_name="min_max_alternatives"):
             sf = sfigs[i // 5, i % 5]
 
             ax1 = sf.subplots(1, 1)
-            fig_df = df[(df["config_id"] == config_id) &
-                        (df["binary-wl"] == workload)]
+            fig_df = df[
+                (df["config_id"] == config_id) & (df["binary-wl"] == workload)
+            ]
 
             # Absolute mode
             base = np.mean(
@@ -725,7 +805,7 @@ class MinMaxAlternativesPlot(Plot, plot_name="min_max_alternatives"):
             # Add the secondary x-axis for relative change
             ax1.set_xlabel("Absolute Value")
 
-            # Keep Baseline row only for plots that show the config opportunity explicitly
+            # Keep Baseline row only for plots that show the config opportunity
             if "config_opportunity" not in self.plot_kwargs:
                 fig_df = fig_df[fig_df["config_opportunity"] != "__baseline__"]
             else:
@@ -739,14 +819,15 @@ class MinMaxAlternativesPlot(Plot, plot_name="min_max_alternatives"):
                 cat_col=category_col,
                 ax=ax1,
                 baseline_val=base,
-                draw_mean=draw_means
+                draw_mean=draw_means,
             )
 
             secax = ax1.secondary_xaxis(
                 'top',
                 functions=(
-                    lambda x, b=base: (x - b) / b, lambda x, b=base: x * b + b
-                )
+                    lambda x, b=base: (x - b) / b,
+                    lambda x, b=base: x * b + b,
+                ),
             )
             secax.set_xlabel("Relative Change")
             secax.xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
@@ -754,8 +835,9 @@ class MinMaxAlternativesPlot(Plot, plot_name="min_max_alternatives"):
 
     def calc_missing_revisions(
         self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        return set()
+    ) -> set[FullCommitHash]:
+        """Unsupported."""
+        pass
 
 
 class MinMaxAlternativesGenerator(
@@ -785,13 +867,15 @@ class MinMaxAlternativesGenerator(
             "--config-opportunity",
             type=str,
             required=False,
-            help=
-            "Show a detailed view for a specific config_opportunity. Will plot bars for each variation of the config_opportunity.",
-        )
-    ]
+            help="Show a detailed view for a specific config_opportunity. "
+            "Will plot bars for each variation of the config_opportunity.",
+        ),
+    ],
 ):
+    """Generator for the min-max alternatives plot."""
 
-    def generate(self) -> tp.List[Plot]:
+    def generate(self) -> list[Plot]:
+        """Generates the min-max alternatives plot."""
         case_studies = self.plot_kwargs["case_studies"]
         self.plot_kwargs.pop("case_studies", None)
         self.plot_kwargs.pop("metric", None)
@@ -809,7 +893,7 @@ class MinMaxAlternativesGenerator(
                     **self.plot_kwargs,
                     case_study=cs,
                     config_opportunity=opportunity,
-                    metric=m
+                    metric=m,
                 )
                 for opportunity in opportunities
                 for m in ["wall_clock_time", "max_resident_size"]
@@ -820,26 +904,34 @@ class MinMaxAlternativesGenerator(
 class SingleMinMaxAlternativesPlot(
     Plot, plot_name="single_min_max_alternatives"
 ):
+    """Generates a single min-max alternatives plot."""
 
     @property
     def name(self) -> str:
         """Returns the name of the plot."""
-        name = f"{self.NAME}_{self.plot_kwargs['config_id']}_{self.plot_kwargs['metric']}"
+        name = (
+            f"{self.NAME}_{self.plot_kwargs['config_id']}_"
+            f"{self.plot_kwargs['metric']}"
+        )
         if self.plot_kwargs["config_opportunity"] is not None:
-            name += f"_{self.plot_kwargs['config_opportunity'].replace('/', '+')}"
+            name += (
+                f"_{self.plot_kwargs['config_opportunity'].replace('/', '+')}"
+            )
         name += f"_{self.plot_kwargs['workload'].replace('/', '+')}"
         return name
 
     def calc_missing_revisions(
         self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
+    ) -> set[FullCommitHash]:
+        """Unsupported."""
         pass
 
-    def plot(self, view_mode: bool) -> None:
+    def plot(self, view_mode: bool) -> None:  # noqa: ARG002
+        """Creates the plot."""
         # Optional data cache that can be passed to the plot
         case_study: CaseStudy = self.plot_kwargs["case_study"]
         metric: str = self.plot_kwargs["metric"]
-        config_id: tp.Optional[int] = self.plot_kwargs["config_id"]
+        config_id: int | None = self.plot_kwargs["config_id"]
         workload: str = self.plot_kwargs["workload"]
 
         if config_id == -1:
@@ -851,7 +943,10 @@ class SingleMinMaxAlternativesPlot(
             df = get_data_for_single_config(case_study, config_id)
 
         print(
-            f"Case Study: {case_study.project_name}, Metric: {metric}, Config ID: {config_id}, Workload: {workload}, Config Opportunity: {self.plot_kwargs.get('config_opportunity', 'None')}"
+            f"Case Study: {case_study.project_name}, Metric: {metric}, "
+            f"Config ID: {config_id}, Workload: {workload},"
+            f" Config Opportunity: "
+            f"{self.plot_kwargs.get('config_opportunity', 'None')}"
         )
 
         df = _prepare_data(self.plot_kwargs, df)
@@ -870,7 +965,7 @@ class SingleMinMaxAlternativesPlot(
         # Add the secondary x-axis for relative change
         ax.set_xlabel("Absolute Value")
 
-        # Keep Baseline row only for plots that show the config opportunity explicitly
+        # Keep Baseline row only for plots that show the config opportunity
         if "config_opportunity" not in self.plot_kwargs:
             df = df[df["config_opportunity"] != "__baseline__"]
         else:
@@ -882,41 +977,50 @@ class SingleMinMaxAlternativesPlot(
             cat_col=category_col,
             ax=ax,
             baseline_val=base,
-            draw_mean=draw_means
+            draw_mean=draw_means,
         )
 
         secax = ax.secondary_xaxis(
             'top',
             functions=(
-                lambda x, b=base: (x - b) / b, lambda x, b=base: x * b + b
-            )
+                lambda x, b=base: (x - b) / b,
+                lambda x, b=base: x * b + b,
+            ),
         )
         secax.set_xlabel("Relative Change")
         secax.xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
 
 
 class SingleStackedDistPlot(Plot, plot_name="single_stacked_dist"):
+    """Plot that shows the distribution of values for a single configuration."""
 
     @property
     def name(self) -> str:
         """Returns the name of the plot."""
-        name = f"{self.NAME}_{self.plot_kwargs['config_id']}_{self.plot_kwargs['metric']}"
+        name = (
+            f"{self.NAME}_{self.plot_kwargs['config_id']}"
+            f"_{self.plot_kwargs['metric']}"
+        )
         if self.plot_kwargs["config_opportunity"] is not None:
-            name += f"_{self.plot_kwargs['config_opportunity'].replace('/', '+')}"
+            name += (
+                f"_{self.plot_kwargs['config_opportunity'].replace('/', '+')}"
+            )
         name += f"_{self.plot_kwargs['workload'].replace('/', '+')}"
         return name
 
     def calc_missing_revisions(
         self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
+    ) -> set[FullCommitHash]:
+        """Unsupported."""
         pass
 
-    def plot(self, view_mode: bool) -> None:
+    def plot(self, view_mode: bool) -> None:  # noqa: ARG002
+        """Creates the plot."""
         # Optional data cache that can be passed to the plot
         case_study: CaseStudy = self.plot_kwargs["case_study"]
-        metric: str = self.plot_kwargs["metric"]
-        config_id: tp.Optional[int] = self.plot_kwargs["config_id"]
-        workload: str = self.plot_kwargs["workload"]
+        # metric: str = self.plot_kwargs["metric"]
+        config_id: int | None = self.plot_kwargs["config_id"]
+        # workload: str = self.plot_kwargs["workload"]
 
         if config_id == -1:
             config_id = None
@@ -926,22 +1030,19 @@ class SingleStackedDistPlot(Plot, plot_name="single_stacked_dist"):
         else:
             df = get_data_for_single_config(case_study, config_id)
 
-        print(
-            f"Case Study: {case_study.project_name}, Metric: {metric}, Config ID: {config_id}, Workload: {workload}, Config Opportunity: {self.plot_kwargs.get('config_opportunity', 'None')}"
-        )
-
         df = _prepare_data(self.plot_kwargs, df)
 
         category_col = "config_opportunity"
         if self.plot_kwargs["config_opportunity"] is not None:
             category_col = "variation"
 
-        fig = plt.figure(figsize=(8, 2 * len(df[category_col].unique())))
+        plt.figure(figsize=(8, 2 * len(df[category_col].unique())))
 
         # Absolute mode
         base = np.mean(*df[df["config_opportunity"] == "__baseline__"]["value"])
 
-        # Keep Baseline row only for plots that show the config opportunity explicitly
+        # Keep Baseline row only for plots that show the config opportunity
+        # explicitly
         if "config_opportunity" not in self.plot_kwargs:
             df = df[df["config_opportunity"] != "__baseline__"]
         else:
@@ -962,8 +1063,9 @@ class SingleStackedDistPlot(Plot, plot_name="single_stacked_dist"):
         secax = ax.secondary_xaxis(
             'top',
             functions=(
-                lambda x, b=base: (x - b) / b, lambda x, b=base: x * b + b
-            )
+                lambda x, b=base: (x - b) / b,
+                lambda x, b=base: x * b + b,
+            ),
         )
         secax.set_xlabel("Relative Change")
         secax.xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
@@ -990,8 +1092,8 @@ class SingleMinMaxAlternativesGenerator(
             "--config-opportunity",
             type=str,
             required=False,
-            help=
-            "Show a detailed view for a specific config_opportunity. Will plot bars for each variation of the config_opportunity.",
+            help="Show a detailed view for a specific config_opportunity. "
+            "Will plot bars for each variation of the config_opportunity.",
         ),
         make_cli_option(
             "--config_id",
@@ -1003,14 +1105,15 @@ class SingleMinMaxAlternativesGenerator(
             "--workload",
             type=str,
             required=True,
-            help=
-            "Workload to plot (e.g. 'binary/workload'). This is used to filter the data.",
-        )
-    ]
+            help="Workload to plot (e.g. 'binary/workload'). "
+            "This is used to filter the data.",
+        ),
+    ],
 ):
     """Generates the single configuration min-max alternatives plot."""
 
-    def generate(self) -> tp.List[Plot]:
+    def generate(self) -> list[Plot]:
+        """Generate the plot."""
         return [
             SingleMinMaxAlternativesPlot(self.plot_config, **self.plot_kwargs)
         ]
@@ -1037,8 +1140,8 @@ class SingleStackedDistGenerator(
             "--config-opportunity",
             type=str,
             required=False,
-            help=
-            "Show a detailed view for a specific config_opportunity. Will plot bars for each variation of the config_opportunity.",
+            help="Show a detailed view for a specific config_opportunity. "
+            "Will plot bars for each variation of the config_opportunity.",
         ),
         make_cli_option(
             "--config_id",
@@ -1050,14 +1153,15 @@ class SingleStackedDistGenerator(
             "--workload",
             type=str,
             required=True,
-            help=
-            "Workload to plot (e.g. 'binary/workload'). This is used to filter the data.",
-        )
-    ]
+            help="Workload to plot (e.g. 'binary/workload'). "
+            "This is used to filter the data.",
+        ),
+    ],
 ):
     """Generates the single configuration min-max alternatives plot."""
 
-    def generate(self) -> tp.List[Plot]:
+    def generate(self) -> list[Plot]:
+        """Generates the plot."""
         return [SingleStackedDistPlot(self.plot_config, **self.plot_kwargs)]
 
 
@@ -1071,11 +1175,12 @@ class AllHCPlotsGenerator(
             required=True,
             help="Case studies to plot",
         )
-    ]
+    ],
 ):
     """Generates all min-max alternatives plots for the given case studies."""
 
-    def generate(self) -> tp.List[Plot]:
+    def generate(self) -> list[Plot]:
+        """Generates the plot."""
         case_studies = self.plot_kwargs["case_studies"]
         self.plot_kwargs.pop("case_studies", None)
 
@@ -1100,61 +1205,66 @@ class AllHCPlotsGenerator(
 
             old_size = len(plots)
 
-            plots += [
-                SingleMinMaxAlternativesPlot(
-                    self.plot_config,
-                    case_study=cs,
-                    metric=metric,
-                    config_id=config_id,
-                    workload=workload,
-                    config_opportunity=config_opportunity,
-                    data_cache=df
-                )
-                for metric in metrics
-                for config_id in config_ids
-                for workload in workloads
-                for config_opportunity in config_opportunities
-            ] + [
-                SingleMinMaxAlternativesPlot(
-                    self.plot_config,
-                    case_study=cs,
-                    metric=metric,
-                    config_id=config_id,
-                    workload=workload,
-                    data_cache=df,
-                    config_opportunity=None
-                )
-                for metric in metrics
-                for config_id in config_ids
-                for workload in workloads
-            ] + [
-                SingleStackedDistPlot(
-                    self.plot_config,
-                    case_study=cs,
-                    metric=metric,
-                    config_id=config_id,
-                    workload=workload,
-                    config_opportunity=config_opportunity,
-                    data_cache=df
-                )
-                for metric in metrics
-                for config_id in config_ids
-                for workload in workloads
-                for config_opportunity in config_opportunities
-            ] + [
-                SingleStackedDistPlot(
-                    self.plot_config,
-                    case_study=cs,
-                    metric=metric,
-                    config_id=config_id,
-                    workload=workload,
-                    data_cache=df,
-                    config_opportunity=None
-                )
-                for metric in metrics
-                for config_id in config_ids
-                for workload in workloads
-            ]
+            plots += (
+                [
+                    SingleMinMaxAlternativesPlot(
+                        self.plot_config,
+                        case_study=cs,
+                        metric=metric,
+                        config_id=config_id,
+                        workload=workload,
+                        config_opportunity=config_opportunity,
+                        data_cache=df,
+                    )
+                    for metric in metrics
+                    for config_id in config_ids
+                    for workload in workloads
+                    for config_opportunity in config_opportunities
+                ]
+                + [
+                    SingleMinMaxAlternativesPlot(
+                        self.plot_config,
+                        case_study=cs,
+                        metric=metric,
+                        config_id=config_id,
+                        workload=workload,
+                        data_cache=df,
+                        config_opportunity=None,
+                    )
+                    for metric in metrics
+                    for config_id in config_ids
+                    for workload in workloads
+                ]
+                + [
+                    SingleStackedDistPlot(
+                        self.plot_config,
+                        case_study=cs,
+                        metric=metric,
+                        config_id=config_id,
+                        workload=workload,
+                        config_opportunity=config_opportunity,
+                        data_cache=df,
+                    )
+                    for metric in metrics
+                    for config_id in config_ids
+                    for workload in workloads
+                    for config_opportunity in config_opportunities
+                ]
+                + [
+                    SingleStackedDistPlot(
+                        self.plot_config,
+                        case_study=cs,
+                        metric=metric,
+                        config_id=config_id,
+                        workload=workload,
+                        data_cache=df,
+                        config_opportunity=None,
+                    )
+                    for metric in metrics
+                    for config_id in config_ids
+                    for workload in workloads
+                ]
+            )
 
             print(f"Added {len(plots) - old_size} plots for {cs.project_name}")
 
@@ -1172,11 +1282,12 @@ class CurrentHCPlotsGenerator(
             required=True,
             help="Case studies to plot",
         )
-    ]
+    ],
 ):
     """Generates all min-max alternatives plots for the given case studies."""
 
-    def generate(self) -> tp.List[Plot]:
+    def generate(self) -> list[Plot]:
+        """Generates the plot."""
         case_studies = self.plot_kwargs["case_studies"]
         self.plot_kwargs.pop("case_studies", None)
 
@@ -1191,7 +1302,7 @@ class CurrentHCPlotsGenerator(
             "cryptominisat": [None],
             "lrzip": [None],
             "mariadb": [None],
-            "xz": [None]
+            "xz": [None],
         }
         for cs in case_studies:
             config_ids = cs_config_ids[cs.project_name]
@@ -1215,7 +1326,7 @@ class CurrentHCPlotsGenerator(
                     metric=metric,
                     config_id=config_id,
                     workload=workload,
-                    data_cache=df
+                    data_cache=df,
                 )
                 for metric in metrics
                 for config_id in config_ids
@@ -1234,7 +1345,7 @@ def _create_min_max_plot(
     cat_col: str,
     ax: Axes,
     baseline_val: float = 0.0,
-    draw_mean: bool = True
+    draw_mean: bool = True,
 ) -> None:
 
     def cmp(item1, item2) -> int:
@@ -1266,19 +1377,19 @@ def _create_min_max_plot(
                 y_pos[i],
                 min(baseline_val, max_val) - min_val,
                 left=min_val,
-                color='palegreen'
+                color='palegreen',
             )
         if max_val > baseline_val:
             bar = ax.barh(
                 y_pos[i],
                 max_val - max(baseline_val, min_val),
                 left=max(baseline_val, min_val),
-                color='lightcoral'
+                color='lightcoral',
             )
 
         vline_end = y_pos[i]
         if not draw_mean:
-            vline_end += (bar[0].get_height() / 2)
+            vline_end += bar[0].get_height() / 2
 
         # Add vlines for all individual values
         ax.vlines(
@@ -1287,7 +1398,7 @@ def _create_min_max_plot(
             vline_end,
             color='black',
             linewidth=1,
-            alpha=0.6
+            alpha=0.6,
         )
 
         if draw_mean:
@@ -1299,7 +1410,7 @@ def _create_min_max_plot(
                 y_pos[i] + (bar[0].get_height() / 2),
                 color='black',
                 linewidth=1,
-                alpha=0.6
+                alpha=0.6,
             )
 
     ax.set_yticks(y_pos)
@@ -1318,22 +1429,26 @@ def _create_min_max_plot(
 
 
 class AlternativesHeatmapPlot(Plot, plot_name="alternatives_heatmap"):
+    """Creates a heatmap based off the configuration opportunities data."""
 
     @property
     def name(self) -> str:
         """Returns the name of the plot."""
-        name = f"{self.NAME}_{self.plot_kwargs['metric']}_{self.plot_kwargs['config_opportunity'].replace('/', '+')}_{self.plot_kwargs['workload'].replace('/', '+')}"
-        return name
+        return (
+            f"{self.NAME}_{self.plot_kwargs['metric']}_"
+            f"{self.plot_kwargs['config_opportunity'].replace('/', '+')}_"
+            f"{self.plot_kwargs['workload'].replace('/', '+')}"
+        )
 
     def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        pass
+        self,
+        boundary_gradient: float,  # noqa: ARG002
+    ) -> set[FullCommitHash]:
+        """Unsupported."""
+        raise UnsupportedOperation()
 
-    def plot(self, view_mode: bool) -> None:
-        print(
-            f"Plotting:\nMetric: {self.plot_kwargs['metric']}\nConfig Opportunity: {self.plot_kwargs['config_opportunity']}\nWorkload: {self.plot_kwargs['workload']}"
-        )
+    def plot(self, view_mode: bool) -> None:  # noqa: ARG002
+        """Plot the heatmap."""
         cs = self.plot_kwargs["case_study"]
 
         if "data_cache" in self.plot_kwargs:
@@ -1355,30 +1470,33 @@ class AlternativesHeatmapPlot(Plot, plot_name="alternatives_heatmap"):
         df["value_relative"] = df["value_relative"].apply(np.mean)
 
         # Convert data to be compatible with heatmap
-        # For the heatmap we have variations on the y-axis and config_ids on the x-axis
+        # For the heatmap we have variations on the y-axis
+        # and config_ids on the x-axis
         heatmap_data = df.pivot_table(
             index="variation",
             columns="config_id",
             values="value_relative",
-            #aggfunc=np.mean
+            # aggfunc=np.mean
         )
 
-        #print(f"{heatmap_data=}")
+        # print(f"{heatmap_data=}")
 
         # Create a mask
-        # With our mask we want to hide all cells were, in the original df, there is no significant result
+        # With our mask we want to hide all cells were, in the original df,
+        # there is no significant result
         significance_df = df.pivot_table(
             index="variation",
             columns="config_id",
             values="significance",
-            aggfunc=lambda x: x.iloc[0] if not x.empty else None
+            aggfunc=lambda x: x.iloc[0] if not x.empty else None,
         )
 
-        # For each entry in significance df convert the ttest result to a boolean by performing x.pvalue < 0.05
+        # For each entry in significance df convert the ttest result to a
+        # boolean by performing x.pvalue < 0.05
         significance_mask = significance_df.map(
             lambda x: x is None or x.pvalue >= 0.05
         )
-        #print(f"{significance_mask=}")
+        # print(f"{significance_mask=}")
 
         sns.heatmap(
             heatmap_data,
@@ -1386,13 +1504,15 @@ class AlternativesHeatmapPlot(Plot, plot_name="alternatives_heatmap"):
             center=0.0,
             cbar_kws={
                 "label": "Relative Change",
-                "format": PercentFormatter(xmax=1.0)
+                "format": PercentFormatter(xmax=1.0),
             },
-            mask=significance_mask
+            mask=significance_mask,
         )
 
         plt.title(
-            f"{cs.project_name} - {self.plot_kwargs['metric']} - {self.plot_kwargs['config_opportunity'].split('/')[0]} - {self.plot_kwargs['workload'].split('/')[1]}"
+            f"{cs.project_name} - {self.plot_kwargs['metric']} - "
+            f"{self.plot_kwargs['config_opportunity'].split('/')[0]} - "
+            f"{self.plot_kwargs['workload'].split('/')[1]}"
         )
 
 
@@ -1406,11 +1526,12 @@ class AlternativesHeatmapGenerator(
             required=True,
             help="Case study to plot",
         )
-    ]
+    ],
 ):
     """Generates the alternatives heatmap plot."""
 
-    def generate(self) -> tp.List[Plot]:
+    def generate(self) -> list[Plot]:
+        """Generates the plot."""
         cs = self.plot_kwargs["case_study"]
         cs_data = aggregate_data_for_cs(cs, None)
 
@@ -1427,7 +1548,7 @@ class AlternativesHeatmapGenerator(
                 data_cache=cs_data,
                 metric=m,
                 config_opportunity=o,
-                workload=wl
+                workload=wl,
             )
             for m in ["wall_clock_time", "max_resident_size"]
             for wl in workloads
@@ -1435,7 +1556,8 @@ class AlternativesHeatmapGenerator(
         ]
 
         print(
-            f"Generating {len(plots)} alternatives heatmaps for {cs.project_name}..."
+            f"Generating {len(plots)} alternatives heatmaps "
+            f"for {cs.project_name}..."
         )
 
         return plots
