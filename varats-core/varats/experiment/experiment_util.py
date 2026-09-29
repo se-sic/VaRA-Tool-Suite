@@ -1,5 +1,5 @@
 """Utility module for BenchBuild experiments."""
-import os
+
 import random
 import shutil
 import tempfile
@@ -8,7 +8,7 @@ import traceback
 import typing as tp
 from abc import abstractmethod
 from collections import defaultdict
-from contextlib import ExitStack
+from contextlib import ExitStack, suppress
 from pathlib import Path
 from types import TracebackType
 
@@ -17,8 +17,8 @@ from benchbuild.experiment import Experiment
 from benchbuild.extensions import base
 from benchbuild.project import Project
 from benchbuild.source import enumerate_revisions
-from benchbuild.utils.actions import Step, MultiStep, StepResult, ProjectStep
-from benchbuild.utils.cmd import prlimit, mkdir
+from benchbuild.utils.actions import MultiStep, ProjectStep, Step, StepResult
+from benchbuild.utils.cmd import mkdir, prlimit
 from plumbum.commands import ProcessExecutionError
 from plumbum.commands.base import BoundCommand
 
@@ -29,13 +29,13 @@ from varats.project.varats_project import VProject
 from varats.report.report import (
     BaseReport,
     FileStatusExtension,
+    ReportFilename,
     ReportFilepath,
     ReportSpecification,
-    ReportFilename,
 )
 from varats.utils.config import get_config_patches
 from varats.utils.git_util import ShortCommitHash
-from varats.utils.settings import vara_cfg, bb_cfg
+from varats.utils.settings import bb_cfg, vara_cfg
 
 if tp.TYPE_CHECKING:
     TempDir = tempfile.TemporaryDirectory[str]
@@ -57,7 +57,7 @@ def get_varats_result_folder(project: Project) -> Path:
 
     vara_result_folder = result_folder_template.format(
         result_dir=str(bb_cfg()["varats"]["outfile"]),
-        project_dir=str(project.name)
+        project_dir=str(project.name),
     )
 
     mkdir("-p", vara_result_folder)
@@ -65,44 +65,43 @@ def get_varats_result_folder(project: Project) -> Path:
     return Path(vara_result_folder)
 
 
-class PEErrorHandler():
+class PEErrorHandler:
     """Error handler for process execution errors."""
 
     def __init__(
         self,
         result_folder: Path,
         error_file_name: str,
-        timeout_duration: tp.Optional[str] = None,
-        delete_files: tp.Optional[tp.List[Path]] = None
-    ):
+        timeout_duration: str | None = None,
+        delete_files: list[Path] | None = None,
+    ) -> None:
+        """Creates a PEErrorHandler."""
         self.__result_folder = result_folder
         self.__error_file_name = error_file_name
         self.__timeout_duration = timeout_duration
         self.__delete_files = delete_files
 
     def __call__(self, ex: Exception, func: tp.Callable[..., tp.Any]) -> None:
+        """Executes the error handler."""
         if self.__delete_files is not None:
             for delete_file in self.__delete_files:
-                try:
+                with suppress(FileNotFoundError):
                     delete_file.unlink()
-                except FileNotFoundError:
-                    pass
 
         error_file = self.__result_folder / self.__error_file_name
 
-        if not os.path.exists(self.__result_folder):
-            os.makedirs(self.__result_folder, exist_ok=True)
-        with open(error_file, 'w') as outfile:
-            if isinstance(ex, ProcessExecutionError):
-                if ex.retcode == 124:
-                    timeout_duration = str(self.__timeout_duration)
-                    extra_error = f"""Command:
-{str(func)}
+        if not Path(self.__result_folder).exists():
+            Path(self.__result_folder).mkdir(exist_ok=True, parents=True)
+        with Path(error_file).open('w', encoding="utf-8") as outfile:
+            if isinstance(ex, ProcessExecutionError) and ex.retcode == 124:
+                timeout_duration = str(self.__timeout_duration)
+                extra_error = f"""Command:
+{func!s}
 Timeout after: {timeout_duration}
 
 """
-                    outfile.write(extra_error)
-                    outfile.flush()
+                outfile.write(extra_error)
+                outfile.flush()
 
             outfile.write("-----\nTraceback:\n")
             traceback.print_exc(file=outfile)
@@ -110,7 +109,7 @@ Timeout after: {timeout_duration}
         raise ex
 
 
-class FunctionPEErrorWrapper():
+class FunctionPEErrorWrapper:
     """
     Wrap a function call with an exception handler.
 
@@ -122,13 +121,15 @@ class FunctionPEErrorWrapper():
     def __init__(
         self, func: tp.Callable[..., tp.Any], handler: PEErrorHandler
     ) -> None:
+        """Creates a FunctionPEErrorHandler."""
         self.__func = func
         self.__handler = handler
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        """Calls the wrapped function and handles exceptions."""
         try:
             return self.__func(*args, **kwargs)
-        except Exception as ex:  # pylint: disable=broad-except
+        except Exception as ex:  # ruff: ignore[blind-except]
             self.__handler(ex, self.__func)
             return None
 
@@ -147,8 +148,9 @@ def exec_func_with_pe_error_handler(
 
 
 def get_default_compile_error_wrapped(
-    experiment_handle: 'ExperimentHandle', project: Project,
-    report_type: tp.Type[BaseReport]
+    experiment_handle: 'ExperimentHandle',
+    project: Project,
+    report_type: type[BaseReport],
 ) -> FunctionPEErrorWrapper:
     """
     Setup the default project compile function with an error handler.
@@ -165,19 +167,18 @@ def get_default_compile_error_wrapped(
         project.compile,
         create_default_compiler_error_handler(
             experiment_handle, project, report_type
-        )
+        ),
     )
 
 
 def create_default_compiler_error_handler(
     experiment_handle: 'ExperimentHandle',
     project: Project,
-    report_type: tp.Type[BaseReport],
-    binary: tp.Optional[ProjectBinaryWrapper] = None
+    report_type: type[BaseReport],
+    binary: ProjectBinaryWrapper | None = None,
 ) -> PEErrorHandler:
     """
-    Create a default PEErrorHandler for compile errors, based on the `project`,
-    `report_type`.
+    Create a default PEErrorHandler for compile errors.
 
     Args:
         experiment_handle: handle to the current experiment
@@ -188,21 +189,23 @@ def create_default_compiler_error_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        experiment_handle, project, report_type,
-        FileStatusExtension.COMPILE_ERROR, binary
+        experiment_handle,
+        project,
+        report_type,
+        FileStatusExtension.COMPILE_ERROR,
+        binary,
     )
 
 
 def create_default_analysis_failure_handler(
     experiment_handle: 'ExperimentHandle',
     project: Project,
-    report_type: tp.Type[BaseReport],
-    binary: tp.Optional[ProjectBinaryWrapper] = None,
-    timeout_duration: tp.Optional[str] = None,
+    report_type: type[BaseReport],
+    binary: ProjectBinaryWrapper | None = None,
+    timeout_duration: str | None = None,
 ) -> PEErrorHandler:
     """
-    Create a default PEErrorHandler for analysis failures, based on the
-    `project`, `report_type`.
+    Create a default PEErrorHandler for analysis failures.
 
     Args:
         experiment_handle: handle to the current experiment
@@ -214,18 +217,22 @@ def create_default_analysis_failure_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        experiment_handle, project, report_type, FileStatusExtension.FAILED,
-        binary, timeout_duration
+        experiment_handle,
+        project,
+        report_type,
+        FileStatusExtension.FAILED,
+        binary,
+        timeout_duration,
     )
 
 
 def create_default_error_handler(
     experiment_handle: 'ExperimentHandle',
     project: Project,
-    report_type: tp.Type[BaseReport],
+    report_type: type[BaseReport],
     error_type: FileStatusExtension,
-    binary: tp.Optional[ProjectBinaryWrapper] = None,
-    timeout_duration: tp.Optional[str] = None,
+    binary: ProjectBinaryWrapper | None = None,
+    timeout_duration: str | None = None,
 ) -> PEErrorHandler:
     """
     Create a default PEErrorHandler based on the `project`, `report_type`.
@@ -251,17 +258,18 @@ def create_default_error_handler(
                 binary_name=binary.name if binary else "all",
                 project_revision=ShortCommitHash(project.version_of_primary),
                 project_uuid=str(project.run_uuid),
-                extension_type=error_type
+                extension_type=error_type,
             )
         ),
-        timeout_duration=timeout_duration
+        timeout_duration=timeout_duration,
     )
 
 
 def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
     """
-    Wraps a command with prlimit to be executed with max stack size, i.e.,
-    setting the soft limit to the hard limit.
+    Wraps a command with prlimit to be executed with max stack size.
+
+    This sets the stack size soft limit to the hard limit (16GB).
 
     Args:
         cmd: command that should be executed with max stack size
@@ -272,15 +280,17 @@ def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
     return prlimit[f"--stack={max_stacksize_16gb}:", cmd]
 
 
-class WithUnlimitedStackSize(base.Extension):  # type: ignore
+class WithUnlimitedStackSize(base.Extension):
     """Sets the stack size of the wrapped command to unlimited (16GB)."""
 
     def __init__(self, *extensions: tp.Any, **kwargs: tp.Any) -> None:
+        """Creates an unlimited stack size extension."""
         super().__init__(*extensions, **kwargs)
 
     def __call__(
         self, binary_command: BoundCommand, *args: tp.Any, **kwargs: tp.Any
     ) -> tp.Any:
+        """Executes the wrapped command with unlimited stack size."""
         return self.call_next(
             wrap_unlimit_stack_size(binary_command), *args, **kwargs
         )
@@ -289,11 +299,16 @@ class WithUnlimitedStackSize(base.Extension):  # type: ignore
 VersionType = tp.TypeVar('VersionType')
 
 
-class ExperimentHandle():
-    """Handle to an experiment that provides helper interfaces for analysis
-    steps to utilize experiment specific data."""
+class ExperimentHandle:
+    """
+    Handle to an experiment.
+
+    This provides helper interfaces for analysis steps to utilize
+    experiment-specific data.
+    """
 
     def __init__(self, experiment: 'VersionExperiment') -> None:
+        """Creates an experiment handle."""
         self.__experiment = experiment
 
     def get_file_name(
@@ -304,11 +319,10 @@ class ExperimentHandle():
         project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
-        config_id: tp.Optional[int] = None
+        config_id: int | None = None,
     ) -> ReportFilename:
         """
-        Generates a filename for a report file that is generated by the
-        experiment.
+        Creates a filename for a report file generated by an experiment.
 
         Args:
             report_shorthand: unique shorthand for the report
@@ -318,14 +332,23 @@ class ExperimentHandle():
             project_revision: revision (commit hash)of the analyzed project
             project_uuid: benchbuild uuid for the experiment run
             extension_type: to specify the status of the generated report
+            config_id: optional id of the analyzed configuration
 
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return self.__experiment.report_spec(
-        ).get_report_type(report_shorthand).get_file_name(
-            self.__experiment.shorthand(), project_name, binary_name,
-            project_revision, project_uuid, extension_type, config_id
+        return (
+            self.__experiment.report_spec()
+            .get_report_type(report_shorthand)
+            .get_file_name(
+                self.__experiment.shorthand(),
+                project_name,
+                binary_name,
+                project_revision,
+                project_uuid,
+                extension_type,
+                config_id,
+            )
         )
 
     def report_spec(self) -> ReportSpecification:
@@ -333,9 +356,8 @@ class ExperimentHandle():
         return self.__experiment.report_spec()
 
 
-class VersionExperiment(Experiment):  # type: ignore
-    """Base class for experiments that want to analyze different project
-    revisions."""
+class VersionExperiment(Experiment):
+    """Base class for experiments that analyze different project revisions."""
 
     REPORT_SPEC: ReportSpecification
     SHORTHAND: str
@@ -344,6 +366,7 @@ class VersionExperiment(Experiment):  # type: ignore
     def __init_subclass__(
         cls, shorthand: str, *args: tp.Any, **kwargs: tp.Any
     ) -> None:
+        """Sets shorthand class variable and checks for valid report spec."""
         super().__init_subclass__(*args, **kwargs)
 
         cls.SHORTHAND = shorthand
@@ -381,6 +404,7 @@ class VersionExperiment(Experiment):  # type: ignore
             return False
 
     def get_handle(self) -> ExperimentHandle:
+        """Returns an experiment handle."""
         return ExperimentHandle(self)
 
     @abstractmethod
@@ -388,26 +412,31 @@ class VersionExperiment(Experiment):  # type: ignore
         """Get the actions a project wants to run."""
 
     @staticmethod
-    def _sample_num_versions(
-        versions: tp.List[VersionType]
-    ) -> tp.List[VersionType]:
+    def _sample_num_versions(versions: list[VersionType]) -> list[VersionType]:
         if vara_cfg()["experiment"]["sample_limit"].value is None:
             return versions
 
         sample_size = int(vara_cfg()["experiment"]["sample_limit"])
         versions = [
-            versions[i] for i in sorted(
-                random.
-                sample(range(len(versions)), min(sample_size, len(versions)))
+            versions[i]
+            for i in sorted(
+                random.sample(
+                    range(len(versions)), min(sample_size, len(versions))
+                )
             )
         ]
         return versions
 
     @classmethod
-    def sample(cls, prj_cls: tp.Type[Project]) -> tp.List[source.Revision]:
+    def sample(cls, prj_cls: type[Project]) -> list[source.Revision]:
         """
-        Adapt version sampling process if needed, otherwise fallback to default
-        implementation.
+        Adapt BenchBuild's version sampling process to our needs.
+
+        Our sampling approach considers:
+         - order randomization
+         - file status black/whitelisting
+         - project configurations
+         - default (BenchBuild) sampling process
 
         Args:
             prj_cls: project class
@@ -435,31 +464,34 @@ class VersionExperiment(Experiment):  # type: ignore
                 for x in fs_whitelist
             }
 
-            report_specific_bad_revs: tp.Dict[
-                str, tp.Set[tp.Optional[int]]] = defaultdict(set)
+            report_specific_bad_revs: dict[str, set[int | None]] = defaultdict(
+                set
+            )
             for report_type in cls.report_spec():
                 for revision, file_states in revs.get_tagged_revisions(
                     prj_cls, cls, report_type
                 ).items():
-                    bad_config_ids: tp.Set[tp.Optional[int]] = set()
+                    bad_config_ids: set[int | None] = set()
                     for config_id, file_status in file_states.items():
                         if file_status not in fs_good:
                             bad_config_ids.add(config_id)
 
                     if bad_config_ids:
-                        report_specific_bad_revs[revision.hash
-                                                ].update(bad_config_ids)
+                        report_specific_bad_revs[revision.hash].update(
+                            bad_config_ids
+                        )
 
             def keep_variant(variant: source.Revision) -> bool:
                 var_version = str(variant.primary.version)
-                var_config_id = int(
-                    variant.variant_by_name("config_info").version
-                ) if variant.has_variant("config_info") else None
+                var_config_id = (
+                    int(variant.variant_by_name("config_info").version)
+                    if variant.has_variant("config_info")
+                    else None
+                )
 
-                if var_version in report_specific_bad_revs:
-                    if var_config_id in report_specific_bad_revs[var_version]:
-                        return False  # Exclude variant from processing
-                return True
+                return var_config_id not in report_specific_bad_revs.get(
+                    var_version, []
+                )
 
             variants = list(filter(keep_variant, variants))
 
@@ -477,8 +509,7 @@ class VersionExperiment(Experiment):  # type: ignore
 
 class ZippedReportFolder(TempDir):
     """
-    Context manager for creating a folder report, i.e., a report file which is
-    actually a folder containing multiple files and other folders.
+    Context manager for storing multiple result files in a zip folder.
 
     Example usage: An experiment step can, with this context manager, simply
     create a folder into which all kinds of data is dropped into. After the
@@ -487,61 +518,64 @@ class ZippedReportFolder(TempDir):
     """
 
     def __init__(self, result_report_path: Path) -> None:
+        """Create a zipped report folder context manager."""
         super().__init__()
         self.__result_report_name: Path = result_report_path.with_suffix('')
 
     def __exit__(
-        self, exc_type: tp.Optional[tp.Type[BaseException]],
-        exc_value: tp.Optional[BaseException],
-        exc_traceback: tp.Optional[TracebackType]
+        self,
+        exc: type[BaseException] | None,
+        value: BaseException | None,
+        tb: TracebackType | None,
     ) -> None:
+        """On exit, create a zipped report from the temporary folder."""
         # Don't create an empty zip archive.
-        if os.listdir(self.name):
+        if any(Path(self.name).iterdir()):
             shutil.make_archive(
                 str(self.__result_report_name), "zip", Path(self.name)
             )
 
-        super().__exit__(exc_type, exc_value, exc_traceback)
+        super().__exit__(exc, value, tb)
 
 
-class WrongStepCall(Exception):
+class WrongStepCallError(Exception):
     """Throw if the common step method was called."""
 
 
-class OutputFolderStep(ProjectStep):  # type: ignore
+class OutputFolderStep(ProjectStep):
     """Special step class that needs an output folder to write to."""
 
     def __call__(self) -> StepResult:
-        raise WrongStepCall()
+        """Use 'call_with_output_folder()' instead."""
+        raise WrongStepCallError("Use 'call_with_output_folder()' instead.")
 
     def call_with_output_folders(
-        self, tmp_dirs: tp.Dict[tp.Type[BaseReport], Path]
+        self, tmp_dirs: dict[type[BaseReport], Path]
     ) -> StepResult:
-        """Call implementation that gets a temp folder for each requested report
-        type."""
+        """Call with a temp folder for each requested report type."""
+        raise NotImplementedError()
 
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         """Actual call implementation that gets a path to tmp_folder."""
+        raise NotImplementedError()
 
 
-ZippedStepTy = tp.TypeVar(
-    "ZippedStepTy", bound=tp.Union[OutputFolderStep, ProjectStep]
-)
+ZippedStepTy = tp.TypeVar("ZippedStepTy", bound=OutputFolderStep | ProjectStep)
 
 
-class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
-    """Runs multiple actions, providing them a shared tmp folder that afterwards
-    is zipped into an archive."""
+class ZippedExperimentSteps(MultiStep[ZippedStepTy]):
+    """Runs multiple actions collecting their reports in a zipped archive."""
 
     NAME = "ZippedSteps"
     DESCRIPTION = "Run multiple actions with a shared tmp folder"
 
     def __init__(
-        self, output_filepaths: tp.Union[tp.Dict[tp.Type[BaseReport],
-                                                 ReportFilepath],
-                                         ReportFilepath],
-        actions: tp.Optional[tp.List[ZippedStepTy]]
+        self,
+        output_filepaths: dict[type[BaseReport], ReportFilepath]
+        | ReportFilepath,
+        actions: list[ZippedStepTy] | None,
     ) -> None:
+        """Create a zipped experiment step."""
         super().__init__(actions)
         if isinstance(output_filepaths, ReportFilepath):
             # Use BaseReport as dummy key if only one path is given
@@ -551,9 +585,9 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
             self.__output_filepaths = output_filepaths
 
     def __run_children(
-        self, tmp_folders: tp.Dict[tp.Type[BaseReport], Path]
-    ) -> tp.List[StepResult]:
-        results: tp.List[StepResult] = []
+        self, tmp_folders: dict[type[BaseReport], Path]
+    ) -> list[StepResult]:
+        results: list[StepResult] = []
 
         for child in self.actions:
             if isinstance(child, OutputFolderStep):
@@ -573,29 +607,31 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
         return results
 
     def __call__(self) -> StepResult:
-        results: tp.List[StepResult] = []
+        """Execute all child steps and collect their results."""
+        results: list[StepResult] = []
 
         exception_raised_during_exec = False
 
         with ExitStack() as stack:
             tmp_folders = {
-                report_ty:
-                    Path(
-                        stack.enter_context(
-                            ZippedReportFolder(report_path.full_path())
-                        )
+                report_ty: Path(
+                    stack.enter_context(
+                        ZippedReportFolder(report_path.full_path())
                     )
+                )
                 for report_ty, report_path in self.__output_filepaths.items()
             }
             try:
                 results = self.__run_children(tmp_folders)
-            except:  # noqa: E722
+            except:
                 exception_raised_during_exec = True
                 raise
 
         overall_step_result = max(results) if results else StepResult.OK
-        if overall_step_result is not StepResult.OK \
-                or exception_raised_during_exec:
+        if (
+            overall_step_result is not StepResult.OK
+            or exception_raised_during_exec
+        ):
             for report_filepath in self.__output_filepaths.values():
                 error_filepath = report_filepath.with_status(
                     FileStatusExtension.FAILED
@@ -605,6 +641,7 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
         return overall_step_result
 
     def __str__(self, indent: int = 0) -> str:
+        """Prints a short description of this step."""
         sub_actns = "\n".join([a.__str__(indent + 1) for a in self.actions])
         return textwrap.indent(
             f"\nZippedExperimentSteps:\n{sub_actns}", indent * " "
@@ -613,15 +650,14 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
 
 def __create_new_result_filepath_impl(
     exp_handle: ExperimentHandle,
-    report_type: tp.Type[BaseReport],
+    report_type: type[BaseReport],
     project: VProject,
     binary: ProjectBinaryWrapper,
     extension_type: FileStatusExtension,
-    config_id: tp.Optional[int] = None
+    config_id: int | None = None,
 ) -> ReportFilepath:
     """
-    Create a result filepath for the specified file extension and report of the
-    executed experiment/project combination.
+    Create a result filepath for the specified file extension and report.
 
     Args:
         exp_handle: handle to the current experiment
@@ -644,8 +680,8 @@ def __create_new_result_filepath_impl(
             project_revision=ShortCommitHash(project.version_of_primary),
             project_uuid=str(project.run_uuid),
             extension_type=extension_type,
-            config_id=config_id
-        )
+            config_id=config_id,
+        ),
     )
 
     if config_id is not None:
@@ -659,14 +695,13 @@ def __create_new_result_filepath_impl(
 
 def create_new_success_result_filepath(
     exp_handle: ExperimentHandle,
-    report_type: tp.Type[BaseReport],
+    report_type: type[BaseReport],
     project: VProject,
     binary: ProjectBinaryWrapper,
-    config_id: tp.Optional[int] = None
+    config_id: int | None = None,
 ) -> ReportFilepath:
     """
-    Create a result filepath for a successfull report of the executed
-    experiment/project combination.
+    Create a result filepath for a successfull report.
 
     Args:
         exp_handle: handle to the current experiment
@@ -678,21 +713,24 @@ def create_new_success_result_filepath(
     Returns: formatted success filepath
     """
     return __create_new_result_filepath_impl(
-        exp_handle, report_type, project, binary, FileStatusExtension.SUCCESS,
-        config_id
+        exp_handle,
+        report_type,
+        project,
+        binary,
+        FileStatusExtension.SUCCESS,
+        config_id,
     )
 
 
 def create_new_failed_result_filepath(
     exp_handle: ExperimentHandle,
-    report_type: tp.Type[BaseReport],
+    report_type: type[BaseReport],
     project: VProject,
     binary: ProjectBinaryWrapper,
-    config_id: tp.Optional[int] = None
+    config_id: int | None = None,
 ) -> ReportFilepath:
     """
-    Create a result filepath for a failed report of the executed
-    experiment/project combination.
+    Create a result filepath for a failed report.
 
     Args:
         exp_handle: handle to the current experiment
@@ -704,8 +742,12 @@ def create_new_failed_result_filepath(
     Returns: formatted fail filepath
     """
     return __create_new_result_filepath_impl(
-        exp_handle, report_type, project, binary, FileStatusExtension.FAILED,
-        config_id
+        exp_handle,
+        report_type,
+        project,
+        binary,
+        FileStatusExtension.FAILED,
+        config_id,
     )
 
 
@@ -719,9 +761,4 @@ def get_config_patch_steps(project: VProject) -> tp.MutableSequence[Step]:
     Returns:
         the actions that configure the project
     """
-    return list(
-        map(
-            lambda patch: ApplyPatch(project, patch),
-            get_config_patches(project)
-        )
-    )
+    return [ApplyPatch(project, patch) for patch in get_config_patches(project)]
