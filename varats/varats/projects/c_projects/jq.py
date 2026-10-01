@@ -94,6 +94,8 @@ class Jq(VProject):
                 bb.watch(autoreconf)("-i")
                 bb.watch(local["./configure"])(*configure_args)
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)(
+                "LDFLAGS=-all-static", "-j", get_number_of_jobs(bb_cfg())
+            )
 
             verify_binaries(self)
