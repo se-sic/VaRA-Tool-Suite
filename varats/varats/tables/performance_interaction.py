@@ -24,7 +24,6 @@ from varats.data.reports.performance_interaction_report import (
 from varats.experiments.base.perf_sampling import PerfSamplingSynth
 from varats.experiments.vara.performance_interaction import (
     PerformanceInteractionExperiment,
-    get_function_annotations,
 )
 from varats.experiments.vara.performance_interaction_synth import (
     PerformanceInteractionExperimentSynthetic,
@@ -39,9 +38,6 @@ from varats.mapping.configuration_map import ConfigurationMap
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config, get_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.function_overhead_report import (
-    MPRWLFunctionOverheadReportAggregate,
-)
 from varats.report.gnu_time_report import MPRWLTimeReportAggregate
 from varats.report.report import FileStatusExtension
 from varats.revision.revisions import (
@@ -300,7 +296,7 @@ def get_performance_data(
     if isinstance(vals_raw, str):
         return tp.cast("list[float]", ast.literal_eval(vals_raw))
 
-    if isinstance(vals_raw, list):
+    if isinstance(vals_raw, list[float]):
         return vals_raw
 
     return []
@@ -582,6 +578,124 @@ def calculate_data_for_project(
     assert rq2_confusion_matrix.FP == 0, (
         f"{project_name}: encountered FP in RQ2. This should not be possible!"
     )
+
+    cs_data: dict[tp.Any, tp.Any] = {
+        ("Project", ""): [project_name],
+        # RQ1
+        ("RQ1", "Scenarios"): [confusion_matrix.P + confusion_matrix.N],
+        ("RQ1", "P"): [confusion_matrix.P],
+        ("RQ1", "PP"): [confusion_matrix.PP],
+        ("RQ1", "TP"): [confusion_matrix.TP],
+        ("RQ1", "Precision"): [confusion_matrix.precision()],
+        ("RQ1", "Recall"): [confusion_matrix.recall()],
+        # RQ2
+        ("RQ2", "Scenarios"): [rq2_confusion_matrix.P + rq2_confusion_matrix.N],
+        ("RQ2", "P"): [rq2_confusion_matrix.P],
+        ("RQ2", "PP"): [rq2_confusion_matrix.PP],
+        ("RQ2", "Recall"): [rq2_confusion_matrix.recall()],
+    }
+
+    return pd.DataFrame.from_dict(cs_data).set_index("Project")
+
+
+def calculate_eval_data_synth(
+    project_name: str,
+    performance_data: pd.DataFrame,
+    old_rev: Revision,
+    new_rev: Revision,
+    configs: ConfigurationMap,
+    report: PerformanceInteractionReport | None,
+    eval_data: EvalData,
+) -> None:
+    """Calculates raw data for RQs 1 & 2 for a subject system."""
+    # RQ1
+    is_reg = "noreg" not in str(new_rev)
+
+    if is_reg:
+        eval_data["baseline_positives"].append(new_rev)
+    else:
+        eval_data["baseline_negatives"].append(new_rev)
+
+    # performance interaction classification
+    perf_inters: tp.Iterable[PerfInteraction] | None = None
+    if report:
+        perf_inters = report.performance_interactions
+
+    if perf_inters:
+        eval_data["rq1_predicted_positives"].append(new_rev)
+    else:
+        eval_data["rq1_predicted_negatives"].append(new_rev)
+
+    # RQ2
+    if perf_inters:
+        relevant_features: set[str] = set()
+
+        for inter in perf_inters:
+            relevant_features.update(inter.involved_features)
+
+        relevant_configs = get_relevant_configs(
+            project_name, configs, relevant_features
+        )
+
+        # TODO: how to get ground truth for RQ2 with synthetic regressions?
+        is_reg2 = True
+
+        if is_reg2:
+            eval_data["rq2_predicted_positives"].append(new_rev)
+        else:
+            eval_data["rq2_predicted_negatives"].append(new_rev)
+
+
+def calculate_data_for_project_synth(
+    project_name: str,
+    performance_data: pd.DataFrame,
+    revision_pairs: tp.Iterable[tuple[Revision, Revision]],
+    configs: ConfigurationMap,
+    perf_inter_reports: dict[Revision, PerformanceInteractionReport],
+) -> pd.DataFrame:
+    """Builds table data for RQs 1 & 2 for a subject system."""
+    eval_data: EvalData = tp.cast("EvalData", defaultdict(list))
+
+    for old_rev, new_rev in revision_pairs:
+        if old_rev not in performance_data.columns:
+            continue
+
+        report = perf_inter_reports.get(new_rev)
+        calculate_eval_data_synth(
+            project_name,
+            performance_data,
+            old_rev,
+            new_rev,
+            configs,
+            report,
+            eval_data,
+        )
+
+    confusion_matrix = ConfusionMatrix(
+        eval_data["baseline_positives"],
+        eval_data["baseline_negatives"],
+        eval_data["rq1_predicted_positives"],
+        eval_data["rq1_predicted_negatives"],
+    )
+
+    rq2_confusion_matrix = ConfusionMatrix(
+        list(
+            set(eval_data["baseline_positives"]).intersection(
+                set(eval_data["rq1_predicted_positives"])
+            )
+        ),
+        list(
+            set(eval_data["baseline_negatives"]).intersection(
+                set(eval_data["rq1_predicted_positives"])
+            )
+        ),
+        eval_data["rq2_predicted_positives"],
+        eval_data["rq2_predicted_negatives"],
+    )
+    # TODO: re-enable
+    # assert rq2_confusion_matrix.FP == 0, (
+    #     f"{project_name}: encountered FP in RQ2. This should not be possible!"
+    # )
 
     cs_data: dict[tp.Any, tp.Any] = {
         ("Project", ""): [project_name],
@@ -1009,8 +1123,9 @@ def load_synth_baseline_data(
                 {
                     "revision": patch_name,
                     "config_id": config_id,
-                    "wall_clock_time":
-                        patched_report.measurements_wall_clock_time(workload),
+                    "wall_clock_time": patched_report.measurements_wall_clock_time(
+                        workload
+                    ),
                 }
             )
 
@@ -1027,7 +1142,7 @@ def load_synth_perf_inter_reports(
         project_name,
         PerformanceInteractionExperimentSynthetic,
         file_name_filter=get_case_study_file_name_filter(case_study),
-        only_newest=True,
+        only_newest=False,
     )
 
     if not report_files:
@@ -1037,14 +1152,17 @@ def load_synth_perf_inter_reports(
         )
         return {}
 
-    assert len(report_files) == 1
     report = load_mpr_performance_interaction_report(report_files[0])
     report_dict: dict[Revision, PerformanceInteractionReport] = {}
 
-    for patch_name in report.get_patch_names():
-        patch_report = report.get_report_for_patch(patch_name)
-        assert patch_report is not None
-        report_dict[patch_name] = patch_report
+    for report_file in report_files:
+        report = load_mpr_performance_interaction_report(report_file)
+
+        for patch_name in report.get_patch_names():
+            if patch_name not in report_dict:
+                patch_report = report.get_report_for_patch(patch_name)
+                assert patch_report is not None
+                report_dict[patch_name] = patch_report
 
     return report_dict
 
@@ -1065,6 +1183,9 @@ class PerformanceRegressionClassificationTableSynth(
         for case_study in case_studies:
             project_name = case_study.project_name
 
+            if project_name != "coreutils_wc":
+                continue
+
             configs = load_configuration_map_for_case_study(
                 get_paper_config(), case_study, PlainCommandlineConfiguration
             )
@@ -1082,18 +1203,16 @@ class PerformanceRegressionClassificationTableSynth(
                 index="config_id", columns="revision", values="wall_clock_time"
             )
             perf_inter_reports = load_synth_perf_inter_reports(case_study)
+            revisions = list(perf_inter_reports.keys())
             revision_pairs = [("base", patch_name) for patch_name in revisions]
 
             data.append(
-                calculate_data_for_project(
+                calculate_data_for_project_synth(
                     project_name,
                     performance_data,
                     revision_pairs,
                     configs,
                     perf_inter_reports,
-                    threshold,
-                    sigma,
-                    ignore_old_zero=False,
                 )
             )
 
