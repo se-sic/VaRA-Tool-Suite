@@ -81,7 +81,9 @@ class Md4c(VProject):
         build_folder.mkdir()
         with local.cwd(build_folder):
             with local.env(CC=str(c_compiler)):
-                bb.watch(cmake)("-G", "Unix Makefiles", "..")
+                bb.watch(cmake)(
+                    "-G", "Unix Makefiles", "-DBUILD_SHARED_LIBS=OFF", ".."
+                )
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
