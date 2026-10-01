@@ -1,95 +1,104 @@
 """Module for performance interaction detection experiments."""
+
+import logging
+import sys
 import textwrap
 import typing as tp
 from itertools import pairwise
 from pathlib import Path
 
-import benchbuild as bb
 import yaml
 from benchbuild import Project
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
-from benchbuild.utils.requirements import Requirement, SlurmMem, SlurmExclusive
+from benchbuild.utils.requirements import Requirement, SlurmExclusive, SlurmMem
 
 from varats.data.filtertree_data import (
     InteractionFilter,
-    SingleCommitFilter,
     OrOperator,
+    SingleCommitFilter,
 )
 from varats.data.reports.performance_interaction_report import (
     PerformanceInteractionReport,
-    MPRPerformanceInteractionReport,
 )
 from varats.experiment.experiment_util import (
+    ExperimentHandle,
     VersionExperiment,
+    create_default_analysis_failure_handler,
     create_default_compiler_error_handler,
     create_new_success_result_filepath,
-    ExperimentHandle,
-    wrap_unlimit_stack_size,
     exec_func_with_pe_error_handler,
-    create_default_analysis_failure_handler,
-    ZippedExperimentSteps,
-    OutputFolderStep,
+    wrap_unlimit_stack_size,
 )
-from varats.experiment.steps.git import GitAdd, GitCommit, GitCheckout
-from varats.experiment.steps.patch import ApplyPatch
 from varats.experiment.wllvm import BCFileExtensions, get_cached_bc_file_path
 from varats.experiments.base.perf_sampling import (
     PerfSampling,
-    PerfSamplingSynth,
 )
 from varats.experiments.vara.blame_experiment import (
-    setup_basic_blame_experiment,
     generate_basic_blame_experiment_actions,
+    setup_basic_blame_experiment,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.paper_config import get_loaded_paper_config
+from varats.paper_mgmt.case_study import CaseStudy
 from varats.project.project_util import (
-    get_local_project_repos,
-    ProjectBinaryWrapper,
     get_local_project_repo,
+    get_local_project_repos,
 )
 from varats.project.varats_project import VProject
-from varats.provider.patch.patch_provider import PatchProvider, Patch
 from varats.report.function_overhead_report import (
     WLFunctionOverheadReportAggregate,
-    MPRWLFunctionOverheadReportAggregate,
 )
 from varats.report.report import (
-    ReportSpecification,
-    ReportFilename,
     BaseReport,
+    ReportFilename,
     ReportFilepath,
+    ReportSpecification,
 )
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
-    ShortCommitHash,
     UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
+    ShortCommitHash,
     get_all_revisions_between,
-    get_head_commit,
-    RepositoryHandle,
 )
+
+if sys.version_info.minor < 12:
+    from typing_extensions import override
+else:
+    from typing import override
+
 
 if tp.TYPE_CHECKING:
     from varats.paper.case_study import CSStage
 
+LOG = logging.getLogger(__name__)
 
-def createCommitFilter(project: VProject) -> tp.Optional[InteractionFilter]:
+
+def create_commit_filter(
+    project: VProject, case_study: CaseStudy
+) -> InteractionFilter | None:
     """
     Creates a commit filter for the given project instance.
 
     The commit filter accepts all commits between the currently analyzed commit
     (inclusive) and the next older commit in the same paper config stage
     (exclusive).
+
+    Args:
+        project: project for which to create the commit filter
+        case_study: case study used to find previous revision
+
+    Returns:
+        The created commit filter.
     """
     project_repo = get_local_project_repo(project.name)
     case_study = get_loaded_paper_config().get_case_studies(project.name)[0]
     commit_map = get_commit_map(project.name)
-    stage: tp.Optional['CSStage'] = None
+    stage: CSStage | None = None
 
-    for idx, s in enumerate(case_study.stages):
+    for s in case_study.stages:
         if s.has_revision(ShortCommitHash(project.version_of_primary)):
             stage = s
             break
@@ -99,11 +108,14 @@ def createCommitFilter(project: VProject) -> tp.Optional[InteractionFilter]:
 
     revisions = sorted(stage.revisions, key=commit_map.time_id)
 
-    def rev_filter(pair: tp.Tuple[FullCommitHash, FullCommitHash]) -> bool:
+    def rev_filter(pair: tuple[FullCommitHash, FullCommitHash]) -> bool:
         return bool(pair[1].short_hash == project.version_of_primary)
 
-    old_rev, new_rev = list(filter(rev_filter, pairwise(revisions)))[0]
+    filtered_revs = list(filter(rev_filter, pairwise(revisions)))
+    if len(filtered_revs) < 0:
+        return None
 
+    old_rev, new_rev = filtered_revs[0]
     commits = get_all_revisions_between(
         project_repo, old_rev.hash, new_rev.hash, FullCommitHash
     )[1:]
@@ -116,75 +128,98 @@ def createCommitFilter(project: VProject) -> tp.Optional[InteractionFilter]:
 
 
 def get_function_overhead_report(
-    report_filepath: ReportFilepath
-) -> tp.Optional[WLFunctionOverheadReportAggregate]:
+    report_filepath: ReportFilepath,
+) -> WLFunctionOverheadReportAggregate | None:
+    """Loads the specified report if available."""
     return WLFunctionOverheadReportAggregate(report_filepath.full_path())
 
 
 def get_old_rev(
-    revisions: tp.List[FullCommitHash], project_version: ShortCommitHash
+    revisions: list[FullCommitHash], project_revision: ShortCommitHash
 ) -> ShortCommitHash:
+    """
+    Finds the old revision for the given project revision.
 
-    def rev_filter(pair: tp.Tuple[FullCommitHash, FullCommitHash]) -> bool:
-        return pair[1].to_short_commit_hash() == project_version
+    The old revision is the newest revision in `revisions` that is older than
+    `project_revision`.
 
-    return list(filter(rev_filter,
-                       pairwise(revisions)))[0][0].to_short_commit_hash()
+    Args:
+        revisions: list of available revisions sorted from old to new
+        project_revision: current project revision
 
+    Returns:
+        The old revision.
+    """
 
-def get_function_overhead_report_synth(
-    report_filepath: ReportFilepath
-) -> tp.Optional[WLFunctionOverheadReportAggregate]:
-    return MPRWLFunctionOverheadReportAggregate(report_filepath.full_path()
-                                               ).get_baseline_report()
+    def rev_filter(pair: tuple[FullCommitHash, FullCommitHash]) -> bool:
+        return pair[1].to_short_commit_hash() == project_revision
 
-
-def get_old_rev_synth(
-    revisions: tp.List[FullCommitHash], project_version: ShortCommitHash
-) -> ShortCommitHash:
-
-    def rev_filter(rev: FullCommitHash) -> bool:
-        return rev.to_short_commit_hash() == project_version
-
-    return list(filter(rev_filter, revisions))[0].to_short_commit_hash()
+    return next(filter(rev_filter, pairwise(revisions)))[
+        0
+    ].to_short_commit_hash()
 
 
 def get_function_annotations(
-    project: VProject,
-    experiment_type: tp.Type[VersionExperiment],
-    report_type: tp.Type[BaseReport],
-    get_report: tp.Callable[[ReportFilepath],
-                            tp.Optional[WLFunctionOverheadReportAggregate]],
-    get_old_revision: tp.Callable[[tp.List[FullCommitHash], ShortCommitHash],
-                                  ShortCommitHash],
-) -> tp.List[str]:
-    case_study = get_loaded_paper_config().get_case_studies(project.name)[0]
-    commit_map = get_commit_map(project.name)
-    revisions = sorted(case_study.revisions, key=commit_map.time_id)
+    project_name: str,
+    project_version: ShortCommitHash,
+    case_study: CaseStudy,
+    experiment_type: type[VersionExperiment],
+    report_type: type[BaseReport],
+    get_report: tp.Callable[
+        [ReportFilepath], WLFunctionOverheadReportAggregate | None
+    ],
+    get_old_revision: tp.Callable[
+        [list[FullCommitHash], ShortCommitHash], ShortCommitHash
+    ],
+) -> list[str]:
+    """
+    Determines which functions to mark as hot code for the experiment.
 
-    old_rev = get_old_revision(
-        revisions, ShortCommitHash(project.version_of_primary)
-    )
+    To determine what is hot code, we look at a performance profile created on
+    an old revision of the project, that is, the latest version before the
+    current one in the case study.
+
+    Args:
+        project_name: name of the project under investigation
+        project_version: version of the project under investigation
+        case_study: case study used in the experiment
+        experiment_type: the experiment used to create the reports with hot
+                         code information.
+        report_type: the report type containing hot code information
+        get_report: function used for loading the report
+        get_old_revision: function used for finding the old revision used in the
+                          experiment
+
+    Returns:
+        A list of function names considered hot code.
+    """
+    commit_map = get_commit_map(project_name)
+    revisions = sorted(case_study.revisions, key=commit_map.time_id)
+    old_rev = get_old_revision(revisions, project_version)
 
     def old_reports_filter() -> tp.Callable[[str], bool]:
-        return lambda file_name: ReportFilename(
-            file_name
-        ).commit_hash != old_rev.to_short_commit_hash()
+        return lambda file_name: (
+            ReportFilename(file_name).commit_hash
+            != old_rev.to_short_commit_hash()
+        )
 
     report_files = get_processed_revisions_files(
-        project.name,
+        project_name,
         experiment_type,
         report_type,
         file_name_filter=old_reports_filter(),
-        only_newest=False
+        only_newest=False,
     )
 
-    hot_functions: tp.Set[str] = set()
+    hot_functions: set[str] = set()
 
     for report_filepath in report_files:
         agg_function_overhead_report = get_report(report_filepath)
         if agg_function_overhead_report is None:
-            #TODO: log warning
+            LOG.warning(
+                f"{project_name}@{project_version}: "
+                "No function overhead data found!"
+            )
             continue
 
         for _, funcs in agg_function_overhead_report.hot_functions_per_workload(
@@ -192,12 +227,13 @@ def get_function_annotations(
         ).items():
             hot_functions.update(funcs.keys())
 
-    print(f"Hot functions for {project.name}@{project.version_of_primary}:")
-    print(hot_functions)
+    LOG.info(
+        f"Hot functions for {project_name}@{project_version}: {hot_functions}"
+    )
     return list(hot_functions)
 
 
-class PerfInterReportGeneration(actions.ProjectStep):  # type: ignore
+class PerfInterReportGeneration(actions.ProjectStep):
     """Step for creating a performance interaction report."""
 
     NAME = "PerfInterReportGeneration"
@@ -211,152 +247,115 @@ class PerfInterReportGeneration(actions.ProjectStep):  # type: ignore
         experiment_handle: ExperimentHandle,
         interaction_filter: InteractionFilter = SingleCommitFilter(
             commit_hash=UNCOMMITTED_COMMIT_HASH.hash
-        )
-    ):
+        ),
+    ) -> None:
+        """Creates a step for creating a performance interaction report."""
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
         self.__interaction_filter = interaction_filter
 
     def __call__(self) -> actions.StepResult:
+        """Calls this step's `analyze()` function."""
         return self.analyze()
 
     def analyze(self) -> actions.StepResult:
-        filter_file_path = Path(
-            self.project.source_of_primary
-        ).parent / "interaction_filter.yaml"
+        """
+        Runs performance interaction analysis.
+
+        This step generates a performance interaction report for the given
+        project using VaRA's performance interaction creator pass.
+
+        Returns:
+            OK if the analysis was successful, ERROR otherwise.
+        """
+        filter_file_path = (
+            Path(self.project.source_of_primary).parent
+            / "interaction_filter.yaml"
+        )
         with filter_file_path.open("w") as filter_file:
-            version_header = self.__interaction_filter.getVersionHeader(
-            ).get_dict()
-            yaml.dump_all([version_header, self.__interaction_filter],
-                          filter_file)
+            version_header = (
+                self.__interaction_filter.getVersionHeader().get_dict()
+            )
+            yaml.dump_all(
+                [version_header, self.__interaction_filter], filter_file
+            )
 
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, PerformanceInteractionReport,
-                self.project, binary
+                self.__experiment_handle,
+                PerformanceInteractionReport,
+                self.project,
+                binary,
             )
 
             opt_params = [
-                "--enable-new-pm=0", "-vara-PTFDD", "-vara-FBFD", "-vara-HD",
-                "-vara-BD", "-vara-PIR", "-vara-init-commits",
-                "-vara-rewriteMD", "-vara-git-mappings=" + ",".join([
-                    f'{repo_name}:{repo.repo_path}' for repo_name, repo in
-                    get_local_project_repos(self.project.name).items()
-                ]), "-vara-use-phasar",
+                "-passes=vara-rewriteMD,vara-PIR",
+                "-vara-feature-detection=FBFD,PTFDD",
+                "-vara-init-commits",
+                "-vara-use-phasar",
+                "-vara-git-mappings="
+                + ",".join(
+                    [
+                        f'{repo_name}:{repo.repo_path}'
+                        for repo_name, repo in get_local_project_repos(
+                            self.project.name
+                        ).items()
+                    ]
+                ),
                 f"-vara-cf-interaction-filter={filter_file_path}",
                 f"-vara-report-outfile={result_file}",
                 get_cached_bc_file_path(
-                    self.project, binary, [
-                        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
-                        BCFileExtensions.BLAME, BCFileExtensions.FEATURE,
-                        BCFileExtensions.HOT_CODE
-                    ]
-                )
+                    self.project,
+                    binary,
+                    [
+                        BCFileExtensions.NO_OPT,
+                        BCFileExtensions.TBAA,
+                        BCFileExtensions.BLAME,
+                        BCFileExtensions.FEATURE,
+                        BCFileExtensions.HOT_CODE,
+                    ],
+                ),
             ]
 
             run_cmd = wrap_unlimit_stack_size(opt[opt_params])
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, self.project,
-                    PerformanceInteractionReport
-                )
+                    self.__experiment_handle,
+                    self.project,
+                    PerformanceInteractionReport,
+                ),
             )
 
         return actions.StepResult.OK
 
     def __str__(self, indent: int = 0) -> str:
+        """Prints a short description of this step."""
         return textwrap.indent(
             f"* {self.project.name}: Run performance interaction analysis",
-            " " * indent
-        )
-
-
-class PerfInterReportGenerationSynth(OutputFolderStep):
-    """Step for creating a performance interaction report."""
-
-    NAME = "PerfInterReportGenerationSynth"
-    DESCRIPTION = "Generate a performance interaction report."
-
-    project: VProject
-
-    def __init__(
-        self,
-        project: Project,
-        binary: ProjectBinaryWrapper,
-        result_file: str,
-        experiment_handle: ExperimentHandle,
-        patches: tp.Optional[tp.List[Patch]] = None,
-    ):
-        super().__init__(project=project)
-        self.__binary = binary
-        self.__result_file = result_file
-        self.__experiment_handle = experiment_handle
-        self.__patches = patches
-
-    def call_with_output_folder(self, tmp_dir: Path) -> actions.StepResult:
-        repo = RepositoryHandle(Path(self.project.source_of_primary))
-        head = get_head_commit(repo)
-        interaction_filter = SingleCommitFilter(commit_hash=head.hash)
-
-        filter_file_path = repo.worktree_path.parent / "interaction_filter.yaml"
-        with filter_file_path.open("w") as filter_file:
-            version_header = interaction_filter.getVersionHeader().get_dict()
-            yaml.dump_all([version_header, interaction_filter], filter_file)
-
-        opt_params = [
-            "--enable-new-pm=0",
-            "-vara-PTFDD",
-            "-vara-FBFD",
-            "-vara-HD",
-            "-vara-BD",
-            "-vara-PIR",
-            "-vara-init-commits",
-            "-vara-rewriteMD",
-            "-vara-use-phasar",
-            f"-vara-cf-interaction-filter={filter_file_path}",
-            f"-vara-report-outfile={tmp_dir / self.__result_file}",
-            # TODO: cached bc files from previous runs won't work
-            #       because commit hashes from patches are not stable.
-            get_cached_bc_file_path(
-                self.project, self.__binary, [
-                    BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
-                    BCFileExtensions.BLAME, BCFileExtensions.FEATURE,
-                    BCFileExtensions.HOT_CODE
-                ], self.__patches
-            )
-        ]
-
-        run_cmd = bb.watch(wrap_unlimit_stack_size(opt[opt_params]))
-        exec_func_with_pe_error_handler(
-            run_cmd,
-            create_default_analysis_failure_handler(
-                self.__experiment_handle, self.project,
-                self.__experiment_handle.report_spec().main_report
-            )
-        )
-
-        return actions.StepResult.OK
-
-    def __str__(self, indent: int = 0) -> str:
-        return textwrap.indent(
-            f"* {self.project.name}: Run performance interaction analysis",
-            " " * indent
+            " " * indent,
         )
 
 
 class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
-    """Performance interaction analysis for real-world projects."""
+    """Performance interaction analysis for real-world regression scenarios."""
 
     NAME = "PerfInteractions"
 
     REPORT_SPEC = ReportSpecification(PerformanceInteractionReport)
-    REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G"), SlurmExclusive()]
+    REQUIREMENTS: list[Requirement] = [  # ruff: ignore[mutable-class-default]
+        SlurmMem("250G"),
+        SlurmExclusive(),
+    ]
 
-    def actions_for_project(
+    @override
+    def actions_for_vproject(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
-        commit_filter = createCommitFilter(project)
+        case_study = next(
+            iter(get_loaded_paper_config().get_case_studies(project.name))
+        )
+        commit_filter = create_commit_filter(project, case_study)
 
         if commit_filter is None:
             # No "old" project version exists -> skip analysis
@@ -367,16 +366,28 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
         )
         project.cflags += FeatureExperiment.get_vara_feature_cflags(project)
         hot_funcs = get_function_annotations(
-            project, PerfSampling, WLFunctionOverheadReportAggregate,
-            get_function_overhead_report, get_old_rev
+            project.name,
+            ShortCommitHash(project.version_of_primary),
+            case_study,
+            PerfSampling,
+            WLFunctionOverheadReportAggregate,
+            get_function_overhead_report,
+            get_old_rev,
         )
-        project.cflags.extend([
-            "-fvara-handleRM=High",
-            f"-fvara-highlight-function={','.join(hot_funcs)}"
-        ])
+        project.cflags.extend(
+            [
+                "-fvara-handleRM=High",
+                f"-fvara-highlight-function={','.join(hot_funcs)}",
+            ]
+        )
         project.cflags += [
-            "-O1", "-Xclang", "-disable-llvm-passes", "-Xclang",
-            "-disable-llvm-verifier", "-g0", "-fuse-ld=lld"
+            "-O1",
+            "-Xclang",
+            "-disable-llvm-passes",
+            "-Xclang",
+            "-disable-llvm-verifier",
+            "-g0",
+            "-fuse-ld=lld",
         ]
         bc_file_extensions = [
             BCFileExtensions.NO_OPT,
@@ -386,151 +397,17 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
             BCFileExtensions.HOT_CODE,
         ]
 
-        analysis_actions = []
-
-        analysis_actions += generate_basic_blame_experiment_actions(
+        analysis_actions = generate_basic_blame_experiment_actions(
             project,
             bc_file_extensions,
             use_blame_server=False,
             extraction_error_handler=create_default_compiler_error_handler(
                 self.get_handle(), project, self.REPORT_SPEC.main_report
-            )
+            ),
         )
         analysis_actions.append(
-            PerfInterReportGeneration(
-                project, self.get_handle(), commit_filter
-            )
+            PerfInterReportGeneration(project, self.get_handle(), commit_filter)
         )
-
-        analysis_actions.append(actions.Clean(project))
-
-        return analysis_actions
-
-
-class PerformanceInteractionExperimentSynthetic(
-    VersionExperiment, shorthand="PIES"
-):
-    """Performance-interaction analysis for synthetic case studies."""
-
-    NAME = "PerfInteractionsSynth"
-
-    REPORT_SPEC = ReportSpecification(MPRPerformanceInteractionReport)
-
-    def actions_for_project(
-        self, project: VProject
-    ) -> tp.MutableSequence[actions.Step]:
-        setup_basic_blame_experiment(
-            self, project, MPRPerformanceInteractionReport
-        )
-        project.cflags += FeatureExperiment.get_vara_feature_cflags(project)
-        hot_funcs = get_function_annotations(
-            project, PerfSamplingSynth, MPRWLFunctionOverheadReportAggregate,
-            get_function_overhead_report_synth, get_old_rev_synth
-        )
-        project.cflags.extend([
-            "-fvara-handleRM=High",
-            f"-fvara-highlight-function={','.join(hot_funcs)}"
-        ])
-        project.cflags += [
-            "-O1", "-Xclang", "-disable-llvm-passes", "-Xclang",
-            "-disable-llvm-verifier", "-g0", "-fuse-ld=lld"
-        ]
-        bc_file_extensions = [
-            BCFileExtensions.NO_OPT,
-            BCFileExtensions.TBAA,
-            BCFileExtensions.BLAME,
-            BCFileExtensions.FEATURE,
-            BCFileExtensions.HOT_CODE,
-        ]
-
-        patch_provider = PatchProvider.get_provider_for_project(project)
-        patches = patch_provider.get_patches_for_revision(
-            ShortCommitHash(project.version_of_primary)
-        )
-        perf_region_patches = patches["perf_region"]
-        regression_patches = patches.all_of("perf_inter", "regression")
-        change_patches = patches.all_of("perf_inter", "change")
-
-        analysis_actions = []
-
-        for binary in project.binaries:
-            result_filepath = create_new_success_result_filepath(
-                self.get_handle(),
-                self.get_handle().report_spec().main_report, project, binary
-            )
-
-            # simulate regressions via patches
-            patch_steps = []
-            for change_patch in [next(change_patches.__iter__())]:
-                # apply performance region patches
-                applied_patches = list(perf_region_patches)
-                for perf_region_patch in perf_region_patches:
-                    patch_steps.append(ApplyPatch(project, perf_region_patch))
-
-                # apply separate regression simulating patch if available
-                #TODO: use tags to match patches
-                patch_id = change_patch.shortname[-1]
-                filtered_regression_patches = list(
-                    filter(
-                        lambda patch: patch.shortname[-1] == patch_id,
-                        regression_patches
-                    )
-                )
-                if filtered_regression_patches:
-                    assert len(filtered_regression_patches) == 1
-                    regression_patch = filtered_regression_patches[0]
-                    applied_patches.append(regression_patch)
-                    patch_steps.append(ApplyPatch(project, regression_patch))
-
-                # commit patches to not interfere with the change patch
-                patch_steps.append(GitAdd(project, "-u"))
-                patch_steps.append(
-                    GitCommit(
-                        project,
-                        message=f"Hot code and regression patches",
-                        no_verify=True
-                    )
-                )
-
-                # apply change patch
-                applied_patches.append(change_patch)
-                patch_steps.append(ApplyPatch(project, change_patch))
-                patch_steps.append(GitAdd(project, "-u"))
-                patch_steps.append(
-                    GitCommit(project, message=f"Change patch", no_verify=True)
-                )
-
-                # experiment steps
-                patch_steps += generate_basic_blame_experiment_actions(
-                    project,
-                    bc_file_extensions,
-                    applied_patches,
-                    use_blame_server=False,
-                    extraction_error_handler=
-                    create_default_compiler_error_handler(
-                        self.get_handle(), project, self.REPORT_SPEC.main_report
-                    )
-                )
-                patch_steps.append(
-                    PerfInterReportGenerationSynth(
-                        project, binary,
-                        MPRPerformanceInteractionReport.
-                        create_patched_report_name(
-                            change_patch, "performance_interactions"
-                        ), self.get_handle(), applied_patches
-                    )
-                )
-
-                # checkout original project revision
-                patch_steps.append(
-                    GitCheckout(
-                        project, ShortCommitHash(project.version_of_primary)
-                    )
-                )
-
-            analysis_actions.append(
-                ZippedExperimentSteps(result_filepath, patch_steps)
-            )
 
         analysis_actions.append(actions.Clean(project))
 

@@ -407,8 +407,21 @@ class VersionExperiment(Experiment):
         """Returns an experiment handle."""
         return ExperimentHandle(self)
 
-    @abstractmethod
     def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
+        """
+        Get the actions a project wants to run.
+
+        Checks if the project an instance of `VProject` and aborts otherwise.
+        Then, this dispatches to `actions_for_vproject`.
+        """
+        if not isinstance(project, VProject):
+            raise TypeError(f"Experiment {self.NAME} only works with VProject.")
+        return self.actions_for_vproject(project)
+
+    @abstractmethod
+    def actions_for_vproject(
+        self, project: VProject
+    ) -> tp.MutableSequence[Step]:
         """Get the actions a project wants to run."""
 
     @staticmethod
@@ -571,8 +584,8 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):
 
     def __init__(
         self,
-        output_filepaths: dict[type[BaseReport], ReportFilepath]
-        | ReportFilepath,
+        output_filepaths:
+                'dict[type[BaseReport], ReportFilepath] | ReportFilepath',
         actions: list[ZippedStepTy] | None,
     ) -> None:
         """Create a zipped experiment step."""
