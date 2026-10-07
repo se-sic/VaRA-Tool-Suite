@@ -115,10 +115,9 @@ class BenchBuildConfig(unittest.TestCase):
     def test_value_restored_after_context(self) -> None:
         """Test if the config value is restored after the context manager."""
         original_tmp_dir = str(bb_cfg()["tmp_dir"])
-        temporary_tmp_dir = str(settings.Path(original_tmp_dir) / "new/tmp/dir")
 
-        with bb_cfg(tmp_dir=temporary_tmp_dir):
-            self.assertEqual(str(bb_cfg()["tmp_dir"]), temporary_tmp_dir)
+        with bb_cfg(tmp_dir="/new/tmp/dir"):
+            self.assertEqual(str(bb_cfg()["tmp_dir"]), "/new/tmp/dir")
 
         self.assertEqual(str(bb_cfg()["tmp_dir"]), original_tmp_dir)
 
