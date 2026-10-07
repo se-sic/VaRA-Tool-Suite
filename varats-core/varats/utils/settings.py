@@ -285,7 +285,7 @@ class __BBCFG:
         return _BB_CFG
 
     def __enter__(self) -> s.Configuration:
-        config = bb_cfg()
+        config = tp.cast("s.Configuration", bb_cfg())
         self.__saved_configs.append(copy.deepcopy(config))
         self.__apply_overrides(config, self.__overrides[-1])
         return config
