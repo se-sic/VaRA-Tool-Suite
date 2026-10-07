@@ -1,12 +1,11 @@
 runner:
-  mypy:
-    name: mypy
-    cmd: mypy --strict --show-column-numbers -p varats
-    errorformat:
-      - "%f:%l:%c: %m"
-    level: error
-
   ruff:
     name: ruff
     cmd: ruff check --output-format=rdjson
     format: rdjson
+
+  ty:
+    name: ty
+    cmd: ty check --output-format=concise
+    errorformat:
+      - "%f:%l:%c: %m"

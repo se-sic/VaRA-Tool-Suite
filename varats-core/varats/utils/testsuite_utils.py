@@ -1,0 +1,186 @@
+"""Several utility functions for the testsuite protocol."""
+
+import json
+import re
+import typing as tp
+from enum import Enum
+from pathlib import Path
+
+import benchbuild as bb
+from junitparser import JUnitXml, junitparser
+from plumbum import ProcessExecutionError, local
+
+
+class TestResult(Enum):
+    """Enum for possible test results."""
+
+    PASSED = 0
+    FAILED = 1
+    SKIPPED = 2
+    TIMEOUT = 3
+    DISABLED = 4
+    UNKNOWN = 5
+
+
+def ctest_get_test_names(build_dir: Path) -> tp.Iterable[str]:
+    """
+    Get the test names for a project using ctest.
+
+    Args:
+        build_dir: Path to the build directory to execute ctest in
+
+    Returns:
+        A list of test names available in the build directory.
+    """
+    ctest_cmd = local["ctest"]["--show-only=json-v1"]
+
+    try:
+        with local.cwd(build_dir):
+            output = ctest_cmd()
+    except ProcessExecutionError:
+        return []
+
+    test_info = json.loads(output)
+
+    return [test["name"] for test in test_info["tests"]]
+
+
+def ctest_run_testsuite(
+    build_dir: Path,
+    test_report_path: Path | None = None,
+    tests_to_run: tp.Iterable[str] | None = None,
+    tests_to_exclude: tp.Iterable[str] | None = None,
+) -> dict[str, TestResult]:
+    """
+    Run a test suite using ctest.
+
+    Args:
+        build_dir: Path to the build directory to execute ctest in
+        test_report_path: Path to write the test report file to.
+        tests_to_run: List of test cases to run. If None, all tests will be run.
+        tests_to_exclude: List of test cases to exclude.
+
+    Returns:
+        True if all tests passed, False otherwise.
+    """
+    if tests_to_run is None:
+        # In case no test names are given, we run all tests
+        tests_to_run = []
+
+    with local.cwd(build_dir):
+        ctest_cmd = local["ctest"]
+        if test_report_path is None:
+            test_report_path = build_dir / "result.xml"
+        ctest_cmd = ctest_cmd["--output-junit", test_report_path]
+
+        if tests_to_run:
+            test_regex = '|'.join(
+                ["^" + re.escape(name) for name in tests_to_run]
+            )
+            ctest_cmd = ctest_cmd["-R", test_regex]
+
+        if tests_to_exclude:
+            exclude_regex = '|'.join(
+                ["^" + re.escape(name) for name in tests_to_exclude]
+            )
+            ctest_cmd = ctest_cmd["-E", exclude_regex]
+
+        bb.watch(ctest_cmd)(retcode=None)
+
+    return parse_junit_xml(test_report_path)
+
+
+def gtest_get_test_names(build_dir: Path, test_bin: str) -> tp.Iterable[str]:
+    """
+    Get the test names for a project using Google Test.
+
+    Args:
+        build_dir: Path to the build directory to execute the test binary in
+        test_bin: Name of the test binary to execute
+
+    Returns:
+        A list of test names available in the test directory.
+    """
+    test_path = build_dir / test_bin
+    try:
+        with local.cwd(build_dir):
+            output = local[test_path]["--gtest_list_tests"]()
+    except ProcessExecutionError:
+        return []
+
+    test_names = []
+
+    current_prefix = ""
+    for line in output.splitlines():
+        # Filter out lines that are not test names
+        if line.startswith("Running "):
+            continue
+        if line.endswith("."):
+            current_prefix = line
+            continue
+
+        test_name = line.split("#", maxsplit=1)[0].strip()
+
+        test_names.append(current_prefix + test_name)
+
+    return test_names
+
+
+def gtest_run_testsuite(
+    build_dir: Path,
+    test_bin: Path,
+    test_report_path: Path | None = None,
+    tests_to_run: tp.Iterable[str] | None = None,
+    tests_to_exclude: tp.Iterable[str] | None = None,
+) -> dict[str, TestResult] | None:
+    """Run the testsuite."""
+    if tests_to_exclude is None:
+        tests_to_exclude = []
+    excluded_tests = ":".join(tests_to_exclude)
+
+    if tests_to_run is None:
+        tests_to_run = []
+    included_tests = ":".join(tests_to_run)
+
+    output_file: Path
+    if test_report_path:
+        output_file = test_report_path.absolute()
+    else:
+        output_file = build_dir / "results.xml"
+
+    gtest_out = "--gtest_output=xml:" + str(output_file)
+
+    with local.cwd(build_dir):
+        bb.watch(
+            local[test_bin][
+                f"--gtest_filter={included_tests}-{excluded_tests}", gtest_out
+            ]
+        )(retcode=None)
+
+    return parse_junit_xml(output_file)
+
+
+def parse_junit_xml(xml_path: Path) -> dict[str, TestResult]:
+    """Parse the xml test report and return the test results."""
+    results: dict[str, TestResult] = {}
+    test_xml = JUnitXml.fromfile(str(xml_path.absolute()))
+    suite: junitparser.TestSuite
+    for suite in test_xml:
+        suite_name = suite.name or "<unknown>"
+
+        case: junitparser.TestCase
+        for case in suite:
+            case_name = case.name or "<unknown>"
+
+            if case.is_passed:
+                status = TestResult.PASSED
+            elif case.is_skipped:
+                status = TestResult.SKIPPED
+            elif case.is_failure or case.is_error:
+                status = TestResult.FAILED
+            else:
+                status = TestResult.UNKNOWN
+
+            results[f"{suite_name}.{case_name}"] = status
+
+    return results
