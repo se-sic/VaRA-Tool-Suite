@@ -4,7 +4,6 @@ import logging
 import re
 import textwrap
 import typing as tp
-from functools import reduce
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -12,9 +11,24 @@ import click
 import pygit2
 from pygit2 import Blob, Commit, Patch
 
-from varats.utils.git_util import FullCommitHash
+from varats.utils.git_util import UNCOMMITTED_COMMIT_HASH, FullCommitHash
 
 LOG = logging.getLogger(__name__)
+
+
+OutTy = tp.TypeVar('OutTy')
+
+
+def _xml_extract(
+    xml_element: ElementTree.Element,
+    xml_path: str,
+    convert: tp.Callable[[str], OutTy] = lambda x: x,
+) -> OutTy | None:
+    if (
+        found := xml_element.find(xml_path)
+    ) is not None and found.text is not None:
+        return convert(found.text)
+    return None
 
 
 class Location:
@@ -124,6 +138,26 @@ class Location:
             xml += f"<memberOffset>{self.member_offset}</memberOffset>\n"
         return xml
 
+    @staticmethod
+    def from_xml(source_range: ElementTree.Element) -> "Location | None":
+        """Creates a location object from XML."""
+        file = _xml_extract(source_range, "./path")
+        start_line = _xml_extract(source_range, "./start/line", int)
+        start_col = _xml_extract(source_range, "./start/column", int)
+        end_line = _xml_extract(source_range, "./end/line", int)
+        end_col = _xml_extract(source_range, "./end/column", int)
+        member_offset = _xml_extract(source_range, "./memberOffset")
+
+        if file is None or start_line is None or start_col is None:
+            return None
+
+        if end_line is None:
+            end_line = start_line
+
+        return Location(
+            file, start_line, start_col, end_line, end_col, member_offset
+        )
+
     def __str__(self) -> str:
         """String representation of the location."""
         member_offset_str = ""
@@ -136,6 +170,10 @@ class Location:
             f"{self.end_line}:{self.end_col}"
             f"{member_offset_str}"
         )
+
+    def __repr__(self) -> str:
+        """String representation of the location."""
+        return self.__str__()
 
 
 class FeatureAnnotation:
@@ -180,6 +218,39 @@ class FeatureAnnotation:
 
         return xml
 
+    def __str__(self) -> str:
+        """String representation of the annotation."""
+        commit_range = f"{self.introduced.short_hash}"
+        if self.removed is not None:
+            commit_range += f"..{self.removed.short_hash}"
+
+        return f"{self.feature_name}@[{range}] {self.location}"
+
+    def __repr__(self) -> str:
+        """String representation of the annotation."""
+        return self.__str__()
+
+    @staticmethod
+    def from_xml(
+        feature_name: str, source_range: ElementTree.Element
+    ) -> "FeatureAnnotation | None":
+        """Parses a feature annotation from XML."""
+        location = Location.from_xml(source_range)
+        if location is None:
+            return None
+
+        introduced = (
+            _xml_extract(
+                source_range, "./revisionRange/introduced", FullCommitHash
+            )
+            or UNCOMMITTED_COMMIT_HASH
+        )
+        removed = _xml_extract(
+            source_range, "./revisionRange/removed", FullCommitHash
+        )
+
+        return FeatureAnnotation(feature_name, location, introduced, removed)
+
 
 def __get_and_check_location(
     raw_location: str,
@@ -187,7 +258,6 @@ def __get_and_check_location(
     old_location: tp.Optional["Location"] = None,
 ) -> tuple[Location, str]:
     location = Location.parse_string(raw_location, old_location)
-    LOG.debug(location)
     if location.file in commit.tree:
         location_content = __get_location_content(commit, location)
     else:
@@ -206,34 +276,32 @@ def __get_location_content(commit: Commit, location: Location) -> str | None:
     lines: list[bytes] = tp.cast(
         "Blob", commit.tree[location.file]
     ).data.splitlines()
-    if len(lines) < location.start_line:
+    if len(lines) < location.end_line:
         LOG.debug(
-            "Location start_line is larger than number of lines in file,"
+            "Location end_line is larger than number of lines in file,"
             " returning None."
         )
         return None
+
     # Handling of multiline locations
     if location.start_line != location.end_line:
-        content = reduce(
-            lambda x, y: x + "\n" + y.decode("utf-8"),
-            lines[location.start_line : location.end_line - 1],
-            lines[location.start_line - 1].decode("utf-8")[
-                location.start_col - 1 :
-            ],
-        )
-        content += (
-            "\n"
-            + lines[location.end_line - 1].decode("utf-8")[: location.end_col]
-        )
+        relevant_lines = [
+            line.decode("utf-8")
+            for line in lines[location.start_line - 1 : location.end_line - 1]
+        ]
+        relevant_lines[0] = relevant_lines[0][location.start_col - 1 :]
+        relevant_lines[-1] = relevant_lines[-1][: location.end_col]
         LOG.debug(
             "Location spans multiple lines, returning content from "
             f"{location.start_line} to {location.end_line}."
         )
-        return content
+        return "\n".join(relevant_lines)
+
     # Handling of single line locations
     line: str = lines[location.start_line - 1].decode("utf-8")
     LOG.debug(f"Location spans a single line, returning content from {line}")
-    if not location.end_col:
+
+    if location.end_col is None:
         LOG.debug("No end_col specified, assuming single word selection.")
         # If no end_col is specified, we assume just one word is selected
         if len(line) < location.start_col:
@@ -244,6 +312,7 @@ def __get_location_content(commit: Commit, location: Location) -> str | None:
         word = line[location.start_col - 1 :]
         location.end_col = len(word.split()[0]) + location.start_col - 2
         LOG.debug(f"End column set to {location.end_col}.")
+
     if len(line) <= location.end_col:
         LOG.debug(
             f"Location end_col is larger than line length {len(line)},"
@@ -251,7 +320,7 @@ def __get_location_content(commit: Commit, location: Location) -> str | None:
         )
         return None
 
-    return line[(location.start_col - 1) : location.end_col]
+    return line[location.start_col - 1 : location.end_col]
 
 
 def __process_patch(
@@ -310,9 +379,12 @@ def __find_potential_new_locations(
     """Find potential new locations for a feature annotation."""
     potential_new_locations: list[tuple[Location, str]] = []
     for parent in commit.parents:
-        diff = repo.diff(parent.tree, commit.tree)
+        diff = repo.diff(parent, commit)
         for patch in diff:
-            if patch.delta.old_file.path == current_location.file:
+            if (
+                patch is not None
+                and patch.delta.old_file.path == current_location.file
+            ):
                 potential_new_locations.extend(
                     __process_patch(current_location, commit, old_target, patch)
                 )
@@ -343,41 +415,30 @@ def update_feature_model(
         )
 
 
-def load_initial_annotations(
-    file: tp.TextIO,
-    revision: pygit2.Commit,
-) -> tuple[
-    dict[str, dict[int, list[FeatureAnnotation]]],
-    dict[str, dict[int, FeatureAnnotation]],
-    dict[str, dict[int, str]],
-]:
-    """Load initial annotations from a file."""
-    current_feature: str | None = None
-    tracked_features: dict[str, dict[int, list[FeatureAnnotation]]] = {}
-    last_annotations: dict[str, dict[int, FeatureAnnotation]] = {}
-    last_annotation_targets: dict[str, dict[int, str]] = {}
-    commit_hash = FullCommitHash.from_pygit_commit(revision)
-    for raw_line in file:
-        line = raw_line.strip()
-        if line == "":
-            continue
-        if line.endswith(":"):
-            current_feature = line[:-1]
-            if current_feature not in tracked_features:
-                tracked_features[current_feature] = {}
-                last_annotations[current_feature] = {}
-                last_annotation_targets[current_feature] = {}
-            continue
-        if current_feature is None:
-            raise click.UsageError(
-                "Annotations file is not formatted correctly. "
-                "It must start with a feature directive."
-            )
-        annotation_id = len(tracked_features[current_feature])
-        location, target = __get_and_check_location(line, revision)
-        tracked_features[current_feature][annotation_id] = []
-        last_annotations[current_feature][annotation_id] = FeatureAnnotation(
-            current_feature, location, commit_hash
-        )
-        last_annotation_targets[current_feature][annotation_id] = target
-    return tracked_features, last_annotations, last_annotation_targets
+def load_feature_model(
+    fm_file: tp.TextIO,
+) -> dict[str, list[FeatureAnnotation]]:
+    """Load initial annotations from a feature model."""
+    annotations: dict[str, list[FeatureAnnotation]] = {}
+
+    tree = ElementTree.parse(fm_file)
+    root = tree.getroot()
+    for feature in root.iter("configurationOption"):
+        if (xml_feature := feature.find("./name")) is not None:
+            feature_name = xml_feature.text
+            if feature_name is None:
+                LOG.warning(f"Feature has no name: {xml_feature.text}")
+                continue
+
+            feature_annotations: list[FeatureAnnotation] = []
+            if (locations := feature.find("./locations")) is not None:
+                for source_range in locations.iter("sourceRange"):
+                    if (
+                        annotation := FeatureAnnotation.from_xml(
+                            feature_name, source_range
+                        )
+                    ) is not None:
+                        feature_annotations.append(annotation)
+            annotations[feature_name] = feature_annotations
+
+    return annotations

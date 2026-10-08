@@ -1,4 +1,4 @@
-"""Driver module for `vara-feature`"""
+"""Driver module for `vara-feature`."""
 
 import logging
 import typing as tp
@@ -6,7 +6,7 @@ from functools import partial
 from pathlib import Path
 
 import click
-from pygit2 import Commit, Repository, Walker
+from pygit2 import Commit, Walker
 from pygit2.enums import SortMode
 
 from varats.project.project_util import get_local_project_repo
@@ -19,10 +19,10 @@ from varats.ts_utils.feature_util import (
     __find_potential_new_locations,
     __get_and_check_location,
     __get_location_content,
-    load_initial_annotations,
+    load_feature_model,
     update_feature_model,
 )
-from varats.utils.git_util import CommitHash
+from varats.utils.git_util import CommitHash, RepositoryHandle
 
 LOG = logging.getLogger(__name__)
 
@@ -45,10 +45,7 @@ def __prompt_location(
         __get_and_check_location, commit=commit, old_location=old_location
     )
 
-    return tp.cast(
-        "tuple[Location, str]",
-        click.prompt(prompt, default=default, value_proc=parse_location),
-    )
+    return click.prompt(prompt, default=default, value_proc=parse_location)
 
 
 @click.group()
@@ -78,37 +75,26 @@ def __annotate(
     outfile: tp.TextIO,
 ) -> None:
     initialize_cli_tool()
-    repo = get_local_project_repo(project).pygit_repo
+    repo = get_local_project_repo(project)
     walker: Walker
 
-    walker = repo.walk(
-        repo.head.target, SortMode.TOPOLOGICAL | SortMode.REVERSE
+    walker = repo.pygit_repo.walk(
+        repo.pygit_repo.head.target, SortMode.TOPOLOGICAL | SortMode.REVERSE
     )
     walker.simplify_first_parent()
 
     first_commit = next(walker)
     if revision is not None:
-        commit = repo.get(revision)
+        commit = repo.pygit_commit(revision)
         while first_commit != commit:
             first_commit = next(walker)
 
-    tracked_features: dict[str, dict[int, list[FeatureAnnotation]]]
-    last_annotations: dict[str, dict[int, FeatureAnnotation]]
-    last_annotation_targets: dict[str, dict[int, str]]
+    tracked_features: dict[str, dict[int, list[FeatureAnnotation]]] = {}
+    last_annotations: dict[str, dict[int, FeatureAnnotation]] = {}
+    last_annotation_targets: dict[str, dict[int, str]] = {}
 
     if infile is not None:
-        LOG.debug(f"Reading existing annotations from {infile.name}")
-        tracked_features, last_annotations, last_annotation_targets = (
-            load_initial_annotations(infile, first_commit)
-        )
-        LOG.debug(
-            f"Loaded {len(tracked_features)} tracked features from "
-            f"{infile.name}."
-        )
-    else:
-        tracked_features = {}
-        last_annotations = {}
-        last_annotation_targets = {}
+        annotations = load_feature_model(infile)
 
     LOG.debug(f"Current revision: {first_commit.id}")
 
@@ -147,7 +133,7 @@ def __annotate(
 def track_annotations(
     last_annotation_targets: dict[str, dict[int, str]],
     last_annotations: dict[str, dict[int, FeatureAnnotation]],
-    repo: Repository,
+    repo: RepositoryHandle,
     tracked_features: dict[str, dict[int, list[FeatureAnnotation]]],
     walker: Walker,
 ) -> dict[str, dict[int, list[FeatureAnnotation]]]:
@@ -184,12 +170,12 @@ def track_annotations(
 
                     # track new feature location
                     click.echo(
-                        f"[{feature} @ {commit_hash.short_hash}] "
+                        f"\n[{feature} @ {commit_hash.short_hash}] "
                         f"Annotation changed for '{old_target}'."
                     )
                     click.echo(f"Old location: {annotation.location}")
                     potential_new_locations = __find_potential_new_locations(
-                        repo, commit, annotation.location, old_target
+                        repo.pygit_repo, commit, annotation.location, old_target
                     )
                     # Determine potential new location
                     best_candidate: tuple[Location, str] | None = None
@@ -219,7 +205,6 @@ def track_annotations(
                         click.echo(
                             f"Symbol changed. Tracking as '{new_target}'."
                         )
-            click.echo()
 
     # store remaining annotations
     for feature, annotations in last_annotations.items():
@@ -245,7 +230,7 @@ def write_annotations(
             outfile.write("\n")
     else:
         update_feature_model(Path(outfile.name), tracked_features)
-    click.echo(f"Final annotations written to {outfile.name}.")
+    click.echo(f"\nFinal annotations written to {outfile.name}.")
 
 
 if __name__ == '__main__':
