@@ -194,7 +194,9 @@ class FeatureAnnotation:
 
     def to_xml(self, parent: ElementTree.Element) -> None:
         """Convert the annotation to SPLConqueror feature model format."""
-        source_range = ElementTree.SubElement(parent, "sourceRange")
+        source_range = ElementTree.SubElement(
+            parent, "sourceRange", category="necessary"
+        )
         revision_range = ElementTree.SubElement(source_range, "revisionRange")
         introduced_revision = ElementTree.SubElement(
             revision_range, "introduced"
@@ -252,14 +254,15 @@ class FeatureAnnotation:
         return FeatureAnnotation(feature_name, location, introduced, removed)
 
 
-def __get_and_check_location(
+def get_and_check_location(
     raw_location: str,
     commit: Commit,
     old_location: tp.Optional["Location"] = None,
 ) -> tuple[Location, str]:
+    """Parse a location string and check that it exists in the given commit."""
     location = Location.parse_string(raw_location, old_location)
     if location.file in commit.tree:
-        location_content = __get_location_content(commit, location)
+        location_content = get_location_content(commit, location)
     else:
         raise click.UsageError(
             "The provided file does not exist in the repository."
@@ -272,7 +275,8 @@ def __get_and_check_location(
     return location, location_content
 
 
-def __get_location_content(commit: Commit, location: Location) -> str | None:
+def get_location_content(commit: Commit, location: Location) -> str | None:
+    """Return the content at the given location in the given commit."""
     lines: list[bytes] = tp.cast(
         "Blob", commit.tree[location.file]
     ).data.splitlines()
@@ -360,9 +364,7 @@ def __process_patch(
     # The line may not be in the diff as it was not changed,
     # but moved because of the diff.
     potential_new_location = Location.move_location(location, offset_counter)
-    potential_new_content = __get_location_content(
-        commit, potential_new_location
-    )
+    potential_new_content = get_location_content(commit, potential_new_location)
     if potential_new_content == old_target:
         potential_new_locations.append(
             (potential_new_location, potential_new_content)
@@ -370,7 +372,7 @@ def __process_patch(
     return potential_new_locations
 
 
-def __find_potential_new_locations(
+def find_potential_new_locations(
     repo: pygit2.Repository,
     commit: Commit,
     current_location: Location,
@@ -392,21 +394,39 @@ def __find_potential_new_locations(
 
 
 def update_feature_model(
-    path: Path, annotations: dict[str, dict[int, list[FeatureAnnotation]]]
+    fm_path: Path,
+    annotations: dict[str, dict[int, list[FeatureAnnotation]]],
+    outfile: tp.TextIO,
 ) -> None:
-    """Update the feature model at the given path based on the annotations."""
-    tree = ElementTree.parse(str(path))
+    """
+    Add annotations to the feature model at the given path.
+
+    Existing annotations are kept; the merged model is written to `outfile`.
+    """
+    # Keep comments; the DOCTYPE is dropped by ElementTree and re-added below.
+    parser = ElementTree.XMLParser(
+        target=ElementTree.TreeBuilder(insert_comments=True)
+    )
+    tree = ElementTree.parse(str(fm_path), parser)
     root = tree.getroot()
     for feature in root.iter("configurationOption"):
-        xml_feature = feature.find("name")
-        if xml_feature and xml_feature.text in annotations:
-            annotation_dict = annotations.pop(xml_feature.text)
+        if (
+            feature_name := _xml_extract(feature, "name")
+        ) is not None and feature_name in annotations:
+            annotation_dict = annotations.pop(feature_name)
             locations = feature.find("locations")
-            if locations:
-                for _, annotation_list in annotation_dict.items():
-                    for annotation in annotation_list:
-                        annotation.to_xml(locations)
-    tree.write(str(path))
+            if locations is None:
+                locations = ElementTree.SubElement(feature, "locations")
+            for _, annotation_list in annotation_dict.items():
+                for annotation in annotation_list:
+                    annotation.to_xml(locations)
+    ElementTree.indent(tree, space="  ")
+    outfile.write(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<!DOCTYPE vm\nSYSTEM "vm.dtd">\n'
+    )
+    outfile.write(ElementTree.tostring(root, encoding="unicode"))
+    outfile.write("\n")
     click.echo("Feature model updated.")
     if annotations:
         click.echo(
@@ -416,7 +436,7 @@ def update_feature_model(
 
 
 def load_feature_model(
-    fm_file: tp.TextIO,
+    fm_file: Path,
 ) -> dict[str, list[FeatureAnnotation]]:
     """Load initial annotations from a feature model."""
     annotations: dict[str, list[FeatureAnnotation]] = {}
