@@ -214,6 +214,23 @@ def create_new_varats_config() -> s.Configuration:
     cfg['sampling'] = {}
 
     cfg['ml'] = {}
+
+    cfg['patch_provider'] = {
+        "repositories": {
+            "desc": "Git repositories that provide project patches.",
+            "default": [
+                {
+                    "remote": "https://github.com/se-sic/vara-project-patches.git",
+                    "local": "patch-configurations",
+                    "refspec": "origin/HEAD",
+                }
+            ],
+        },
+        "local_folders": {
+            "desc": "Local folders that provide project patches.",
+            "default": [],
+        },
+    }
     return cfg
 
 
