@@ -17,7 +17,6 @@ from yaml import YAMLError
 
 from varats.project.project_util import get_local_project_repo
 from varats.provider.provider import Provider, ProviderType
-from varats.utils.benchbuild_util import temporary_tmp_dir
 from varats.utils.filesystem_util import lock_file
 from varats.utils.git_commands import fetch_repository, pull_current_branch
 from varats.utils.git_util import (
@@ -27,7 +26,7 @@ from varats.utils.git_util import (
     get_all_revisions_between,
     get_initial_commit,
 )
-from varats.utils.settings import vara_cfg
+from varats.utils.settings import bb_cfg, vara_cfg
 
 
 class Patch:
@@ -43,7 +42,7 @@ class Patch:
         tags: set[str] | None = None,
         feature_tags: set[str] | None = None,
         regression_severity: int | None = None,
-    ):
+    ) -> None:
         """
         Initialize a patch class.
 
@@ -190,7 +189,7 @@ class PatchSet:
     easily be accessed via the tags of a patch.
     """
 
-    def __init__(self, patches: set[Patch] | frozenset[Patch]):
+    def __init__(self, patches: set[Patch] | frozenset[Patch]) -> None:
         """Initialize a PatchSet with a set of patches."""
         self.__patches: frozenset[Patch] = frozenset(patches)
 
@@ -310,7 +309,7 @@ class PatchSet:
 class PatchProvider(Provider):
     """A provider for getting patch files for a certain project."""
 
-    def __init__(self, project: type[Project]):
+    def __init__(self, project: type[Project]) -> None:
         """Initialize a patch provider for a given project."""
         super().__init__(project)
 
@@ -320,66 +319,23 @@ class PatchProvider(Provider):
         repo_cfgs = cfg["patch_provider"]["repositories"].value
         local_cfgs = cfg["patch_provider"]["local_folders"].value or []
 
-        patches_sources: list[bb.source.Git] = []
+        self.__patches: set[Patch] = set()
 
-        # Just adding the repository form the list to the patches_sources
+        # Update repository to have all upstream changes.
+        project_repo = get_local_project_repo(self.project.NAME)
+        fetch_repository(project_repo)
+
         for repo_cfg in repo_cfgs:
-            remote_cfg = repo_cfg.get("remote")
-            local_cfg = repo_cfg.get("local")
-            refspec_cfg = repo_cfg.get("refspec")
-            patches_sources.append(
-                bb.source.Git(
-                    remote=remote_cfg,
-                    local=local_cfg,
-                    refspec=refspec_cfg,
-                    limit=None,
-                    shallow=False,
-                )
+            patches_dir = self._get_patches_directory_from_repository(repo_cfg)
+            self.__patches.update(
+                self._parse_patches_from_directory(patches_dir)
             )
 
-        for local in local_cfgs:
-            remote_cfg = local
-            local_cfg = local.str().split("/").join("_")
-            refspec_cfg = "origin/HEAD"
-            patches_sources.append(
-                bb.source.Git(
-                    remote=remote_cfg,
-                    local=local_cfg,
-                    refspec=refspec_cfg,
-                    limit=None,
-                    shallow=False,
-                )
+        for local_folder in local_cfgs:
+            patches_dir = Path(str(local_folder)) / self.project.NAME
+            self.__patches.update(
+                self._parse_patches_from_directory(patches_dir)
             )
-
-        # Here for each patch_source, we want for each project we look inside
-        # each projects, there can and not be a subfolder for some patch, we
-        # then want to add each of this patch to self.__patches
-        for patch_source in patches_sources:
-            with temporary_tmp_dir():
-                self._update_local_patches_repo(patch_source)
-                repo = self._get_patches_repository(patch_source)
-                patches_project_dir = repo.worktree_path / self.project.NAME
-
-                if not patches_project_dir.is_dir():
-                    warnings.warn(
-                        "Could not find patches directory for project "
-                        f"'{self.project.NAME}'."
-                    )
-
-            self.__patches: set[Patch] = set()
-
-            # Update repository to have all upstream changes
-            project_repo = get_local_project_repo(self.project.NAME)
-            fetch_repository(project_repo)
-
-            for info_path in patches_project_dir.rglob("*.info"):
-                try:
-                    current_patch = Patch.from_yaml(info_path)
-                    self.__patches.add(current_patch)
-                except YAMLError:
-                    warnings.warn(
-                        f"Unable to parse patch info in: `{info_path}`"
-                    )
 
     def get_by_shortname(self, shortname: str) -> Patch | None:
         """
@@ -427,12 +383,49 @@ class PatchProvider(Provider):
         """
         return PatchProvider(project)
 
+    def _get_patches_directory_from_repository(
+        self, repo_cfg: dict[str, tp.Any]
+    ) -> Path:
+        """Fetch a configured patch repository and return its project folder."""
+        patch_source = bb.source.Git(
+            remote=repo_cfg.get("remote"),
+            local=repo_cfg.get("local"),
+            refspec=repo_cfg.get("refspec"),
+            limit=None,
+            shallow=False,
+        )
+
+        patch_sources_tmp_dir = Path(str(bb_cfg()["tmp_dir"])) / "patch-sources"
+        with bb_cfg(tmp_dir=str(patch_sources_tmp_dir)):
+            self._update_local_patches_repo(patch_source)
+            repo = self._get_patches_repository(patch_source)
+
+        return repo.worktree_path / self.project.NAME
+
+    @staticmethod
+    def _parse_patches_from_directory(patches_dir: Path) -> set[Patch]:
+        """Parse all patch info files in a project's patch directory."""
+        if not patches_dir.is_dir():
+            warnings.warn(f"Could not find patches directory: '{patches_dir}'.")
+            return set()
+
+        patches: set[Patch] = set()
+        for info_path in patches_dir.rglob("*.info"):
+            try:
+                patches.add(Patch.from_yaml(info_path))
+            except YAMLError:
+                warnings.warn(f"Unable to parse patch info in: `{info_path}`")
+
+        return patches
+
     @classmethod
-    def _get_patches_repository(cls, patch_source) -> RepositoryHandle:
+    def _get_patches_repository(
+        cls, patch_source: bb.source.Git
+    ) -> RepositoryHandle:
         return RepositoryHandle(Path(target_prefix()) / patch_source.local)
 
     @classmethod
-    def _update_local_patches_repo(cls, patch_source) -> None:
+    def _update_local_patches_repo(cls, patch_source: bb.source.Git) -> None:
         lock_path = Path(target_prefix()) / (str(patch_source.local) + ".lock")
 
         with lock_file(lock_path):
