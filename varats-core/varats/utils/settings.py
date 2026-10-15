@@ -301,6 +301,9 @@ class __BBCFG:
             return self
         return _BB_CFG
 
+    def __getitem__(self, key: str) -> s.Configuration:
+        return self()[key]
+
     def __enter__(self) -> s.Configuration:
         global _BB_CFG  # noqa: PLW0603
         previous_config = tp.cast("s.Configuration", bb_cfg())
