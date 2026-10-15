@@ -1,5 +1,3 @@
-import shutil
-import tempfile
 import unittest
 from copy import deepcopy
 from pathlib import Path
@@ -28,16 +26,15 @@ from varats.utils.settings import vara_cfg
 
 class TestPatchProvider(unittest.TestCase):
     @staticmethod
-    def _create_patch_repository(source: Path, destination: Path) -> Path:
-        """Create a Git patch repository from a test-input directory."""
-        shutil.copytree(source, destination)
-        with local.cwd(destination):
+    def _initialize_patch_repository(repository: Path) -> Path:
+        """Initialize a copied patch-source fixture as a Git repository."""
+        with local.cwd(repository):
             local["git"]("init")
             local["git"]("config", "user.email", "tests@example.com")
             local["git"]("config", "user.name", "Patch Provider Tests")
             local["git"]("add", ".")
             local["git"]("commit", "-m", "Add test patches")
-        return destination
+        return repository
 
     @staticmethod
     def _create_patch_provider(
@@ -63,15 +60,13 @@ class TestPatchProvider(unittest.TestCase):
         UnitTestFixtures.create_project_repo_fixture(FeaturePerfCSCollection),
     )
     def test_reads_patches_from_two_git_sources(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            patch_repositories = [
-                self._create_patch_repository(
-                    Path("patch_subdirectories") / source_name,
-                    Path(tmp_dir) / source_name,
-                )
-                for source_name in ["git_source_one", "git_source_two"]
-            ]
-            provider = self._create_patch_provider(patch_repositories, [])
+        patch_repositories = [
+            self._initialize_patch_repository(
+                Path("patch_subdirectories") / source_name
+            )
+            for source_name in ["git_source_one", "git_source_two"]
+        ]
+        provider = self._create_patch_provider(patch_repositories, [])
 
         for shortname in ("git-source-one", "git-source-two"):
             self.assertIsNotNone(provider.get_by_shortname(shortname))
@@ -103,15 +98,13 @@ class TestPatchProvider(unittest.TestCase):
         UnitTestFixtures.create_project_repo_fixture(FeaturePerfCSCollection),
     )
     def test_reads_patches_from_git_and_local_source(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            repository = self._create_patch_repository(
-                Path("patch_subdirectories/git_source_one"),
-                Path(tmp_dir) / "git_source_one",
-            )
-            provider = self._create_patch_provider(
-                [repository],
-                ["patch_subdirectories/local_source_one"],
-            )
+        repository = self._initialize_patch_repository(
+            Path("patch_subdirectories/git_source_one")
+        )
+        provider = self._create_patch_provider(
+            [repository],
+            ["patch_subdirectories/local_source_one"],
+        )
 
         for shortname in ("git-source-one", "local-source-one"):
             self.assertIsNotNone(provider.get_by_shortname(shortname))
