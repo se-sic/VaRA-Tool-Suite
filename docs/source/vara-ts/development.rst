@@ -13,12 +13,12 @@ Pre-Commit
 ----------
 
 We use `pre-commit <https://pre-commit.com/>`__ to automatically enforce our code-style guidelines.
-To activate these checks, you first have to install pre-commit and its hooks:
+To activate these checks, you first have to install pre-commit, which is part of the ``dev`` dependency group, and its hooks:
 
 .. code-block:: console
 
-    pip install pre-commit
-    pre-commit install
+    uv sync --group dev
+    uv run pre-commit install
 
 Afterwards, the checks will run every time you make a ``git commit``.
 The same checks also run in our CI and pull requests are required to pass them before merging.
@@ -26,7 +26,7 @@ It is also possible to run the checks manually:
 
 .. code-block:: console
 
-    pre-commit run --all-files
+    uv run pre-commit run --all-files
 
 Testing
 -------
@@ -88,13 +88,20 @@ Prepare release tooling
 
 Before we can create a release, we need to install and prepare our release tools.
 
-Install:
+VaRA-TS is built and published with `uv <https://docs.astral.sh/uv/>`_.
+``uv publish`` reads the PyPI token from the ``UV_PUBLISH_TOKEN`` environment variable:
+
+.. code-block:: console
+
+    export UV_PUBLISH_TOKEN=<your-pypi-token>
+
+vara-feature still uses tox for releases. Install:
 
 .. code-block:: console
 
     pip install --user wheel tox
 
-Configure pypi credentials
+Configure pypi credentials for tox
 
 .. code-block:: none
 
@@ -142,11 +149,12 @@ Integrate the changes from develop into the release branch `vara`.
     git checkout vara
     git merge vara-dev
 
-Build and upload release files with tox and tag the new release, this automatically builds both namespace packages `varats` and `varats-core`.
+Build and upload release files with uv and tag the new release, this automatically builds both namespace packages `varats` and `varats-core`.
 
 .. code-block:: console
 
-    tox -e release
+    uv build
+    uv publish
     git tag -s vara-X.Y.Z
 
     git push origin vara
