@@ -1,5 +1,5 @@
 """Git related project steps."""
-
+import logging
 import textwrap
 import typing as tp
 from pathlib import Path
@@ -9,7 +9,9 @@ from plumbum import ProcessExecutionError
 
 import varats.utils.git_commands as git
 from varats.project.varats_project import VProject
-from varats.utils.git_util import CommitHash
+from varats.utils.git_util import CommitHash, RepositoryHandle
+
+LOG = logging.Logger(__name__)
 
 
 class GitAdd(ProjectStep):
@@ -25,7 +27,10 @@ class GitAdd(ProjectStep):
     def __call__(self) -> StepResult:
         self.status = StepResult.OK
         try:
-            git.add(Path(self.project.source_of_primary), *self.__git_add_args)
+            git.add(
+                RepositoryHandle(Path(self.project.source_of_primary)),
+                *self.__git_add_args
+            )
         except ProcessExecutionError:
             self.status = StepResult.ERROR
 
@@ -48,20 +53,23 @@ class GitCommit(ProjectStep):
         self,
         project: VProject,
         message: tp.Optional[str] = None,
-        allow_empty: bool = False
+        allow_empty: bool = False,
+        no_verify: bool = False
     ) -> None:
         super().__init__(project)
         self.__message = message
         self.__allow_empty = allow_empty
+        self.__no_verify = no_verify
 
     def __call__(self) -> StepResult:
         self.status = StepResult.OK
         try:
             git.commit(
-                Path(self.project.source_of_primary), self.__message,
-                self.__allow_empty
+                RepositoryHandle(Path(self.project.source_of_primary)),
+                self.__message, self.__allow_empty, self.__no_verify
             )
-        except ProcessExecutionError:
+        except ProcessExecutionError as e:
+            LOG.error(e)
             self.status = StepResult.ERROR
 
         return self.status
@@ -87,9 +95,11 @@ class GitCheckout(ProjectStep):
         self.status = StepResult.OK
         try:
             git.checkout_branch_or_commit(
-                Path(self.project.source_of_primary), self.__commit
+                RepositoryHandle(Path(self.project.source_of_primary)),
+                self.__commit
             )
-        except ProcessExecutionError:
+        except ProcessExecutionError as e:
+            LOG.error(e)
             self.status = StepResult.ERROR
 
         return self.status

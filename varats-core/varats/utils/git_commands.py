@@ -82,13 +82,13 @@ def update_all_submodules(
     repo(*git_params)
 
 
-
 def get_all_submodules(repo: 'RepositoryHandle') -> 'tp.List[RepositoryHandle]':
     submodule_paths = repo("submodule", "--quiet", "foreach", "echo $path")
     return [
         repo.get_submodule(path)
         for path in submodule_paths.splitlines()
     ]
+
 
 def fetch_remote(
     repo: 'RepositoryHandle',
@@ -133,15 +133,16 @@ def fetch_repository(repo: 'RepositoryHandle') -> None:
     repo("fetch")
 
 
-def add(repo_folder: Path, *git_add_args: str) -> None:
+def add(repo: 'RepositoryHandle', *git_add_args: str) -> None:
     """Runs `git add` with the given arguments."""
-    git("-C", repo_folder.absolute(), "add", *git_add_args)
+    repo("add", *git_add_args)
 
 
 def commit(
-    repo_folder: Path,
+    repo: 'RepositoryHandle',
     message: tp.Optional[str] = None,
-    allow_empty: bool = False
+    allow_empty: bool = False,
+    no_verify: bool = False
 ) -> None:
     """Commits the repository."""
     args = ["--allow-empty-message"]
@@ -149,12 +150,14 @@ def commit(
         args = ["-m", message]
     if allow_empty:
         args += ["--allow-empty"]
+    if no_verify:
+        args += ["--no-verify"]
 
-    git("-C", repo_folder.absolute(), "commit", *args)
+    repo("commit", *args)
 
 
 def checkout_branch_or_commit(
-    repo: 'RepositoryHandle', target: tp.Union[str, 'CommitHash']
+    repo: 'RepositoryHandle', target: 'tp.Union[str, CommitHash]'
 ) -> None:
     """Checks out a branch or commit in the repository."""
     repo("checkout", str(target))
