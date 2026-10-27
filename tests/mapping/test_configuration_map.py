@@ -1,17 +1,17 @@
 """Test module for ConfigurationMap tests."""
 
 import unittest
-import unittest.mock as mock
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from unittest import mock
 
 from tests.helper_utils import ConfigurationHelper
-from varats.base.configuration import DummyConfiguration, ConfigurationImpl
+from varats.base.configuration import ConfigurationImpl, DummyConfiguration
 from varats.mapping.configuration_map import (
     ConfigurationMap,
-    store_configuration_map,
-    load_configuration_map,
     create_configuration_map_from_yaml_doc,
+    load_configuration_map,
+    store_configuration_map,
 )
 
 YAML_DOC_CONFIG_HEADER = """---
@@ -48,7 +48,8 @@ class TestConfigurationMap(unittest.TestCase):
         self.assertEqual(
             type(
                 config_map.get_configuration(ConfigurationMap.DUMMY_CONFIG_ID)
-            ), DummyConfiguration
+            ),
+            DummyConfiguration,
         )
 
     def test_add_get_multiple_configs(self) -> None:
@@ -135,10 +136,10 @@ class TestConfigurationMapStoreAndLoad(unittest.TestCase):
 
             self.assertEqual(
                 YAML_DOC_CONFIG_HEADER + YAML_DOC_CONFIG_MAP,
-                "".join(yaml_output_file.readlines())
+                "".join(yaml_output_file.readlines()),
             )
 
-    @mock.patch("builtins.open", create=True)
+    @mock.patch("pathlib.Path.open", create=True)
     def test_load_configuration_map(self, mock_open) -> None:
         """Tests if we can load a stored configuration map correctly from a
         file."""
@@ -158,10 +159,13 @@ class TestConfigurationMapStoreAndLoad(unittest.TestCase):
     def test_create_configuration_map_from_dict(self) -> None:
         """Tests if we can create a `ConfigurationMap` from a dict, similar to a
         yaml doc."""
-        config_map = create_configuration_map_from_yaml_doc({
-            '0': '{"foo": "True", "bar": "False", "bazz": "bazz-value"}',
-            '1': "{}"
-        }, ConfigurationImpl)
+        config_map = create_configuration_map_from_yaml_doc(
+            {
+                '0': '{"foo": "True", "bar": "False", "bazz": "bazz-value"}',
+                '1': "{}",
+            },
+            ConfigurationImpl,
+        )
 
         self.assertSetEqual({0, 1}, set(config_map.ids()))
         config = config_map.get_configuration(0)

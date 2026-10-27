@@ -1,0 +1,9 @@
+DocType: CaseStudy
+Version: 1
+---
+project_name: external_project
+stages:
+- revisions:
+  - commit_hash: 2f0bc9cd40f709152a0177c8e585c0757e9af9c9
+    commit_id: 355
+version: 0

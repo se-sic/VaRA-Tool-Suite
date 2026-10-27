@@ -1,15 +1,16 @@
 """Test varats container tool."""
+
 import unittest
-import unittest.mock as mock
 from pathlib import Path
+from unittest import mock
 
 from click.testing import CliRunner
 
 from tests.helper_utils import run_in_test_environment
 from varats.containers.containers import (
+    _DEV_IMAGE_STAGES,
     ImageBase,
     get_image_name,
-    _DEV_IMAGE_STAGES,
 )
 from varats.tools import driver_build_setup
 from varats.tools.driver_build_setup import _build_in_container
@@ -45,15 +46,20 @@ class TestDriverBuildsetup(unittest.TestCase):
         research_tool = get_research_tool("vara")
         image_base = ImageBase.DEBIAN_10
         build_type = BuildType.DEV
-        mock_create.return_value = \
-            f"{get_image_name(image_base, _DEV_IMAGE_STAGES[-1], True)}" \
+        mock_create.return_value = (
+            f"{get_image_name(image_base, _DEV_IMAGE_STAGES[-1], True)}"
             f"_{build_type.name.lower()}"
+        )
 
         _build_in_container(research_tool, image_base, build_type)
 
         mock_create.assert_called_with(image_base, build_type)
         mock_run.assert_called_with(
-            "debian_10:stage_31_config_dev_dev", "build_VaRA", None, [
+            "debian_10:stage_31_config_dev_dev",
+            "build_VaRA",
+            None,
+            None,
+            [
                 "build",
                 "vara",
                 "--no-update-prompt",
@@ -61,5 +67,5 @@ class TestDriverBuildsetup(unittest.TestCase):
                 "--source-location=/varats_root/tools_src",
                 "--install-prefix=/varats_root/tools",
                 "--build-folder-suffix=DEBIAN_10",
-            ]
+            ],
         )

@@ -1,7 +1,6 @@
 """Driver module for `vara-buildsetup`."""
 
 import os
-import typing as tp
 from pathlib import Path
 
 import click
@@ -9,15 +8,15 @@ from plumbum import colors
 
 from varats.containers.containers import (
     ImageBase,
-    run_container,
     StageBuilder,
     create_dev_image,
+    run_container,
 )
 from varats.tools.bb_config import update_env
 from varats.tools.research_tools.research_tool import (
+    Distro,
     ResearchTool,
     SpecificCodeBase,
-    Distro,
 )
 from varats.tools.research_tools.vara import VaRACodeBase
 from varats.tools.research_tools.vara_manager import BuildType
@@ -25,9 +24,9 @@ from varats.tools.tool_util import (
     get_research_tool,
     get_supported_research_tool_names,
 )
-from varats.ts_utils.cli_util import initialize_cli_tool, cli_yn_choice
+from varats.ts_utils.cli_util import cli_yn_choice, initialize_cli_tool
 from varats.ts_utils.click_param_types import EnumChoice
-from varats.utils.settings import save_config, vara_cfg, bb_cfg
+from varats.utils.settings import bb_cfg, save_config, vara_cfg
 
 
 def update_term(text: str, enable_inline: bool = False) -> None:
@@ -50,8 +49,7 @@ def update_term(text: str, enable_inline: bool = False) -> None:
 
 def print_up_to_date_message(research_tool: ResearchTool[VaRACodeBase]) -> None:
     """
-    Checks if VaRA's major release version is up to date and prints a message in
-    the terminal if VaRA is outdated.
+    Prints a message if VaRA's major release number is outdated.
 
     Args:
         research_tool: The loaded research tool
@@ -68,16 +66,14 @@ def print_up_to_date_message(research_tool: ResearchTool[VaRACodeBase]) -> None:
 
 
 def show_major_release_prompt(
-    research_tool: ResearchTool[VaRACodeBase]
+    research_tool: ResearchTool[VaRACodeBase],
 ) -> None:
     """
-    Shows a prompt if VaRA's major release version is not up to date to decide
-    if the user wants to upgrade.
+    Prompt whether VaRA should be upgraded to the current major release version.
 
     Args:
         research_tool: The loaded research tool
     """
-
     if not research_tool.is_up_to_date():
         print_up_to_date_message(research_tool)
         user_choice = cli_yn_choice(
@@ -110,24 +106,26 @@ def config() -> None:
     metavar="VERSION",
     type=int,
     required=False,
-    help="Version to download."
+    help="Version to download.",
 )
 @click.option(
     "--source-location",
     type=click.Path(path_type=Path),
     required=False,
-    help="Folder to store tool sources."
+    help="Folder to store tool sources.",
 )
 @click.option(
     "--install-prefix",
     type=click.Path(path_type=Path),
     required=False,
-    help="Tool install folder."
+    help="Tool install folder.",
 )
 @main.command()
 def init(
-    version: tp.Optional[int], install_prefix: tp.Optional[Path],
-    source_location: tp.Optional[Path], research_tool: str
+    version: int | None,
+    install_prefix: Path | None,
+    source_location: Path | None,
+    research_tool: str,
 ) -> None:
     """Initialize a research tool and all its components."""
     tool = get_research_tool(research_tool)
@@ -151,19 +149,19 @@ def update(research_tool: str) -> None:
 @click.option(
     "--container",
     type=EnumChoice(ImageBase, case_sensitive=False),
-    help="Build the tool in a container using the specified base image."
+    help="Build the tool in a container using the specified base image.",
 )
 @click.option(
     "--install-prefix",
     type=click.Path(path_type=Path),
     required=False,
-    help="Tool install folder."
+    help="Tool install folder.",
 )
 @click.option(
     "--source-location",
     type=click.Path(path_type=Path),
     required=False,
-    help="Folder to store tool sources."
+    help="Folder to store tool sources.",
 )
 @click.option(
     "--build-folder-suffix", required=False, help="Folder to use for building."
@@ -172,19 +170,22 @@ def update(research_tool: str) -> None:
     "--build-type",
     type=EnumChoice(BuildType, case_sensitive=False),
     default=BuildType.DEV,
-    help="Build type to use for the tool build configuration."
+    help="Build type to use for the tool build configuration.",
 )
 @click.option(
     "--update-prompt/--no-update-prompt",
     default=True,
-    help="Show a prompt to check for major version updates."
+    help="Show a prompt to check for major version updates.",
 )
 @main.command()
 def build(
-    research_tool: str, build_type: BuildType,
-    build_folder_suffix: tp.Optional[str], source_location: tp.Optional[Path],
-    install_prefix: tp.Optional[Path], container: tp.Optional[ImageBase],
-    update_prompt: bool
+    research_tool: str,
+    build_type: BuildType,
+    build_folder_suffix: str | None,
+    source_location: Path | None,
+    install_prefix: Path | None,
+    container: ImageBase | None,
+    update_prompt: bool,
 ) -> None:
     """Build a research tool and all its components."""
     tool = get_research_tool(research_tool, source_location)
@@ -196,8 +197,9 @@ def build(
     else:
         tool.invalidate_install(__get_install_prefix(tool, install_prefix))
         tool.build(
-            build_type, __get_install_prefix(tool, install_prefix),
-            build_folder_suffix
+            build_type,
+            __get_install_prefix(tool, install_prefix),
+            build_folder_suffix,
         )
 
         if not tool.verify_build(build_type, build_folder_suffix):
@@ -212,39 +214,42 @@ def build(
 
 
 def __build_setup_init(
-    tool: ResearchTool[SpecificCodeBase], source_location: tp.Optional[Path],
-    raw_install_prefix: tp.Optional[Path], version: tp.Optional[int]
+    tool: ResearchTool[SpecificCodeBase],
+    source_location: Path | None,
+    raw_install_prefix: Path | None,
+    version: int | None,
 ) -> None:
 
     if source_location and not source_location.exists():
         source_location.mkdir(parents=True)
 
-    if (distro := Distro.get_current_distro()):
-        if not tool.get_dependencies().has_dependencies_for_distro(distro):
-            missing_deps = tool.get_dependencies(
-            ).get_missing_dependencies_for_distro(distro)
-            print(
-                f"The following dependencies "
-                f"have to be installed: {missing_deps}"
-            )
-            return
+    if (
+        distro := Distro.get_current_distro()
+    ) and not tool.get_dependencies().has_dependencies_for_distro(distro):
+        missing_deps = (
+            tool.get_dependencies().get_missing_dependencies_for_distro(distro)
+        )
+        print(
+            f"The following dependencies have to be installed: {missing_deps}"
+        )
+        return
 
     tool.setup(
         source_location,
         install_prefix=__get_install_prefix(tool, raw_install_prefix),
-        version=version
+        version=version,
     )
 
 
 def __get_install_prefix(
-    tool: ResearchTool[SpecificCodeBase], raw_install_prefix: tp.Optional[Path]
+    tool: ResearchTool[SpecificCodeBase], raw_install_prefix: Path | None
 ) -> Path:
     if raw_install_prefix:
         install_prefix = raw_install_prefix
     elif tool.has_install_location():
         install_prefix = tool.install_location()
     else:
-        install_prefix = Path(str(os.getcwd()) + f"/tools/{tool.name}/")
+        install_prefix = Path(str(Path.cwd()) + f"/tools/{tool.name}/")
 
     if not install_prefix.exists():
         install_prefix.mkdir(parents=True)
@@ -256,7 +261,7 @@ def _build_in_container(
     tool: ResearchTool[SpecificCodeBase],
     image_base: ImageBase,
     build_type: BuildType,
-    install_prefix: tp.Optional[Path] = None
+    install_prefix: Path | None = None,
 ) -> None:
     vara_cfg()["container"]["research_tool"] = tool.name
 
@@ -281,7 +286,7 @@ def _build_in_container(
         # mount tool src dir
         [str(tool.source_location()), source_mount],
         # mount install dir
-        [str(install_prefix), install_mount]
+        [str(install_prefix), install_mount],
     ]
 
     click.echo(
@@ -290,7 +295,11 @@ def _build_in_container(
     )
 
     run_container(
-        image_name, f"build_{tool.name}", None, [
+        image_name,
+        f"build_{tool.name}",
+        None,
+        None,
+        [
             "build",
             tool.name.lower(),
             "--no-update-prompt",
@@ -298,7 +307,7 @@ def _build_in_container(
             f"--source-location={source_mount}",
             f"--install-prefix={install_mount}",
             f"--build-folder-suffix={image_base.name}",
-        ]
+        ],
     )
 
 

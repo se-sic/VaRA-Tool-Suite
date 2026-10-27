@@ -1,6 +1,10 @@
-"""Module for the research tool phasar that describes the phasar code base
-layout and implements automatic configuration and setup."""
-import os
+"""
+Module for the research tool phasar.
+
+Describes the phasar code base layout and implements automatic configuration
+and setup.
+"""
+
 import shutil
 import typing as tp
 from pathlib import Path
@@ -11,10 +15,10 @@ from PyQt5.QtCore import QProcess
 from varats.tools.research_tools.cmake_util import set_cmake_var
 from varats.tools.research_tools.research_tool import (
     CodeBase,
-    ResearchTool,
-    SubProject,
     Dependencies,
     Distro,
+    ResearchTool,
+    SubProject,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
@@ -33,11 +37,14 @@ class PhasarCodeBase(CodeBase):
     """Layout of the phasar code base."""
 
     def __init__(self, base_dir: Path) -> None:
+        """Initialize the phasar code base layout."""
         sub_projects = [
             SubProject(
-                base_dir, "phasar",
+                base_dir,
+                "phasar",
                 "https://github.com/secure-software-engineering/phasar.git",
-                "origin", "phasar"
+                "origin",
+                "phasar",
             )
         ]
         super().__init__(base_dir, sub_projects)
@@ -47,12 +54,9 @@ class PhasarCodeBase(CodeBase):
         Checkout out a specific version of phasar.
 
         Args:
-            use_dev_branche: true, if one wants the current development version
+            use_dev_branch: true, if one wants the current development version
         """
-        if use_dev_branch:
-            branch_name = "development"
-        else:
-            branch_name = "master"
+        branch_name = "development" if use_dev_branch else "master"
 
         print(f"Checking out phasar version {branch_name}")
 
@@ -76,30 +80,67 @@ class Phasar(ResearchTool[PhasarCodeBase]):
     https://github.com/secure-software-engineering/phasar.git
     """
 
-    __DEPENDENCIES = Dependencies({
-        Distro.DEBIAN: [
-            "libboost-all-dev", "zlib1g-dev", "sqlite3", "libsqlite3-dev",
-            "bear", "python3", "doxygen", "graphviz", "python3-pip", "libxml2",
-            "libxml2-dev", "libncurses5-dev", "libncursesw5-dev", "swig",
-            "build-essential", "g++", "cmake", "libz3-dev", "libedit-dev",
-            "python3-sphinx", "libomp-dev", "libcurl4-openssl-dev",
-            "ninja-build"
-        ],
-        Distro.ARCH: [
-            "boost-libs", "boost", "which", "zlib", "sqlite3", "ncurses",
-            "make", "python3", "doxygen", "libxml2", "swig", "gcc", "cmake",
-            "z3", "libedit", "graphviz", "python-sphinx", "openmp", "curl",
-            "python-pip"
-        ]
-    })
+    __DEPENDENCIES = Dependencies(
+        {
+            Distro.DEBIAN: [
+                "libboost-all-dev",
+                "zlib1g-dev",
+                "sqlite3",
+                "libsqlite3-dev",
+                "bear",
+                "python3",
+                "doxygen",
+                "graphviz",
+                "python3-pip",
+                "libxml2",
+                "libxml2-dev",
+                "libncurses5-dev",
+                "libncursesw5-dev",
+                "swig",
+                "build-essential",
+                "g++",
+                "cmake",
+                "libz3-dev",
+                "libedit-dev",
+                "python3-sphinx",
+                "libomp-dev",
+                "libcurl4-openssl-dev",
+                "ninja-build",
+            ],
+            Distro.ARCH: [
+                "boost-libs",
+                "boost",
+                "which",
+                "zlib",
+                "sqlite3",
+                "ncurses",
+                "make",
+                "python3",
+                "doxygen",
+                "libxml2",
+                "swig",
+                "gcc",
+                "cmake",
+                "z3",
+                "libedit",
+                "graphviz",
+                "python-sphinx",
+                "openmp",
+                "curl",
+                "python-pip",
+            ],
+        }
+    )
 
     def __init__(self, base_dir: Path) -> None:
+        """Initialize the phasar research tool."""
         super().__init__("phasar", [BuildType.DEV], PhasarCodeBase(base_dir))
         vara_cfg()["phasar"]["source_dir"] = str(base_dir)
         save_config()
 
     @classmethod
     def get_dependencies(cls) -> Dependencies:
+        """Returns the dependencies for this research tool."""
         return cls.__DEPENDENCIES
 
     @staticmethod
@@ -123,19 +164,22 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         return vara_cfg()["phasar"]["install_dir"].value is not None
 
     def setup(
-        self, source_folder: tp.Optional[Path], install_prefix: Path,
-        version: tp.Optional[int]
+        self,
+        source_folder: Path | None,
+        install_prefix: Path,
+        _version: int | None,
     ) -> None:
         """
-        Setup the research tool phasar with it's code base. This method sets up
-        all relevant config variables, downloads repositories via the
-        ``CodeBase``, checkouts the correct branches and prepares the research
-        tool to be built.
+        Setup the research tool phasar with it's code base.
+
+        This method sets up all relevant config variables, downloads
+        repositories via the ``CodeBase``, checkouts the correct branches and
+        prepares the research tool to be built.
 
         Args:
             source_folder: location to store the code base in
             install_prefix: Installation prefix path
-            version: Version to setup
+            _version: Version to setup
         """
         cfg = vara_cfg()
         if source_folder:
@@ -156,28 +200,37 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         self.code_base.pull()
 
     def build(
-        self, build_type: BuildType, install_location: Path,
-        build_folder_suffix: tp.Optional[str]
+        self,
+        build_type: BuildType,
+        install_location: Path,
+        build_folder_suffix: str | None,
     ) -> None:
         """
-        Build/Compile phasar in the specified ``build_type``. This method leaves
-        phasar in a finished state, i.e., being ready to be installed.
+        Build/Compile phasar in the specified ``build_type``.
+
+        This method leaves phasar in a finished state, i.e., being ready to
+        be installed.
 
         Args:
             build_type: which type of build should be used, e.g., debug,
                         development or release
+            install_location: location to install phasar into
+            build_folder_suffix: a suffix that is appended to the build
+                                  folder
         """
-        build_path = self.code_base.base_dir / self.code_base.get_sub_project(
-            "phasar"
-        ).path / "build"
+        build_path = (
+            self.code_base.base_dir
+            / self.code_base.get_sub_project("phasar").path
+            / "build"
+        )
 
         build_path /= build_type.build_folder(build_folder_suffix)
 
         # Setup configured build folder
         print(" - Setting up build folder.")
-        if not os.path.exists(build_path):
+        if not Path.exists(build_path):
             try:
-                os.makedirs(build_path, exist_ok=True)
+                Path.mkdir(build_path, exist_ok=True, parents=True)
                 with ProcessManager.create_process(
                     "cmake", ["-G", "Ninja", "../.."], workdir=build_path
                 ) as proc:
@@ -195,8 +248,9 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         with local.cwd(build_path):
             vara_cfg()["phasar"]["install_dir"] = str(install_location)
             set_cmake_var(
-                "CMAKE_INSTALL_PREFIX", str(install_location),
-                log_without_linesep(print)
+                "CMAKE_INSTALL_PREFIX",
+                str(install_location),
+                log_without_linesep(print),
             )
         print(" - Finished extra cmake config.")
 
@@ -206,27 +260,30 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         ) as proc:
             proc.setProcessChannelMode(QProcess.MergedChannels)
             proc.readyReadStandardOutput.connect(
-                lambda:
-                run_process_with_output(proc, log_without_linesep(print))
+                lambda: run_process_with_output(
+                    proc, log_without_linesep(print)
+                )
             )
 
-    def get_install_binaries(self) -> tp.List[str]:
+    def get_install_binaries(self) -> list[str]:
+        """Returns a list of binaries installed by this research tool."""
         return ["bin/myphasartool", "bin/phasar-cli"]
 
     def verify_build(
-        self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
+        self,
+        build_type: BuildType,  # noqa: ARG002
+        build_folder_suffix: str | None,  # noqa: ARG002
     ) -> bool:
+        """Verify if the research tool is correctly built."""
         return True
 
-
-# ContainerInstallable protocol implementation ---------------------------------
+    # ContainerInstallable protocol implementation ----------------------------
 
     def container_install_dependencies(
         self, stage_builder: 'containers.StageBuilder'
     ) -> None:
         """
-        Add layers for installing this research tool's dependencies to the given
-        container.
+        Add layers for installing this research tool's dependencies.
 
         Args:
             stage_builder: the builder object for the current container stage
@@ -236,8 +293,9 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         ):
             stage_builder.layers.run(
                 *(
-                    self.get_dependencies().
-                    get_install_command(stage_builder.base.distro).split(" ")
+                    self.get_dependencies()
+                    .get_install_command(stage_builder.base.distro)
+                    .split(" ")
                 )
             )
 
@@ -256,15 +314,15 @@ class Phasar(ResearchTool[PhasarCodeBase]):
             )
 
         container_phasar_dir = stage_builder.varats_root / "tools/phasar"
-        stage_builder.layers.copy_([str(self.install_location())],
-                                   str(container_phasar_dir))
+        stage_builder.layers.copy_(
+            [str(self.install_location())], str(container_phasar_dir)
+        )
 
     def container_tool_env(
         self, stage_builder: 'containers.StageBuilder'
-    ) -> tp.Dict[str, tp.List[str]]:
+    ) -> dict[str, list[str]]:
         """
-        Tool-specific container configuration in the form of environment
-        variables.
+        Tool-specific container configuration in the form of env variables.
 
         Args:
             stage_builder: the builder object for the current container stage
@@ -273,3 +331,11 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         """
         container_phasar_dir = stage_builder.varats_root / "tools/phasar"
         return {"PATH": [str(container_phasar_dir / 'bin')]}
+
+    def find_highest_sub_prj_version(self, sub_prj_name: str) -> int:
+        """Returns the highest release version for the given ``SubProject``."""
+        raise NotImplementedError
+
+    def is_up_to_date(self) -> bool:
+        """Returns true if Phasar's major release version is up to date."""
+        raise NotImplementedError
