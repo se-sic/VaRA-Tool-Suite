@@ -32,7 +32,7 @@ from varats.utils.settings import vara_cfg
 def show_status_of_case_studies(
     experiment_type: tp.Type[VersionExperiment], filter_regex: str,
     short_status: bool, sort: bool, print_rev_list: bool, sep_stages: bool,
-    print_legend: bool, ignore_configs: bool
+    print_legend: bool, ignore_configs: bool = False
 ) -> None:
     """
     Prints the status of all matching case studies to the console.
@@ -78,15 +78,22 @@ def show_status_of_case_studies(
         elif short_status:
             print(
                 get_short_status(
-                    case_study, experiment_type, longest_cs_name,
-                    ignore_configs, True, total_status_occurrences
+                    case_study,
+                    experiment_type,
+                    longest_cs_name,
+                    True,
+                    total_status_occurrences,
+                    ignore_configs=ignore_configs
                 )
             )
         else:
             print(
                 get_status(
                     case_study, experiment_type, longest_cs_name, sep_stages,
-                    sort, ignore_configs, True, total_status_occurrences
+                    sort,
+                    True,
+                    total_status_occurrences,
+                    ignore_configs=ignore_configs
                 )
             )
 
@@ -226,10 +233,10 @@ def get_short_status(
     case_study: CaseStudy,
     experiment_type: tp.Type[VersionExperiment],
     longest_cs_name: int,
-    ignore_configs: bool,
     use_color: bool = False,
     total_status_occurrences: tp.Optional[tp.DefaultDict[
-        FileStatusExtension, tp.Set[ShortCommitHash]]] = None
+        FileStatusExtension, tp.Set[ShortCommitHash]]] = None,
+    ignore_configs: bool = False
 ) -> str:
     """
     Return a short string representation that describes the current status of
@@ -243,6 +250,7 @@ def get_short_status(
         use_color: add color escape sequences for highlighting
         total_status_occurrences: mapping from all occured status to a set of
                                   all revisions (total amount of revisions)
+        ignore_configs: if true, ignore configuration for file status
 
     Returns:
         a short string representation of a case study
@@ -256,7 +264,7 @@ def get_short_status(
         FileStatusExtension, tp.Set[ShortCommitHash]] = defaultdict(set)
 
     for tagged_rev in _combine_tagged_revs_for_experiment(
-        case_study, experiment_type, ignore_configs
+        case_study, experiment_type, ignore_configs=ignore_configs
     ):
         status_occurrences[tagged_rev[1]].add(tagged_rev[0])
 
@@ -274,10 +282,10 @@ def get_status(
     longest_cs_name: int,
     sep_stages: bool,
     sort: bool,
-    ignore_configs: bool,
     use_color: bool = False,
     total_status_occurrences: tp.Optional[tp.DefaultDict[
-        FileStatusExtension, tp.Set[ShortCommitHash]]] = None
+        FileStatusExtension, tp.Set[ShortCommitHash]]] = None,
+    ignore_configs: bool = False
 ) -> str:
     """
     Return a string representation that describes the current status of the case
@@ -292,13 +300,18 @@ def get_status(
         use_color: add color escape sequences for highlighting
         total_status_occurrences: mapping from all occurred status to a set of
                                   all revisions (total amount of revisions)
+        ignore_configs: if true, ignore configuration for file status
 
     Returns:
         a full string representation of all case studies
     """
     status = get_short_status(
-        case_study, experiment_type, longest_cs_name, ignore_configs, use_color,
-        total_status_occurrences
+        case_study,
+        experiment_type,
+        longest_cs_name,
+        use_color,
+        total_status_occurrences,
+        ignore_configs=ignore_configs
     ) + "\n"
 
     if sort:
@@ -316,7 +329,10 @@ def get_status(
                 status += f" ({stage_name})"
             status += "\n"
             tagged_revs = _combine_tagged_revs_for_experiment(
-                case_study, experiment_type, ignore_configs, stage_num
+                case_study,
+                experiment_type,
+                stage_num,
+                ignore_configs=ignore_configs
             )
             if sort:
                 tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
@@ -327,7 +343,9 @@ def get_status(
         tagged_revs = list(
             dict.fromkeys(
                 _combine_tagged_revs_for_experiment(
-                    case_study, experiment_type, ignore_configs
+                    case_study,
+                    experiment_type,
+                    ignore_configs=ignore_configs
                 )
             )
         )
@@ -419,8 +437,8 @@ def package_paper_config(
 def _combine_tagged_revs_for_experiment(
     case_study: CaseStudy,
     experiment_type: tp.Type[VersionExperiment],
-    ignore_configs: bool,
-    stage_num: tp.Optional[int] = None
+    stage_num: tp.Optional[int] = None,
+    ignore_configs: bool = False
 ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
     """
     Combines the tagged revision results from all reports that are specified in
