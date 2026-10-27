@@ -42,12 +42,7 @@ readme = "README.md"
 license = "BSD-2-Clause"
 
 [dependency-groups]
-test = [
-    "pytest>=9.0.2",
-    "pytest-cov",
-]
 dev = [
-    "jupyter>=1.1.1",
     "pre-commit>=3.2.0",
     "ruff>=0.17.1",
     "ty>=0.0.89",
@@ -61,6 +56,13 @@ docs = [
     "Sphinx>=9.0.0",
     "sphinx-autodoc-typehints>=3.6.1",
     "sphinxcontrib-programoutput>=0.19",
+]
+jupyter = [
+    "jupyter>=1.1.1",
+]
+test = [
+    "pytest>=9.0.2",
+    "pytest-cov",
 ]
 
 [project.scripts]

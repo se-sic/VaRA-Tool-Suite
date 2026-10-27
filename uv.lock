@@ -4576,7 +4576,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "jupyter" },
     { name = "pre-commit" },
     { name = "ruff" },
     { name = "ty" },
@@ -4593,6 +4592,9 @@ docs = [
     { name = "sphinx-autodoc-typehints", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "sphinx-autodoc-typehints", version = "3.17.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "sphinxcontrib-programoutput" },
+]
+jupyter = [
+    { name = "jupyter" },
 ]
 test = [
     { name = "pytest" },
@@ -4636,7 +4638,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "jupyter", specifier = ">=1.1.1" },
     { name = "pre-commit", specifier = ">=3.2.0" },
     { name = "ruff", specifier = ">=0.17.1" },
     { name = "ty", specifier = ">=0.0.89" },
@@ -4651,6 +4652,7 @@ docs = [
     { name = "sphinx-autodoc-typehints", specifier = ">=3.6.1" },
     { name = "sphinxcontrib-programoutput", specifier = ">=0.19" },
 ]
+jupyter = [{ name = "jupyter", specifier = ">=1.1.1" }]
 test = [
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "pytest-cov" },
