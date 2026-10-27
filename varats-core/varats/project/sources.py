@@ -24,7 +24,7 @@ class FeatureSource(bb.source.FetchableSource):  # type: ignore
     def version(self, target_dir: str, version: str) -> pb.LocalPath:
         return pb.LocalPath('.')
 
-    def versions(self) -> tp.List[Variant]:
+    def versions(self) -> list[Variant]:
         raise NotImplementedError()
 
     def fetch(self) -> pb.LocalPath:
@@ -42,10 +42,13 @@ class FeatureSource(bb.source.FetchableSource):  # type: ignore
         return False
 
     def versions_with_context(self, ctx: Revision) -> tp.Sequence[Variant]:
-        """Computes the list of variants for given revision, multiplex with the
-        config ids that should be explored.."""
-        case_study = get_paper_config().get_case_studies(ctx.project_cls.NAME
-                                                        )[0]
+        """
+        Computes the list of variants for given revision, multiplex with the
+        config ids that should be explored..
+        """
+        case_study = get_paper_config().get_case_studies(ctx.project_cls.NAME)[
+            0
+        ]
         config_ids = case_study.get_config_ids_for_revision(
             ShortCommitHash(ctx.primary.version)
         )
