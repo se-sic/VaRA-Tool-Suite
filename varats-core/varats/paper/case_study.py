@@ -572,7 +572,8 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
 
         if sampling_method_name:
             sampling_method: SamplingMethod | None = (
-                SamplingMethod.get_sampling_method_type(sampling_method_name)())
+                SamplingMethod.get_sampling_method_type(sampling_method_name)()
+            )
         else:
             sampling_method = None
 

@@ -1,9 +1,10 @@
 """This module provides different sampling-method interface classes."""
+
 import abc
 import json
 from collections.abc import Callable
 from enum import Enum
-from typing import Any, TYPE_CHECKING, TypeVar, TypeAlias, TypeGuard, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard, TypeVar, cast
 
 from varats.base.configuration import Configuration
 
@@ -79,7 +80,7 @@ class SamplingMethodBase(abc.ABC):
 
     @staticmethod
     def create_sampling_method_from_config_str(
-        config_str: str
+        config_str: str,
     ) -> 'SamplingMethodBase':
         """
         Recreates a configured `SamplingMethod` from a config string.
@@ -134,8 +135,10 @@ SamplingMethod: TypeAlias = SamplingMethodBase
 
 
 class NormalSamplingMethod(SamplingMethodBase):
-    """Abstract base class for normal sampling methods that sample following a
-    certain probability distribution."""
+    """
+    Abstract base class for normal sampling methods that sample following a
+    certain probability distribution.
+    """
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -157,7 +160,7 @@ class NormalSamplingMethod(SamplingMethodBase):
     ) -> type['NormalSamplingMethod']:
         """Maps the name of a `NormalSamplingMethod` to the concrete type."""
         return cast(
-            type[NormalSamplingMethod], cls._methods[sampling_method_name]
+            'type[NormalSamplingMethod]', cls._methods[sampling_method_name]
         )
 
     @classmethod
@@ -170,13 +173,13 @@ class NormalSamplingMethod(SamplingMethodBase):
         return list(
             filter(
                 NormalSamplingMethod.__is_normal_sampling_method,
-                cls._methods.values()
+                cls._methods.values(),
             )
         )
 
     @staticmethod
     def __is_normal_sampling_method(
-        sampling_method_type: type[SamplingMethodBase]
+        sampling_method_type: type[SamplingMethodBase],
     ) -> TypeGuard[type['NormalSamplingMethod']]:
         return sampling_method_type is not NormalSamplingMethod and issubclass(
             sampling_method_type, NormalSamplingMethod
@@ -192,8 +195,9 @@ class NormalSamplingMethod(SamplingMethodBase):
             according to the selected distribution
         """
 
-    def sample_n(self, data: list[SampleType],
-                 num_samples: int) -> list[SampleType]:
+    def sample_n(
+        self, data: list[SampleType], num_samples: int
+    ) -> list[SampleType]:
         """
         Return a list of n unique samples. If the list to sample is smaller than
         the number of samples the full list is returned.
@@ -233,6 +237,7 @@ class UniformSamplingMethod(NormalSamplingMethod):
 
         def uniform(num_samples: int) -> SampleArray:
             import numpy as np  # pylint: disable=import-outside-toplevel
+
             return np.asarray(np.random.uniform(0, 1.0, num_samples))
 
         return uniform
@@ -254,6 +259,7 @@ class HalfNormalSamplingMethod(NormalSamplingMethod):
             # pylint: disable=import-outside-toplevel
             import numpy as np
             from scipy.stats import halfnorm
+
             return np.asarray(halfnorm.rvs(scale=1, size=num_samples))
 
         return halfnormal
@@ -282,14 +288,16 @@ class EveryNSamplingMethod(NormalSamplingMethod):
 
         def every_nth(num_samples: int) -> SampleArray:
             import numpy as np  # pylint: disable=import-outside-toplevel
+
             return np.arange(
                 0, num_samples * self.__step, self.__step, dtype=np.float64
             )
 
         return every_nth
 
-    def sample_n(self, data: list[SampleType],
-                 num_samples: int) -> list[SampleType]:
+    def sample_n(
+        self, data: list[SampleType], num_samples: int
+    ) -> list[SampleType]:
         """
         Return a list of n unique samples. If the list to sample is smaller than
         the number of samples the full list is returned.
@@ -301,7 +309,7 @@ class EveryNSamplingMethod(NormalSamplingMethod):
         Returns: list of sampled items
         """
         end = min(num_samples * self.__step, len(data))
-        return list(reversed(data))[0:end:self.__step]
+        return list(reversed(data))[0 : end : self.__step]
 
 
 class SamplingStrategy(abc.ABC):  # @Kalti: better name? Sampling heuristic?
@@ -309,8 +317,10 @@ class SamplingStrategy(abc.ABC):  # @Kalti: better name? Sampling heuristic?
 
 
 class SampleN(SamplingStrategy):
-    """Sample N, selects a random amount of `N` samples from the whole
-    population."""
+    """
+    Sample N, selects a random amount of `N` samples from the whole
+    population.
+    """
 
     def __init__(self, amount: int = 1) -> None:
         self.__amount = amount
@@ -327,34 +337,44 @@ class SampleN(SamplingStrategy):
 
 
 class SampleOptionWise(SamplingStrategy):
-    """Option-wise sampling selects configurations such that it purposefully
-    avoids interactions."""
+    """
+    Option-wise sampling selects configurations such that it purposefully
+    avoids interactions.
+    """
 
 
 class SamplePairWise(SamplingStrategy):
-    """Pair-wise sampling, constructs a learning set that includes a minimal set
+    """
+    Pair-wise sampling, constructs a learning set that includes a minimal set
     of configurations, in which all two-way interactions are present and not
-    confounded with other interactions."""
+    confounded with other interactions.
+    """
 
 
 class SampleTripleWise(SamplingStrategy):
-    """Triple-wise sampling, constructs a learning set that includes a minimal
+    """
+    Triple-wise sampling, constructs a learning set that includes a minimal
     set of configurations, in which all three-way interactions are present and
-    not confounded with other interactions."""
+    not confounded with other interactions.
+    """
 
 
 class Solver(Enum):
-    """Represents the type of solver used in the background of the
-    `SamplingMethod`."""
+    """
+    Represents the type of solver used in the background of the
+    `SamplingMethod`.
+    """
 
     NO_SOLVER = None
     Z3 = 1
 
 
 class FeatureSamplingMethod(SamplingMethodBase):
-    """Abstract base class for feature-sampling methods that sample
+    """
+    Abstract base class for feature-sampling methods that sample
     configurations from a feature model based on different sampling
-    strategies."""
+    strategies.
+    """
 
     def __init__(
         self, solver: Solver = Solver.NO_SOLVER, **kwargs: Any
@@ -380,8 +400,10 @@ class FeatureSamplingMethod(SamplingMethodBase):
 
     @abc.abstractmethod
     def sample(
-        self, feature_model: Any, partial_config: Configuration | None,
-        strategy: SamplingStrategy | None
+        self,
+        feature_model: Any,
+        partial_config: Configuration | None,
+        strategy: SamplingStrategy | None,
     ) -> list[Configuration]:
         """
         Sample a list of `Configurations` from a given `FeatureModel` according

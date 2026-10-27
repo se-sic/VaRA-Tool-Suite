@@ -16,24 +16,25 @@ class TestSamplingMethodBase(unittest.TestCase):
         """Tests if new sampling classes get automatically added to the
         registry."""
         self.assertFalse(
-            'NewTestSamplingMethod' in
-            SamplingMethodBase.sampling_method_names()
+            'NewTestSamplingMethod'
+            in SamplingMethodBase.sampling_method_names()
         )
 
         class NewTestSamplingMethod(SamplingMethodBase):  # pylint: disable=W0612
             pass
 
         self.assertTrue(
-            'NewTestSamplingMethod' in
-            SamplingMethodBase.sampling_method_names()
+            'NewTestSamplingMethod'
+            in SamplingMethodBase.sampling_method_names()
         )
 
     def test_sampling_method_lookup(self) -> None:
         """Test if the type look-up for sampling methods works."""
         self.assertEqual(
-            SamplingMethodBase.
-            get_sampling_method_type("UniformSamplingMethod"),
-            UniformSamplingMethod
+            SamplingMethodBase.get_sampling_method_type(
+                "UniformSamplingMethod"
+            ),
+            UniformSamplingMethod,
         )
 
     def test_dump_sampling_method(self) -> None:
@@ -50,9 +51,11 @@ class TestSamplingMethodBase(unittest.TestCase):
         dumped_usm = "{'sampling_method': 'UniformSamplingMethod'}"
         self.assertEqual(
             type(
-                SamplingMethodBase.
-                create_sampling_method_from_config_str(dumped_usm)
-            ), UniformSamplingMethod
+                SamplingMethodBase.create_sampling_method_from_config_str(
+                    dumped_usm
+                )
+            ),
+            UniformSamplingMethod,
         )
 
 
