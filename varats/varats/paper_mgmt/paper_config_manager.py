@@ -193,11 +193,11 @@ def get_occurrences(
     color: Style | None = None
     if use_color:
         if num_succ_rev == num_rev:
-            color = colors.green
+            color = colors.green  # ty: ignore[unresolved-attribute]
         elif num_succ_rev == 0:
-            color = colors.red
+            color = colors.red  # ty: ignore[unresolved-attribute]
         else:
-            color = colors.orange3
+            color = colors.orange3  # ty: ignore[unresolved-attribute]
 
     if color is not None:
         status += "(" + str(color.wrap(f"{num_succ_rev:3}/{num_rev}")) + ")"

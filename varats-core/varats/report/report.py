@@ -34,13 +34,13 @@ class FileStatusExtension(Enum):
         self._status_name = status_name
         self._status_color = status_color
 
-    SUCCESS = ("success", colors.green)
-    PARTIAL = ("partial", colors.darkturquoise)
-    INCOMPLETE = ("incomplete", colors.orangered1)
-    FAILED = ("failed", colors.lightred)
-    COMPILE_ERROR = ("cerror", colors.red)
-    MISSING = ("###", colors.yellow3a)
-    BLOCKED = ("blocked", colors.blue)
+    SUCCESS = ("success", colors.green)  # ty: ignore[unresolved-attribute]
+    PARTIAL = ("partial", colors.darkturquoise)  # ty: ignore[unresolved-attribute]
+    INCOMPLETE = ("incomplete", colors.orangered1)  # ty: ignore[unresolved-attribute]
+    FAILED = ("failed", colors.lightred)  # ty: ignore[unresolved-attribute]
+    COMPILE_ERROR = ("cerror", colors.red)  # ty: ignore[unresolved-attribute]
+    MISSING = ("###", colors.yellow3a)  # ty: ignore[unresolved-attribute]
+    BLOCKED = ("blocked", colors.blue)  # ty: ignore[unresolved-attribute]
 
     def get_status_extension(self) -> str:
         """Returns the corresponding file ending to the status."""
