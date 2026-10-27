@@ -5,7 +5,6 @@ import typing as tp
 from pathlib import Path
 
 import yaml
-from pygments.lexer import default
 
 from varats.base.configuration import (
     Configuration,
@@ -34,21 +33,18 @@ class ConfigurationMap:
         self.__configurations: dict[int, Configuration] = {}
 
     def add_configuration(
-        self, config: Configuration, config_id: tp.Optional[int] = None
+        self, config: Configuration, config_id: int | None = None
     ) -> int:
         """
         Add a new configuration to the map.
 
         Args:
             config: the configuration to add
+            config_id: optional unique identifier for the configuration
 
         Returns: unique ID for the added configuration
         """
-        if config_id is not None:
-            next_id = config_id
-        else:
-            next_id = self.__get_next_id()
-
+        next_id = config_id if config_id is not None else self.__get_next_id()
         self.__configurations[next_id] = config
         return next_id
 
