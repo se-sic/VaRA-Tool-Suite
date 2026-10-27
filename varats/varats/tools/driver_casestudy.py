@@ -9,7 +9,7 @@ from pathlib import Path
 import click
 from plumbum import FG, colors, local
 
-from varats.base.sampling_method import NormalSamplingMethod, SamplingMethodBase
+from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
 from varats.experiment.experiment_util import VersionExperiment
 from varats.experiments.szz.pydriller_szz_experiment import (
@@ -299,7 +299,9 @@ def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
 @__casestudy_gen.command("select_sample")
 @click.argument(
     "distribution",
-    type=click.Choice(SamplingMethodBase.sampling_method_names())
+    type=click.Choice([
+        x.name() for x in NormalSamplingMethod.normal_sampling_method_types()
+    ])
 )
 @click.option(
     "--end", help="End of the commit range (inclusive)", default="HEAD"

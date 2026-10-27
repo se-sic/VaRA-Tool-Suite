@@ -252,13 +252,14 @@ class HalfNormalSamplingMethod(NormalSamplingMethod):
 
         def halfnormal(num_samples: int) -> SampleArray:
             # pylint: disable=import-outside-toplevel
+            import numpy as np
             from scipy.stats import halfnorm
             return np.asarray(halfnorm.rvs(scale=1, size=num_samples))
 
         return halfnormal
 
 
-class EveryNSamplingMethod(SamplingMethodBase):
+class EveryNSamplingMethod(NormalSamplingMethod):
     """SampleMethod sampling every n-th revision."""
 
     def __init__(self, step: int, **kwargs: Any) -> None:
