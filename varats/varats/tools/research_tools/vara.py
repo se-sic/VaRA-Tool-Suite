@@ -416,10 +416,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         ret, stdout, _ = clang.run("--version")
 
         vara_name = self.code_base.get_sub_project("vara-llvm-project").name
-        status_ok &= ret == 0
-        status_ok &= vara_name in stdout
-
-        return status_ok
+        return status_ok and int(ret) == 0 and vara_name in stdout
 
     def verify_build(
         self, build_type: BuildType, build_folder_suffix: str | None
