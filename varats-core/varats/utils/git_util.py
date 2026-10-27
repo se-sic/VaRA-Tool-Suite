@@ -253,7 +253,7 @@ class RepositoryHandle:
 
         return commit
 
-    def get_submodule(self, submodule_path) -> 'RepositoryHandle':
+    def get_submodule(self, submodule_path: str) -> 'RepositoryHandle':
         """Get a repository handle for the submodule at the given path."""
         return RepositoryHandle(self.worktree_path / submodule_path)
 
@@ -305,8 +305,9 @@ def get_parent_commit(
     Get the parent of a given commit.
 
     Args:
-        commit:      commit to get the parent for
-        repo_folder: where the git repository is located
+        repo: repository handle
+        commit: commit to get the parent for
+
     Returns: parent commit hash
     """
     return FullCommitHash(
@@ -351,32 +352,36 @@ def get_submodule_commits(
             result[match.group("name")] = FullCommitHash(match.group("hash"))
     return result
 
-def get_submodule_updates(repo: RepositoryHandle,
-                          submodule_path: str) -> tp.List[FullCommitHash]:
+
+def get_submodule_updates(
+    repo: RepositoryHandle, submodule_path: str
+) -> list[FullCommitHash]:
     """
     Get all commits that update the given submodule.
 
     Args:
         repo: repository handle
-        submodule_name: the submodule to find upgrades for
+        submodule_path: path of the submodule to find upgrades for
+
     Returns:
         a list of submodule upgrading commits
     """
     submodule_log = repo("log", "--pretty=%H", "--", submodule_path)
     return [FullCommitHash(c) for c in submodule_log.strip().split()]
 
+
 def get_submodule_update_commits(
     repo: RepositoryHandle, submodule: RepositoryHandle,
     update_commit: FullCommitHash
-) -> tp.List[FullCommitHash]:
+) -> list[FullCommitHash]:
     """
-    Get all new submodule commits that were introduced by the given submodule
-    update.
+    Get all new submodule commits introduced by the given submodule update.
 
     Args:
         repo: main repository handle
         submodule: submodule repository handle
         update_commit: the commit that upgraded the submodule
+
     Returns:
         a list of submodule commits
     """
@@ -384,12 +389,13 @@ def get_submodule_update_commits(
     old_submodule_head = get_submodule_head(
         repo, submodule, get_parent_commit(repo, update_commit)
     )
+    # get_all_revisions_between includes the old head, which is not new
     return get_all_revisions_between(
         submodule,
         old_submodule_head.hash,
         new_submodule_head.hash,
         FullCommitHash,
-    )
+    )[1:]
 
 
 def get_all_revisions_between(

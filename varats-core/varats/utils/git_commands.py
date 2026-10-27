@@ -82,7 +82,8 @@ def update_all_submodules(
     repo(*git_params)
 
 
-def get_all_submodules(repo: 'RepositoryHandle') -> 'tp.List[RepositoryHandle]':
+def get_all_submodules(repo: 'RepositoryHandle') -> 'list[RepositoryHandle]':
+    """Returns repository handles for all submodules of the repository."""
     submodule_paths = repo("submodule", "--quiet", "foreach", "echo $path")
     return [
         repo.get_submodule(path)
@@ -140,7 +141,7 @@ def add(repo: 'RepositoryHandle', *git_add_args: str) -> None:
 
 def commit(
     repo: 'RepositoryHandle',
-    message: tp.Optional[str] = None,
+    message: str | None = None,
     allow_empty: bool = False,
     no_verify: bool = False
 ) -> None:
@@ -157,7 +158,7 @@ def commit(
 
 
 def checkout_branch_or_commit(
-    repo: 'RepositoryHandle', target: 'tp.Union[str, CommitHash]'
+    repo: 'RepositoryHandle', target: tp.Union[str, 'CommitHash']
 ) -> None:
     """Checks out a branch or commit in the repository."""
     repo("checkout", str(target))
