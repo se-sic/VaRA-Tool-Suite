@@ -1,4 +1,5 @@
 """This module contains wrapper for basic git commands."""
+
 import typing as tp
 from pathlib import Path
 
@@ -19,15 +20,14 @@ def show_status(repo: 'RepositoryHandle') -> None:
 
 
 def get_branches(
-    repo: 'RepositoryHandle',
-    extra_args: tp.Optional[tp.List[str]] = None
+    repo: 'RepositoryHandle', extra_args: list[str] | None = None
 ) -> str:
     """Show git branches."""
     args = ["branch"]
     if extra_args:
         args += extra_args
 
-    return tp.cast(str, repo(*args))
+    return tp.cast('str', repo(*args))
 
 
 def get_current_branch(repo: 'RepositoryHandle') -> str:
@@ -39,21 +39,19 @@ def get_current_branch(repo: 'RepositoryHandle') -> str:
 
     Returns: branch name
     """
-    return tp.cast(str, repo("rev-parse", "--abbrev-ref", "HEAD").strip())
+    return tp.cast('str', repo("rev-parse", "--abbrev-ref", "HEAD").strip())
 
 
 def get_tags(
-    repo: 'RepositoryHandle',
-    extra_args: tp.Optional[tp.List[str]] = None
-) -> tp.List[str]:
+    repo: 'RepositoryHandle', extra_args: list[str] | None = None
+) -> list[str]:
     """Get the list of available git tags."""
-
     args = ["tag"]
     if extra_args:
         args += extra_args
 
     git_tag_string: str = repo(*args)
-    git_tag_list: tp.List[str] = []
+    git_tag_list: list[str] = []
 
     if git_tag_string:
         git_tag_list = git_tag_string.split("\n")
@@ -69,9 +67,7 @@ def init_all_submodules(repo: 'RepositoryHandle') -> None:
 
 
 def update_all_submodules(
-    repo: 'RepositoryHandle',
-    recursive: bool = True,
-    init: bool = False
+    repo: 'RepositoryHandle', recursive: bool = True, init: bool = False
 ) -> None:
     """Updates all submodules."""
     git_params = ["submodule", "update"]
@@ -85,16 +81,13 @@ def update_all_submodules(
 def get_all_submodules(repo: 'RepositoryHandle') -> 'list[RepositoryHandle]':
     """Returns repository handles for all submodules of the repository."""
     submodule_paths = repo("submodule", "--quiet", "foreach", "echo $path")
-    return [
-        repo.get_submodule(path)
-        for path in submodule_paths.splitlines()
-    ]
+    return [repo.get_submodule(path) for path in submodule_paths.splitlines()]
 
 
 def fetch_remote(
     repo: 'RepositoryHandle',
-    remote: tp.Optional[str] = None,
-    extra_args: tp.Optional[tp.List[str]] = None
+    remote: str | None = None,
+    extra_args: list[str] | None = None,
 ) -> None:
     """Fetches the new changes from the remote."""
     args = ["fetch"]
@@ -112,8 +105,8 @@ def pull_current_branch(repo: 'RepositoryHandle') -> None:
 
 def push_current_branch(
     repo: 'RepositoryHandle',
-    upstream: tp.Optional[str] = None,
-    branch_name: tp.Optional[str] = None
+    upstream: str | None = None,
+    branch_name: str | None = None,
 ) -> None:
     """Push in changes in a certain branch."""
     cmd_args = ["push"]
@@ -143,7 +136,7 @@ def commit(
     repo: 'RepositoryHandle',
     message: str | None = None,
     allow_empty: bool = False,
-    no_verify: bool = False
+    no_verify: bool = False,
 ) -> None:
     """Commits the repository."""
     args = ["--allow-empty-message"]
@@ -165,9 +158,7 @@ def checkout_branch_or_commit(
 
 
 def checkout_new_branch(
-    repo: 'RepositoryHandle',
-    branch: str,
-    remote_branch: tp.Optional[str] = None
+    repo: 'RepositoryHandle', branch: str, remote_branch: str | None = None
 ) -> None:
     """Checks out a new branch in the repository."""
     args = ["checkout", "-b", branch]
@@ -179,9 +170,9 @@ def checkout_new_branch(
 def download_repo(
     dl_folder: Path,
     url: str,
-    repo_name: tp.Optional[str] = None,
-    remote_name: tp.Optional[str] = None,
-    post_out: tp.Callable[[str], None] = lambda x: None
+    repo_name: str | None = None,
+    remote_name: str | None = None,
+    post_out: tp.Callable[[str], None] = lambda x: None,
 ) -> None:
     """Download a repo into the specified folder."""
     if not dl_folder.exists():

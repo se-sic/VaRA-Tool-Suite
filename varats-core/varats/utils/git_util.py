@@ -371,8 +371,9 @@ def get_submodule_updates(
 
 
 def get_submodule_update_commits(
-    repo: RepositoryHandle, submodule: RepositoryHandle,
-    update_commit: FullCommitHash
+    repo: RepositoryHandle,
+    submodule: RepositoryHandle,
+    update_commit: FullCommitHash,
 ) -> list[FullCommitHash]:
     """
     Get all new submodule commits introduced by the given submodule update.

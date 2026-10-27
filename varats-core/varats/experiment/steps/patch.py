@@ -33,7 +33,7 @@ class ApplyPatch(actions.ProjectStep):
             )
             apply_patch(
                 RepositoryHandle(Path(self.project.source_of_primary)),
-                self.__patch.path
+                self.__patch.path,
             )
 
         except ProcessExecutionError as e:
@@ -44,8 +44,8 @@ class ApplyPatch(actions.ProjectStep):
 
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
-            f"* {self.project.name}: Apply patch "
-            f"{self.__patch.shortname}", " " * indent
+            f"* {self.project.name}: Apply patch {self.__patch.shortname}",
+            " " * indent,
         )
 
 
@@ -68,7 +68,7 @@ class RevertPatch(actions.ProjectStep):
             )
             revert_patch(
                 RepositoryHandle(Path(self.project.source_of_primary)),
-                self.__patch.path
+                self.__patch.path,
             )
 
         except ProcessExecutionError as e:
@@ -79,6 +79,6 @@ class RevertPatch(actions.ProjectStep):
 
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
-            f"* {self.project.name}: Revert patch "
-            f"{self.__patch.shortname}", " " * indent
+            f"* {self.project.name}: Revert patch {self.__patch.shortname}",
+            " " * indent,
         )
