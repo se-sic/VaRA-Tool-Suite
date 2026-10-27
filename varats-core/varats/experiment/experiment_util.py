@@ -517,8 +517,7 @@ class OutputFolderStep(ProjectStep):  # type: ignore
     def call_with_output_folders(
         self, tmp_dirs: tp.Dict[tp.Type[BaseReport], Path]
     ) -> StepResult:
-        """Call implementation that gets a temp folder for each requested report
-        type."""
+        """Call implementation that gets a temp folder per requested report."""
 
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         """Actual call implementation that gets a path to tmp_folder."""
