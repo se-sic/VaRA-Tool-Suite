@@ -1,6 +1,8 @@
-"""Module for interacting and managing paper configs and case studies, e.g.,
+"""
+Module for interacting and managing paper configs and case studies, e.g.,
 this module provides functionality to visualize the status of case studies or to
-package a whole paper config into a zip folder."""
+package a whole paper config into a zip folder.
+"""
 
 import re
 import typing as tp
@@ -15,12 +17,12 @@ from varats.experiment.experiment_util import VersionExperiment
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
-    get_revisions_status_for_case_study,
     get_newest_result_files_for_case_study,
+    get_revisions_status_for_case_study,
 )
 from varats.report.report import (
-    FileStatusExtension,
     BaseReport,
+    FileStatusExtension,
     ReportFilename,
     ReportFilepath,
 )
@@ -30,9 +32,14 @@ from varats.utils.settings import vara_cfg
 
 
 def show_status_of_case_studies(
-    experiment_type: tp.Type[VersionExperiment], filter_regex: str,
-    short_status: bool, sort: bool, print_rev_list: bool, sep_stages: bool,
-    print_legend: bool, ignore_configs: bool = False
+    experiment_type: type[VersionExperiment],
+    filter_regex: str,
+    short_status: bool,
+    sort: bool,
+    print_rev_list: bool,
+    sep_stages: bool,
+    print_legend: bool,
+    ignore_configs: bool = False,
 ) -> None:
     """
     Prints the status of all matching case studies to the console.
@@ -54,7 +61,7 @@ def show_status_of_case_studies(
     output_case_studies = []
     for case_study in sorted(
         current_config.get_all_case_studies(),
-        key=lambda cs: (cs.project_name, cs.version)
+        key=lambda cs: (cs.project_name, cs.version),
     ):
         match = re.match(
             filter_regex, f"{case_study.project_name}_{case_study.version}"
@@ -63,14 +70,15 @@ def show_status_of_case_studies(
             output_case_studies.append(case_study)
             longest_cs_name = max(
                 longest_cs_name,
-                len(case_study.project_name) + len(str(case_study.version))
+                len(case_study.project_name) + len(str(case_study.version)),
             )
 
     if print_legend:
         print(get_legend(True))
 
-    total_status_occurrences: tp.DefaultDict[
-        FileStatusExtension, tp.Set[ShortCommitHash]] = defaultdict(set)
+    total_status_occurrences: defaultdict[
+        FileStatusExtension, set[ShortCommitHash]
+    ] = defaultdict(set)
 
     for case_study in output_case_studies:
         if print_rev_list:
@@ -83,17 +91,20 @@ def show_status_of_case_studies(
                     longest_cs_name,
                     True,
                     total_status_occurrences,
-                    ignore_configs=ignore_configs
+                    ignore_configs=ignore_configs,
                 )
             )
         else:
             print(
                 get_status(
-                    case_study, experiment_type, longest_cs_name, sep_stages,
+                    case_study,
+                    experiment_type,
+                    longest_cs_name,
+                    sep_stages,
                     sort,
                     True,
                     total_status_occurrences,
-                    ignore_configs=ignore_configs
+                    ignore_configs=ignore_configs,
                 )
             )
 
@@ -123,10 +134,12 @@ def get_revision_list(case_study: CaseStudy) -> str:
 
 
 def get_result_files(
-    project_name: str, experiment_type: tp.Type["VersionExperiment"],
-    report_type: tp.Optional[tp.Type[BaseReport]], commit_hash: ShortCommitHash,
-    only_newest: bool
-) -> tp.List[ReportFilepath]:
+    project_name: str,
+    experiment_type: type["VersionExperiment"],
+    report_type: type[BaseReport] | None,
+    commit_hash: ShortCommitHash,
+    only_newest: bool,
+) -> list[ReportFilepath]:
     """
     Returns a list of result files that (partially) match the given commit hash.
 
@@ -150,15 +163,17 @@ def get_result_files(
         return not file_commit_hash == commit_hash
 
     return get_all_revisions_files(
-        project_name, experiment_type, report_type, file_name_filter,
-        only_newest
+        project_name,
+        experiment_type,
+        report_type,
+        file_name_filter,
+        only_newest,
     )
 
 
 def get_occurrences(
-    status_occurrences: tp.DefaultDict[FileStatusExtension,
-                                       tp.Set[ShortCommitHash]],
-    use_color: bool = False
+    status_occurrences: defaultdict[FileStatusExtension, set[ShortCommitHash]],
+    use_color: bool = False,
 ) -> str:
     """
     Returns a string with all status occurrences of a case study.
@@ -193,9 +208,12 @@ def get_occurrences(
     status += "["
     for file_status in FileStatusExtension:
         if use_color:
-            status += file_status.status_color[str(
-                len(status_occurrences[file_status])
-            )] + "/"
+            status += (
+                file_status.status_color[
+                    str(len(status_occurrences[file_status]))
+                ]
+                + "/"
+            )
         else:
             status += str(len(status_occurrences[file_status])) + "/"
 
@@ -205,10 +223,11 @@ def get_occurrences(
 
 
 def get_total_status(
-    total_status_occurrences: tp.DefaultDict[FileStatusExtension,
-                                             tp.Set[ShortCommitHash]],
+    total_status_occurrences: defaultdict[
+        FileStatusExtension, set[ShortCommitHash]
+    ],
     longest_cs_name: int,
-    use_color: bool = False
+    use_color: bool = False,
 ) -> str:
     """
     Returns a status string showing the total amount of occurrences.
@@ -231,12 +250,14 @@ def get_total_status(
 
 def get_short_status(
     case_study: CaseStudy,
-    experiment_type: tp.Type[VersionExperiment],
+    experiment_type: type[VersionExperiment],
     longest_cs_name: int,
     use_color: bool = False,
-    total_status_occurrences: tp.Optional[tp.DefaultDict[
-        FileStatusExtension, tp.Set[ShortCommitHash]]] = None,
-    ignore_configs: bool = False
+    total_status_occurrences: defaultdict[
+        FileStatusExtension, set[ShortCommitHash]
+    ]
+    | None = None,
+    ignore_configs: bool = False,
 ) -> str:
     """
     Return a short string representation that describes the current status of
@@ -256,12 +277,14 @@ def get_short_status(
         a short string representation of a case study
     """
     status = f"CS: {case_study.project_name}_{case_study.version}: " + "".ljust(
-        longest_cs_name -
-        (len(case_study.project_name) + len(str(case_study.version))), ' '
+        longest_cs_name
+        - (len(case_study.project_name) + len(str(case_study.version))),
+        ' ',
     )
 
-    status_occurrences: tp.DefaultDict[
-        FileStatusExtension, tp.Set[ShortCommitHash]] = defaultdict(set)
+    status_occurrences: defaultdict[
+        FileStatusExtension, set[ShortCommitHash]
+    ] = defaultdict(set)
 
     for tagged_rev in _combine_tagged_revs_for_experiment(
         case_study, experiment_type, ignore_configs=ignore_configs
@@ -278,14 +301,16 @@ def get_short_status(
 
 def get_status(
     case_study: CaseStudy,
-    experiment_type: tp.Type[VersionExperiment],
+    experiment_type: type[VersionExperiment],
     longest_cs_name: int,
     sep_stages: bool,
     sort: bool,
     use_color: bool = False,
-    total_status_occurrences: tp.Optional[tp.DefaultDict[
-        FileStatusExtension, tp.Set[ShortCommitHash]]] = None,
-    ignore_configs: bool = False
+    total_status_occurrences: defaultdict[
+        FileStatusExtension, set[ShortCommitHash]
+    ]
+    | None = None,
+    ignore_configs: bool = False,
 ) -> str:
     """
     Return a string representation that describes the current status of the case
@@ -305,19 +330,22 @@ def get_status(
     Returns:
         a full string representation of all case studies
     """
-    status = get_short_status(
-        case_study,
-        experiment_type,
-        longest_cs_name,
-        use_color,
-        total_status_occurrences,
-        ignore_configs=ignore_configs
-    ) + "\n"
+    status = (
+        get_short_status(
+            case_study,
+            experiment_type,
+            longest_cs_name,
+            use_color,
+            total_status_occurrences,
+            ignore_configs=ignore_configs,
+        )
+        + "\n"
+    )
 
     if sort:
         cmap = get_commit_map(case_study.project_name)
 
-    def rev_time(rev: tp.Tuple[ShortCommitHash, FileStatusExtension]) -> int:
+    def rev_time(rev: tuple[ShortCommitHash, FileStatusExtension]) -> int:
         return cmap.short_time_id(rev[0])
 
     if sep_stages:
@@ -332,28 +360,30 @@ def get_status(
                 case_study,
                 experiment_type,
                 stage_num,
-                ignore_configs=ignore_configs
+                ignore_configs=ignore_configs,
             )
             if sort:
                 tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
             for tagged_rev_state in tagged_revs:
-                status += f"    {tagged_rev_state[0].hash} " \
-                          f"[{tagged_rev_state[1].get_colored_status()}]\n"
+                status += (
+                    f"    {tagged_rev_state[0].hash} "
+                    f"[{tagged_rev_state[1].get_colored_status()}]\n"
+                )
     else:
         tagged_revs = list(
             dict.fromkeys(
                 _combine_tagged_revs_for_experiment(
-                    case_study,
-                    experiment_type,
-                    ignore_configs=ignore_configs
+                    case_study, experiment_type, ignore_configs=ignore_configs
                 )
             )
         )
         if sort:
             tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
         for tagged_rev_state in tagged_revs:
-            status += f"    {tagged_rev_state[0].hash} " \
-                      f"[{tagged_rev_state[1].get_colored_status()}]\n"
+            status += (
+                f"    {tagged_rev_state[0].hash} "
+                f"[{tagged_rev_state[1].get_colored_status()}]\n"
+            )
 
     return status
 
@@ -383,8 +413,9 @@ def get_legend(use_color: bool = False) -> str:
 
 
 def package_paper_config(
-    output_file: Path, cs_filter_regex: tp.Pattern[str],
-    experiment_types: tp.List[tp.Type[VersionExperiment]]
+    output_file: Path,
+    cs_filter_regex: tp.Pattern[str],
+    experiment_types: list[type[VersionExperiment]],
 ) -> None:
     """
     Package all files from a paper config into a zip folder.
@@ -397,14 +428,14 @@ def package_paper_config(
     """
     current_config = PC.get_paper_config()
     result_dir = Path(str(vara_cfg()['result_dir']))
-    report_types: tp.List[tp.Type[BaseReport]] = []
+    report_types: list[type[BaseReport]] = []
     if experiment_types:
         for experiment_type in experiment_types:
             report_types.extend(experiment_type.report_spec().report_types)
     else:
         report_types = list(BaseReport.REPORT_TYPES.values())
 
-    files_to_store: tp.Set[Path] = set()
+    files_to_store: set[Path] = set()
     for case_study in current_config.get_all_case_studies():
         match = re.match(
             cs_filter_regex, f"{case_study.project_name}_{case_study.version}"
@@ -417,7 +448,7 @@ def package_paper_config(
                     )
                 )
 
-    case_study_files_to_include: tp.List[Path] = []
+    case_study_files_to_include: list[Path] = []
     for cs_file in current_config.path.iterdir():
         match = re.match(cs_filter_regex, cs_file.name)
         if match is not None:
@@ -436,10 +467,10 @@ def package_paper_config(
 
 def _combine_tagged_revs_for_experiment(
     case_study: CaseStudy,
-    experiment_type: tp.Type[VersionExperiment],
-    stage_num: tp.Optional[int] = None,
-    ignore_configs: bool = False
-) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
+    experiment_type: type[VersionExperiment],
+    stage_num: int | None = None,
+    ignore_configs: bool = False,
+) -> list[tuple[ShortCommitHash, FileStatusExtension]]:
     """
     Combines the tagged revision results from all reports that are specified in
     the experiment.
@@ -452,15 +483,14 @@ def _combine_tagged_revs_for_experiment(
     Returns:
         combined tagged revision list
     """
-    combined_tagged_revisions: tp.Dict[ShortCommitHash,
-                                       FileStatusExtension] = {}
+    combined_tagged_revisions: dict[ShortCommitHash, FileStatusExtension] = {}
     for report_type in experiment_type.report_spec():
         if stage_num is None:
             tagged_revs = get_revisions_status_for_case_study(
                 case_study,
                 experiment_type,
                 report_type,
-                ignore_configs=ignore_configs
+                ignore_configs=ignore_configs,
             )
         else:
             tagged_revs = get_revisions_status_for_case_study(
@@ -468,15 +498,16 @@ def _combine_tagged_revs_for_experiment(
                 experiment_type,
                 report_type,
                 stage_num,
-                ignore_configs=ignore_configs
+                ignore_configs=ignore_configs,
             )
 
         for tagged_rev in tagged_revs:
             if tagged_rev[0] in combined_tagged_revisions:
-                combined_tagged_revisions[
-                    tagged_rev[0]] = FileStatusExtension.combine(
+                combined_tagged_revisions[tagged_rev[0]] = (
+                    FileStatusExtension.combine(
                         combined_tagged_revisions[tagged_rev[0]], tagged_rev[1]
                     )
+                )
             else:
                 combined_tagged_revisions[tagged_rev[0]] = tagged_rev[1]
 
