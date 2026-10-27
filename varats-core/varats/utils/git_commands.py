@@ -82,6 +82,14 @@ def update_all_submodules(
     repo(*git_params)
 
 
+
+def get_all_submodules(repo: 'RepositoryHandle') -> 'tp.List[RepositoryHandle]':
+    submodule_paths = repo("submodule", "--quiet", "foreach", "echo $path")
+    return [
+        repo.get_submodule(path)
+        for path in submodule_paths.splitlines()
+    ]
+
 def fetch_remote(
     repo: 'RepositoryHandle',
     remote: tp.Optional[str] = None,
