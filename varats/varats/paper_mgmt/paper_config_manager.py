@@ -30,6 +30,9 @@ from varats.revision.revisions import get_all_revisions_files
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
 
+if tp.TYPE_CHECKING:
+    from plumbum.colorlib import Style
+
 
 def show_status_of_case_studies(
     experiment_type: type[VersionExperiment],
@@ -182,12 +185,12 @@ def get_occurrences(
     Returns:
         a string with all status occurrences of a case study
     """
-    status = ""
+    status: str = ""
 
     num_succ_rev = len(status_occurrences[FileStatusExtension.SUCCESS])
     num_rev = sum(map(len, status_occurrences.values()))
 
-    color = None
+    color: Style | None = None
     if use_color:
         if num_succ_rev == num_rev:
             color = colors.green
@@ -197,17 +200,17 @@ def get_occurrences(
             color = colors.orange3
 
     if color is not None:
-        status += "(" + color[f"{num_succ_rev:3}/{num_rev}"] + ") processed "
+        status += "(" + str(color.wrap(f"{num_succ_rev:3}/{num_rev}")) + ")"
     else:
-        status += "(" + f"{num_succ_rev:3}/{num_rev}" + ") processed "
+        status += f"({num_succ_rev:3}/{num_rev})"
 
-    status += "["
+    status += " processed ["
     for file_status in FileStatusExtension:
         if use_color:
-            status += (
-                file_status.status_color[
+            status += str(
+                file_status.status_color.wrap(
                     str(len(status_occurrences[file_status]))
-                ]
+                )
                 + "/"
             )
         else:
