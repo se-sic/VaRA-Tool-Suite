@@ -238,7 +238,7 @@ class UniformSamplingMethod(NormalSamplingMethod):
         def uniform(num_samples: int) -> SampleArray:
             import numpy as np  # pylint: disable=import-outside-toplevel
 
-            return np.asarray(np.random.uniform(0, 1.0, num_samples))
+            return np.random.uniform(0, 1.0, num_samples).reshape(num_samples)
 
         return uniform
 
@@ -260,7 +260,8 @@ class HalfNormalSamplingMethod(NormalSamplingMethod):
             import numpy as np
             from scipy.stats import halfnorm
 
-            return np.asarray(halfnorm.rvs(scale=1, size=num_samples))
+            samples = np.asarray(halfnorm.rvs(scale=1, size=num_samples))
+            return samples.astype(np.float64, copy=False).reshape(num_samples)
 
         return halfnormal
 
