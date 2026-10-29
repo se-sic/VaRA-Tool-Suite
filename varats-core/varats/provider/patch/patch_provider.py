@@ -26,6 +26,7 @@ from varats.utils.git_util import (
     get_all_revisions_between,
     get_initial_commit,
 )
+from varats.utils.settings import __BBCFG as BBCFG
 from varats.utils.settings import bb_cfg, vara_cfg
 
 
@@ -63,8 +64,8 @@ class Patch:
         self.description: str = description
         self.path: Path = path
         self.valid_revisions: set[CommitHash] = valid_revisions or set()
-        self.tags: set[str] | None = tags
-        self.feature_tags: set[str] | None = feature_tags
+        self.tags: set[str] = tags or set()
+        self.feature_tags: set[str] = feature_tags or set()
         self.regression_severity: int | None = regression_severity
 
     @staticmethod
@@ -224,7 +225,7 @@ class PatchSet:
         res_set = set()
 
         for patch in self.__patches:
-            if patch.tags and tag_set.issubset(patch.tags):
+            if tag_set.issubset(patch.tags):
                 res_set.add(patch)
 
         return PatchSet(res_set)
@@ -250,7 +251,7 @@ class PatchSet:
 
         result: set[Patch] = set()
         for patch in self:
-            if patch.tags and any(tag in patch.tags for tag in tags):
+            if any(tag in patch.tags for tag in tags):
                 result.add(patch)
 
         return PatchSet(result)
@@ -273,7 +274,7 @@ class PatchSet:
         tag_set = set(feature_tags)
         result: set[Patch] = set()
         for patch in self:
-            if patch.feature_tags and patch.feature_tags.intersection(tag_set):
+            if patch.feature_tags.intersection(tag_set):
                 result.add(patch)
 
         return PatchSet(result)
@@ -290,7 +291,7 @@ class PatchSet:
         tag_set = set(feature_tags)
         result: set[Patch] = set()
         for patch in self:
-            if patch.feature_tags and tag_set.issubset(patch.feature_tags):
+            if tag_set.issubset(patch.feature_tags):
                 result.add(patch)
 
         return PatchSet(result)
@@ -332,10 +333,23 @@ class PatchProvider(Provider):
             )
 
         for local_folder in local_cfgs:
-            patches_dir = Path(str(local_folder)) / self.project.NAME
-            self.__patches.update(
-                self._parse_patches_from_directory(patches_dir)
-            )
+            local_folder_path = Path(str(local_folder))
+            if not local_folder_path.is_dir():
+                warnings.warn(
+                    f"Could not find local patch folder: '{local_folder_path}'."
+                )
+                continue
+
+            for local_repository in local_folder_path.iterdir():
+                if local_repository.is_dir():
+                    patches_dir = (
+                        self._get_patches_directory_from_local_repository(
+                            local_repository
+                        )
+                    )
+                    self.__patches.update(
+                        self._parse_patches_from_directory(patches_dir)
+                    )
 
     def get_by_shortname(self, shortname: str) -> Patch | None:
         """
@@ -396,11 +410,45 @@ class PatchProvider(Provider):
         )
 
         patch_sources_tmp_dir = Path(str(bb_cfg()["tmp_dir"])) / "patch-sources"
-        with bb_cfg(tmp_dir=str(patch_sources_tmp_dir)):
+        with BBCFG(tmp_dir=str(patch_sources_tmp_dir)):
             self._update_local_patches_repo(patch_source)
             repo = self._get_patches_repository(patch_source)
 
         return repo.worktree_path / self.project.NAME
+
+    def _get_patches_directory_from_local_repository(
+        self, local_repository: Path
+    ) -> Path:
+        """Link a local patch repository into BenchBuild's patch cache."""
+        local_repository = local_repository.resolve()
+        if not local_repository.is_dir():
+            raise ValueError(
+                f"Local patch repository does not exist: '{local_repository}'."
+            )
+
+        patch_sources_dir = Path(str(bb_cfg()["tmp_dir"])) / "patch-sources"
+        repository_link = patch_sources_dir / local_repository.name
+
+        with lock_file(repository_link.with_suffix(".lock")):
+            if repository_link.is_symlink():
+                if repository_link.resolve() != local_repository:
+                    raise FileExistsError(
+                        f"Patch repository link '{repository_link}' points to "
+                        f"'{repository_link.resolve()}', not "
+                        f"'{local_repository}'."
+                    )
+            elif repository_link.exists():
+                raise FileExistsError(
+                    f"Patch repository path already exists: "
+                    f"'{repository_link}'."
+                )
+            else:
+                repository_link.parent.mkdir(parents=True, exist_ok=True)
+                repository_link.symlink_to(
+                    local_repository, target_is_directory=True
+                )
+
+        return repository_link / self.project.NAME
 
     @staticmethod
     def _parse_patches_from_directory(patches_dir: Path) -> set[Patch]:

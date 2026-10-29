@@ -1,6 +1,7 @@
 import unittest
 from copy import deepcopy
 from pathlib import Path
+from shutil import copytree
 
 import benchbuild as bb
 from benchbuild.source.base import target_prefix
@@ -21,7 +22,7 @@ from varats.utils.git_util import (
     get_all_revisions_between,
     get_initial_commit,
 )
-from varats.utils.settings import vara_cfg
+from varats.utils.settings import bb_cfg, vara_cfg
 
 
 class TestPatchProvider(unittest.TestCase):
@@ -81,10 +82,7 @@ class TestPatchProvider(unittest.TestCase):
     def test_reads_patches_from_two_local_sources(self) -> None:
         provider = self._create_patch_provider(
             [],
-            [
-                "patch_subdirectories/local_source_one",
-                "patch_subdirectories/local_source_two",
-            ],
+            ["patch_subdirectories"],
         )
 
         for shortname in ("local-source-one", "local-source-two"):
@@ -97,13 +95,43 @@ class TestPatchProvider(unittest.TestCase):
         ),
         UnitTestFixtures.create_project_repo_fixture(FeaturePerfCSCollection),
     )
+    def test_reads_patches_from_local_repository_symlink(self) -> None:
+        """Test that local repositories are linked into patch-sources."""
+        local_folder = Path("patch_subdirectories")
+        local_repository = local_folder / "local_source_one"
+        vara_cfg()["patch_provider"]["repositories"] = []
+        vara_cfg()["patch_provider"]["local_folders"] = [str(local_folder)]
+
+        provider = PatchProvider(FeaturePerfCSCollection)
+
+        repository_link = (
+            Path(str(bb_cfg()["tmp_dir"]))
+            / "patch-sources"
+            / local_repository.name
+        )
+        self.assertTrue(repository_link.is_symlink())
+        self.assertEqual(repository_link.resolve(), local_repository.resolve())
+        self.assertIsNotNone(provider.get_by_shortname("local-source-one"))
+
+    @run_in_test_environment(
+        UnitTestFixtures.create_file_fixture(
+            TEST_INPUTS_DIR / "patch_subdirectories",
+            Path("patch_subdirectories"),
+        ),
+        UnitTestFixtures.create_project_repo_fixture(FeaturePerfCSCollection),
+    )
     def test_reads_patches_from_git_and_local_source(self) -> None:
         repository = self._initialize_patch_repository(
             Path("patch_subdirectories/git_source_one")
         )
+        local_folder = Path("local_patch_repositories")
+        copytree(
+            "patch_subdirectories/local_source_one",
+            local_folder / "local_source_one",
+        )
         provider = self._create_patch_provider(
             [repository],
-            ["patch_subdirectories/local_source_one"],
+            [str(local_folder)],
         )
 
         for shortname in ("git-source-one", "local-source-one"):
