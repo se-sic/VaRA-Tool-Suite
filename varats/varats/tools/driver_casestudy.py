@@ -20,64 +20,64 @@ from varats.experiments.szz.szz_unleashed_experiment import (
 )
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import (
-    load_case_study_from_file,
-    store_case_study,
     CaseStudy,
     CSStage,
+    load_case_study_from_file,
+    store_case_study,
 )
 from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt import paper_config_manager as PCM
 from varats.paper_mgmt.case_study import (
-    get_revisions_status_for_case_study,
-    extend_with_latest_rev,
+    extend_with_bug_commits,
     extend_with_distrib_sampling,
+    extend_with_extra_revs,
+    extend_with_latest_rev,
+    extend_with_release_revs,
     extend_with_revs_per_year,
     extend_with_smooth_revs,
-    extend_with_release_revs,
-    extend_with_bug_commits,
-    extend_with_extra_revs,
+    get_revisions_status_for_case_study,
 )
 from varats.plot.plot import Plot
-from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
+from varats.plot.plots import PlotConfig, PlotGenerator, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import (
-    get_primary_project_source,
     get_local_project_repo,
+    get_primary_project_source,
 )
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
-from varats.report.report import FileStatusExtension, BaseReport, ReportFilepath
+from varats.report.report import BaseReport, FileStatusExtension, ReportFilepath
 from varats.revision.revisions import (
     get_all_revisions_files,
     get_failed_revisions_files,
 )
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
-    cli_list_choice,
-    initialize_cli_tool,
-    cli_yn_choice,
     add_cli_options,
+    cli_list_choice,
+    cli_yn_choice,
+    initialize_cli_tool,
 )
 from varats.ts_utils.click_param_types import (
-    create_experiment_type_choice,
-    create_report_type_choice,
-    TypedChoice,
     EnumChoice,
-    create_multi_case_study_choice,
     ShortCommitHashParamType,
+    TypedChoice,
+    create_experiment_type_choice,
+    create_multi_case_study_choice,
+    create_report_type_choice,
 )
 from varats.utils.git_util import (
+    ShortCommitHash,
+    get_commits_before_timestamp,
     get_initial_commit,
     is_commit_hash,
-    get_commits_before_timestamp,
-    ShortCommitHash,
 )
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 
 
-def create_plot_type_choice() -> TypedChoice[tp.Type[Plot]]:
+def create_plot_type_choice() -> TypedChoice[type[Plot]]:
     initialize_plots()
     return TypedChoice(Plot.PLOTS)
 
@@ -96,37 +96,48 @@ def main() -> None:
 @click.option(
     "--filter-regex",
     help="Provide a regex to filter the shown case studies",
-    default=".*"
+    default=".*",
 )
 @click.option("-s", "--short", is_flag=True, help="Only print a short summary")
 @click.option(
     "--list-revs",
     is_flag=True,
-    help="Print a list of revisions for every stage and every case study"
+    help="Print a list of revisions for every stage and every case study",
 )
 @click.option(
     "--ws",
     "with_stage",
     is_flag=True,
-    help="Print status with stage separation"
+    help="Print status with stage separation",
 )
 @click.option(
     "--sorted",
     "sort_revs",
     is_flag=True,
-    help="Sort the revisions in the order they are printed by git log."
+    help="Sort the revisions in the order they are printed by git log.",
 )
 @click.option("--legend", is_flag=True, help="Print status with legend")
 @click.option(
     "--force-color",
     is_flag=True,
     help="Force colored output also when not connected to a terminal "
-    "(e.g. when piping to less -r)."
+    "(e.g. when piping to less -r).",
+)
+@click.option(
+    "--ignore-configs",
+    is_flag=True,
+    help="Show status for configuration-independent results only.",
 )
 def __casestudy_status(
-    experiment_type: tp.Type[VersionExperiment], filter_regex: str, short: bool,
-    list_revs: bool, with_stage: bool, sort_revs: bool, legend: bool,
-    force_color: bool
+    experiment_type: type[VersionExperiment],
+    filter_regex: str,
+    short: bool,
+    list_revs: bool,
+    with_stage: bool,
+    sort_revs: bool,
+    legend: bool,
+    force_color: bool,
+    ignore_configs: bool,
 ) -> None:
     """
     Show status of current case study.
@@ -145,8 +156,14 @@ def __casestudy_status(
             "At most one argument of: --short, --ws can be used."
         )
     PCM.show_status_of_case_studies(
-        experiment_type, filter_regex, short, sort_revs, list_revs, with_stage,
-        legend
+        experiment_type,
+        filter_regex,
+        short,
+        sort_revs,
+        list_revs,
+        with_stage,
+        legend,
+        ignore_configs,
     )
 
 
@@ -157,14 +174,13 @@ def __casestudy_status(
     "-or",
     is_flag=True,
     help="If a case study for the given project and version"
-    " exists override it instead of extending it"
+    " exists override it instead of extending it",
 )
 @click.option(
     "--merge-stage",
-    help="Merge the new revision(s) into stage "
-    "`n`; defaults to last stage.",
+    help="Merge the new revision(s) into stage `n`; defaults to last stage.",
     type=str,
-    default=None
+    default=None,
 )
 @click.option(
     "--new-stage", is_flag=True, help="Add the new revision(s) to a new stage"
@@ -176,22 +192,29 @@ def __casestudy_status(
     "--ignore-blocked/--allow-blocked",
     default=True,
     help="Ignore/Allow revisions that are marked as blocked. By default, "
-    "blocked revisions will be ignored."
+    "blocked revisions will be ignored.",
 )
 @click.option(
     "--update/--no-update",
     is_flag=True,
     default=True,
-    help="Project repository will not be updated."
+    help="Project repository will not be updated.",
 )
 @click.pass_context
 def __casestudy_gen(
-    ctx: click.Context, project: str, override: bool, version: int,
-    ignore_blocked: bool, merge_stage: tp.Optional[str], new_stage: bool,
-    update: bool
+    ctx: click.Context,
+    project: str,
+    override: bool,
+    version: int,
+    ignore_blocked: bool,
+    merge_stage: str | None,
+    new_stage: bool,
+    update: bool,
 ) -> None:
-    """Generate or extend a CaseStudy Sub commands can be chained to for example
-    sample revisions but also add the latest."""
+    """
+    Generate or extend a CaseStudy Sub commands can be chained to for example
+    sample revisions but also add the latest.
+    """
     ctx.ensure_object(dict)
     ctx.obj['project'] = project
     ctx.obj['ignore_blocked'] = ignore_blocked
@@ -199,13 +222,12 @@ def __casestudy_gen(
     paper_config = vara_cfg()["paper_config"]["current_config"].value
     if not paper_config:
         click.echo(
-            "You need to create a paper config first"
-            " using vara-pc create"
+            "You need to create a paper config first using vara-pc create"
         )
         raise click.Abort()
-    ctx.obj['path'] = Path(
-        vara_cfg()["paper_config"]["folder"].value
-    ) / (paper_config + f"/{project}_{version}.case_study")
+    ctx.obj['path'] = Path(vara_cfg()["paper_config"]["folder"].value) / (
+        paper_config + f"/{project}_{version}.case_study"
+    )
     ctx.obj['repo'] = get_local_project_repo(project)
     if update:
         get_primary_project_source(project).fetch()
@@ -225,8 +247,9 @@ def __casestudy_gen(
                 case_study.insert_empty_stage(stage_index)
                 case_study.name_stage(stage_index, merge_stage)
             else:
-                stage_index_opt = case_study \
-                    .get_stage_index_by_name(merge_stage)
+                stage_index_opt = case_study.get_stage_index_by_name(
+                    merge_stage
+                )
                 if not stage_index_opt:
                     selected_stage = CSStage(merge_stage)
 
@@ -235,14 +258,15 @@ def __casestudy_gen(
                         selected_stage = stage
 
                     stage_choices = [selected_stage]
-                    stage_choices.extend([
-                        stage for stage in case_study.stages if stage.name
-                    ])
+                    stage_choices.extend(
+                        [stage for stage in case_study.stages if stage.name]
+                    )
                     cli_list_choice(
                         f"The given stage({merge_stage}) does not exist,"
                         f" do you want to create it or select an existing one",
-                        stage_choices, lambda x: x.name
-                        if x.name else "", set_merge_stage
+                        stage_choices,
+                        lambda x: x.name or "",
+                        set_merge_stage,
                     )
                     if selected_stage.name == merge_stage:
                         stage_index = case_study.num_stages
@@ -266,7 +290,6 @@ def __casestudy_gen(
 @click.pass_context
 def __gen_latest(ctx: click.Context) -> None:
     """Add the latest revision of the project to the CS."""
-
     cmap = get_commit_map(ctx.obj['project'])
     case_study: CaseStudy = ctx.obj['case_study']
 
@@ -275,7 +298,7 @@ def __gen_latest(ctx: click.Context) -> None:
         cmap,
         merge_stage=ctx.obj['merge_stage'],
         ignore_blocked=ctx.obj['ignore_blocked'],
-        repo=ctx.obj["repo"]
+        repo=ctx.obj["repo"],
     )
     store_case_study(case_study, ctx.obj['path'])
 
@@ -283,7 +306,7 @@ def __gen_latest(ctx: click.Context) -> None:
 @__casestudy_gen.command("select_specific")
 @click.argument("revisions", nargs=-1)
 @click.pass_context
-def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
+def __gen_specific(ctx: click.Context, revisions: list[str]) -> None:
     """
     Adds a list of specified revisions to the CS.
 
@@ -299,9 +322,9 @@ def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
 @__casestudy_gen.command("select_sample")
 @click.argument(
     "distribution",
-    type=click.Choice([
-        x.name() for x in NormalSamplingMethod.normal_sampling_method_types()
-    ])
+    type=click.Choice(
+        [x.name() for x in NormalSamplingMethod.normal_sampling_method_types()]
+    ),
 )
 @click.option(
     "--end", help="End of the commit range (inclusive)", default="HEAD"
@@ -315,22 +338,25 @@ def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
 @click.option(
     "--only-code-commits",
     is_flag=True,
-    help="Only consider code changes when sampling."
+    help="Only consider code changes when sampling.",
 )
 @click.pass_context
 def __gen_sample(
-    ctx: click.Context, distribution: str, end: str, start: str, num_rev: int,
-    only_code_commits: bool
+    ctx: click.Context,
+    distribution: str,
+    end: str,
+    start: str,
+    num_rev: int,
+    only_code_commits: bool,
 ) -> None:
     """
     Add revisions based on a sampling Distribution.
 
     Distribution: The sampling method to use
     """
-    sampling_method: NormalSamplingMethod = NormalSamplingMethod \
-        .get_sampling_method_type(
-        distribution
-    )()
+    sampling_method: NormalSamplingMethod = (
+        NormalSamplingMethod.get_sampling_method_type(distribution)()
+    )
 
     project_repo = get_local_project_repo(ctx.obj['project'])
     if end != "HEAD" and not is_commit_hash(end):
@@ -345,8 +371,13 @@ def __gen_sample(
 
     cmap = get_commit_map(ctx.obj['project'], end, start)
     extend_with_distrib_sampling(
-        ctx.obj['case_study'], cmap, sampling_method, ctx.obj['merge_stage'],
-        num_rev, ctx.obj['ignore_blocked'], only_code_commits
+        ctx.obj['case_study'],
+        cmap,
+        sampling_method,
+        ctx.obj['merge_stage'],
+        num_rev,
+        ctx.obj['ignore_blocked'],
+        only_code_commits,
     )
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
@@ -367,8 +398,13 @@ def __gen_per_year(
     """
     cmap = get_commit_map(ctx.obj['project'], refspec='HEAD')
     extend_with_revs_per_year(
-        ctx.obj['case_study'], cmap, ctx.obj['merge_stage'],
-        ctx.obj['ignore_blocked'], ctx.obj['repo'], revs_per_year, separate
+        ctx.obj['case_study'],
+        cmap,
+        ctx.obj['merge_stage'],
+        ctx.obj['ignore_blocked'],
+        ctx.obj['repo'],
+        revs_per_year,
+        separate,
     )
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
@@ -380,11 +416,12 @@ class SmoothPlotCLI(click.Group):
         initialize_plots()
         super().__init__(**attrs)
 
-    def list_commands(self, ctx: click.Context) -> tp.List[str]:
+    def list_commands(self, ctx: click.Context) -> list[str]:
         return list(PlotGenerator.GENERATORS.keys())
 
-    def get_command(self, ctx: click.Context,
-                    cmd_name: str) -> tp.Optional[click.Command]:
+    def get_command(
+        self, ctx: click.Context, cmd_name: str
+    ) -> click.Command | None:
 
         generator_cls = PlotGenerator.GENERATORS[cmd_name]
 
@@ -404,14 +441,19 @@ class SmoothPlotCLI(click.Group):
 
                     cli_list_choice(
                         "The given plot generator creates multiple plots"
-                        " please select one:", plots, lambda p: p.name, set_plot
+                        " please select one:",
+                        plots,
+                        lambda p: p.name,
+                        set_plot,
                     )
                 cmap = get_commit_map(context.obj['project'], refspec='HEAD')
                 extend_with_smooth_revs(
-                    context.obj['case_study'], cmap,
+                    context.obj['case_study'],
+                    cmap,
                     context.obj['boundary_gradient'],
-                    context.obj['ignore_blocked'], plot,
-                    context.obj['merge_stage']
+                    context.obj['ignore_blocked'],
+                    plot,
+                    context.obj['merge_stage'],
                 )
                 store_case_study(context.obj['case_study'], context.obj['path'])
             except PlotGeneratorFailed as ex:
@@ -432,8 +474,8 @@ class SmoothPlotCLI(click.Group):
     "--boundary-gradient",
     type=int,
     default=5,
-    help="Maximal expected gradient in percent between " +
-    "two revisions, e.g., 5 for 5%%"
+    help="Maximal expected gradient in percent between "
+    + "two revisions, e.g., 5 for 5%%",
 )
 @click.pass_context
 def __gen_smooth_plot(ctx: click.Context, boundary_gradient: int) -> None:
@@ -457,8 +499,11 @@ def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
     """
     cmap = get_commit_map(ctx.obj['project'], refspec='HEAD')
     extend_with_release_revs(
-        ctx.obj['case_study'], cmap, release_type, ctx.obj['ignore_blocked'],
-        ctx.obj['merge_stage']
+        ctx.obj['case_study'],
+        cmap,
+        release_type,
+        ctx.obj['ignore_blocked'],
+        ctx.obj['merge_stage'],
     )
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
@@ -466,16 +511,18 @@ def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
 @__casestudy_gen.command("select_bug")
 @click.option(
     "--experiment-type",
-    type=TypedChoice({
-        SZZUnleashedExperiment.NAME: SZZUnleashedExperiment,
-        PyDrillerSZZExperiment.NAME: PyDrillerSZZExperiment
-    }),
+    type=TypedChoice(
+        {
+            SZZUnleashedExperiment.NAME: SZZUnleashedExperiment,
+            PyDrillerSZZExperiment.NAME: PyDrillerSZZExperiment,
+        }
+    ),
     required=True,
-    help="Experiment type of the result files."
+    help="Experiment type of the result files.",
 )
 @click.pass_context
 def __gen_bug_commits(
-    ctx: click.Context, experiment_type: tp.Type['VersionExperiment']
+    ctx: click.Context, experiment_type: type['VersionExperiment']
 ) -> None:
     """
     Extend a case study with revisions that either introduced or fixed a bug as
@@ -484,8 +531,10 @@ def __gen_bug_commits(
     REPORT_TYPE: report to use for determining bug regions
     """
     extend_with_bug_commits(
-        ctx.obj['case_study'], experiment_type, ctx.obj['merge_stage'],
-        ctx.obj['ignore_blocked']
+        ctx.obj['case_study'],
+        experiment_type,
+        ctx.obj['merge_stage'],
+        ctx.obj['ignore_blocked'],
     )
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
@@ -497,14 +546,14 @@ def __gen_bug_commits(
 @click.option("-o", "--output", help="Output file")
 @click.option(
     "--filter-regex",
-    help="Provide a regex to only include case "
-    "studies that match the filter.",
+    help="Provide a regex to only include case studies that match the filter.",
     type=str,
-    default=".*"
+    default=".*",
 )
 def __casestudy_package(
-    output: str, filter_regex: str,
-    experiment_names: tp.List[tp.Type[VersionExperiment]]
+    output: str,
+    filter_regex: str,
+    experiment_names: list[type[VersionExperiment]],
 ) -> None:
     """
     Case study packaging util.
@@ -531,7 +580,7 @@ def __casestudy_package(
         click.echo(
             "--output has the wrong file type extension. "
             "Please do not provide any other file type extension than .zip",
-            err=True
+            err=True,
         )
 
 
@@ -540,13 +589,13 @@ def __casestudy_package(
     "--experiment-type",
     type=create_experiment_type_choice(),
     required=True,
-    help="Experiment type of the result files."
+    help="Experiment type of the result files.",
 )
 @click.option(
     "--report-type",
     type=create_report_type_choice(),
     required=False,
-    help="Report type of the result files."
+    help="Report type of the result files.",
 )
 @click.option(
     "--project", required=True, help="Project to view result files for."
@@ -554,17 +603,19 @@ def __casestudy_package(
 @click.option(
     "--commit-hash",
     type=ShortCommitHashParamType(),
-    help="Commit hash to view result files for."
+    help="Commit hash to view result files for.",
 )
 @click.option(
     "--newest-only",
     is_flag=True,
-    help="Only report the newest file for each matched commit hash"
+    help="Only report the newest file for each matched commit hash",
 )
 def __casestudy_view(
-    experiment_type: tp.Type[VersionExperiment],
-    report_type: tp.Optional[tp.Type[BaseReport]], project: str,
-    commit_hash: ShortCommitHash, newest_only: bool
+    experiment_type: type[VersionExperiment],
+    report_type: type[BaseReport] | None,
+    project: str,
+    commit_hash: ShortCommitHash,
+    newest_only: bool,
 ) -> None:
     """View report files."""
     try:
@@ -597,11 +648,9 @@ def __casestudy_view(
 
     def result_file_to_list_entry(result_file: ReportFilepath) -> str:
         file_status = result_file.report_filename.file_status
-        status = (
-            file_status.get_colored_status().rjust(
-                longest_file_status_extension +
-                file_status.num_color_characters(), " "
-            )
+        status = file_status.get_colored_status().rjust(
+            longest_file_status_extension + file_status.num_color_characters(),
+            " ",
         )
         return f"[{status}] {result_file.full_path().name}"
 
@@ -622,15 +671,17 @@ def __casestudy_view(
             open_in_editor,
             start_label=1,
             default=1,
-            repeat=True
+            repeat=True,
         )
     except EOFError:
         return
 
 
 def __init_commit_hash(
-    project: str, experiment_type: tp.Type["VersionExperiment"],
-    report_type: tp.Optional[tp.Type[BaseReport]], commit_hash: ShortCommitHash
+    project: str,
+    experiment_type: type["VersionExperiment"],
+    report_type: type[BaseReport] | None,
+    commit_hash: ShortCommitHash,
 ) -> ShortCommitHash:
     if not commit_hash:
         # Ask the user to provide a commit hash
@@ -651,7 +702,7 @@ def __init_commit_hash(
 
         # Create call backs for cli choice
         def set_commit_hash(
-            choice_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
+            choice_pair: tuple[ShortCommitHash, FileStatusExtension],
         ) -> None:
             nonlocal commit_hash
             commit_hash = choice_pair[0]
@@ -665,11 +716,16 @@ def __init_commit_hash(
         )
 
         def result_file_to_list_entry(
-            commit_status_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
+            commit_status_pair: tuple[ShortCommitHash, FileStatusExtension],
         ) -> str:
-            status = commit_status_pair[1].get_colored_status().rjust(
-                longest_file_status_extension +
-                commit_status_pair[1].num_color_characters(), " "
+            status = (
+                commit_status_pair[1]
+                .get_colored_status()
+                .rjust(
+                    longest_file_status_extension
+                    + commit_status_pair[1].num_color_characters(),
+                    " ",
+                )
             )
 
             return f"[{status}] {commit_status_pair[0]}"
@@ -701,37 +757,38 @@ def __init_commit_hash(
     default='all',
     help="Only remove reports for revisions from "
     "these case studies, defaults to all case "
-    "studies from the current paper config"
+    "studies from the current paper config",
 )
 @click.option(
     "--experiment",
     "-exp",
     type=create_experiment_type_choice(),
-    help="Only remove reports that belong to the given experiment"
+    help="Only remove reports that belong to the given experiment",
 )
 @click.option(
     "--report",
     type=create_report_type_choice(),
-    help="Only remove reports from the given type."
+    help="Only remove reports from the given type.",
 )
 @click.pass_context
 def cleanup(
-    ctx: click.Context, case_studies: tp.List[CaseStudy],
-    experiment: tp.Optional[VersionExperiment], report: tp.Optional[BaseReport]
+    ctx: click.Context,
+    case_studies: list[CaseStudy],
+    experiment: VersionExperiment | None,
+    report: BaseReport | None,
 ) -> None:
     """
     Cleanup report files.
 
     If both --experiment and --report the report file has to belong to both
     """
-
     ctx.ensure_object(dict)
     ctx.obj["case_studies"] = case_studies
     ctx.obj["experiment"] = experiment
     ctx.obj["report"] = report
 
 
-def __delete_report_file_paths(report_files: tp.List[ReportFilepath]) -> None:
+def __delete_report_file_paths(report_files: list[ReportFilepath]) -> None:
     for file in report_files:
         file.full_path().unlink(missing_ok=True)
         parent_dir = file.full_path().parent
@@ -752,14 +809,14 @@ def _remove_all_result_files(ctx: click.Context, error: bool) -> None:
                 case_study.project_name,
                 ctx.obj["experiment"],
                 ctx.obj["report"],
-                only_newest=False
+                only_newest=False,
             )
         else:
             revision_files = get_all_revisions_files(
                 case_study.project_name,
                 ctx.obj["experiment"],
                 ctx.obj["report"],
-                only_newest=False
+                only_newest=False,
             )
         __delete_report_file_paths(revision_files)
 
@@ -773,16 +830,17 @@ def _remove_old_result_files(ctx: click.Context) -> None:
             case_study.project_name,
             ctx.obj["experiment"],
             ctx.obj["report"],
-            only_newest=False
+            only_newest=False,
         )
         new_revision_files = get_all_revisions_files(
             case_study.project_name,
             ctx.obj["experiment"],
             ctx.obj["report"],
-            only_newest=True
+            only_newest=True,
         )
         old_revision_files = [
-            file for file in all_revision_files
+            file
+            for file in all_revision_files
             if file not in new_revision_files
         ]
         __delete_report_file_paths(old_revision_files)
@@ -794,7 +852,7 @@ def _remove_old_result_files(ctx: click.Context) -> None:
     "-f",
     "regex_filter",
     prompt="Specify a regex for the filenames to delete",
-    type=str
+    type=str,
 )
 @click.option(
     "--silent", help="Hide the output of the matching filenames", is_flag=True
@@ -814,7 +872,7 @@ def _remove_result_files_by_regex(
             ctx.obj["experiment"],
             ctx.obj["report"],
             lambda x: re.match(regex_filter, x) is None,
-            only_newest=False
+            only_newest=False,
         )
 
         if not all_revision_files:
