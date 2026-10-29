@@ -142,6 +142,7 @@ def main(
     Runs on all projects in the current paper config by default. You can
     restrict this to only certain projects or even revisions using BenchBuild-
     style project selectors: <project>[@<revision>]
+    Project revisions support `*` as a wildcard to select all revisions of the project.
     """
     initialize_cli_tool()
     initialize_projects()
