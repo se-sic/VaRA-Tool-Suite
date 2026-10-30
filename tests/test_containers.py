@@ -1,29 +1,30 @@
 """Test varats container support module."""
+
 import typing as tp
 import unittest
-import unittest.mock as mock
+from unittest import mock
 
 from benchbuild.environments.adapters.common import buildah_version
 from benchbuild.environments.domain.model import (
-    Layer,
-    FromLayer,
-    WorkingDirectory,
     CopyLayer,
-    UpdateEnv,
-    RunLayer,
     EntryPoint,
+    FromLayer,
+    Layer,
+    RunLayer,
+    UpdateEnv,
+    WorkingDirectory,
 )
 
 from tests.helper_utils import run_in_test_environment
 from varats.containers.containers import (
+    _STAGE_LAYERS,
     ImageBase,
+    ImageStage,
     StageBuilder,
     get_image_name,
-    ImageStage,
-    _STAGE_LAYERS,
 )
 from varats.tools.research_tools.research_tool import Distro
-from varats.utils.settings import vara_cfg, bb_cfg
+from varats.utils.settings import bb_cfg, vara_cfg
 
 
 class TestImageBase(unittest.TestCase):
@@ -45,7 +46,7 @@ class TestContainerSupport(unittest.TestCase):
             "debian_10:stage_00_base",
             get_image_name(
                 ImageBase.DEBIAN_10, ImageStage.STAGE_00_BASE, False
-            )
+            ),
         )
 
     @run_in_test_environment()
@@ -53,7 +54,7 @@ class TestContainerSupport(unittest.TestCase):
         vara_cfg()["container"]["research_tool"] = None
         self.assertEqual(
             "debian_10:stage_20_tool",
-            get_image_name(ImageBase.DEBIAN_10, ImageStage.STAGE_20_TOOL, True)
+            get_image_name(ImageBase.DEBIAN_10, ImageStage.STAGE_20_TOOL, True),
         )
 
     @run_in_test_environment()
@@ -61,7 +62,7 @@ class TestContainerSupport(unittest.TestCase):
         vara_cfg()["container"]["research_tool"] = "vara"
         self.assertEqual(
             "debian_10:stage_20_tool_vara",
-            get_image_name(ImageBase.DEBIAN_10, ImageStage.STAGE_20_TOOL, True)
+            get_image_name(ImageBase.DEBIAN_10, ImageStage.STAGE_20_TOOL, True),
         )
 
     @run_in_test_environment()
@@ -99,10 +100,12 @@ class TestContainerSupport(unittest.TestCase):
         layers = stage_builder.layers
         self.check_layer_type(layers[0], FromLayer)
 
-        varats_core_install_layer = self.check_layer_type(layers[2], RunLayer)
-        self.assertEqual("pip", varats_core_install_layer.command)
-        self.assertTupleEqual(("install", "--ignore-installed", "varats"),
-                              varats_core_install_layer.args)
+        varats_core_install_layer = self.check_layer_type(layers[1], RunLayer)
+        self.assertEqual("uv", varats_core_install_layer.command)
+        self.assertTupleEqual(
+            ("pip", "install", "--no-cache", "--reinstall", "varats"),
+            varats_core_install_layer.args,
+        )
 
     @run_in_test_environment()
     def test_create_stage_10_from_source(self) -> None:
@@ -124,14 +127,27 @@ class TestContainerSupport(unittest.TestCase):
         layers = stage_builder.layers
         self.check_layer_type(layers[0], FromLayer)
 
-        varats_install_layer = self.check_layer_type(layers[4], RunLayer)
-        self.assertEqual("pip", varats_install_layer.command)
-        self.assertTupleEqual(("install", "/varats"), varats_install_layer.args)
+        varats_install_layer = self.check_layer_type(layers[2], RunLayer)
+        self.assertEqual("uv", varats_install_layer.command)
+        self.assertTupleEqual(
+            (
+                "sync",
+                "--locked",
+                "--no-dev",
+                "--inexact",
+                "--no-cache",
+                "--project",
+                "/varats",
+                "--no-editable",
+            ),
+            varats_install_layer.args,
+        )
         mounting_parameters = "type=bind,src=varats_src,target=/varats"
         if buildah_version() >= (1, 24, 0):
             mounting_parameters += ",rw"
-        self.assertIn(("mount", mounting_parameters),
-                      varats_install_layer.kwargs)
+        self.assertIn(
+            ("mount", mounting_parameters), varats_install_layer.kwargs
+        )
 
     @run_in_test_environment()
     def test_stage_30(self) -> None:
@@ -142,7 +158,7 @@ class TestContainerSupport(unittest.TestCase):
         bb_cfg()["jobs"] = 42
         bb_cfg()["env"] = {
             "LD_LIBRARY_PATH": ["foo/libs"],
-            "PATH": ["/foo/bin"]
+            "PATH": ["/foo/bin"],
         }
 
         base = ImageBase.DEBIAN_10
@@ -164,7 +180,7 @@ class TestContainerSupport(unittest.TestCase):
         varats_config_layer = self.check_layer_type(layers[2], UpdateEnv)
         self.assertTupleEqual(
             ("VARATS_CONFIG_FILE", "/varats_root/.varats.yaml"),
-            varats_config_layer.env[0]
+            varats_config_layer.env[0],
         )
 
         ld_copy_layer = self.check_layer_type(layers[3], CopyLayer)
@@ -172,14 +188,18 @@ class TestContainerSupport(unittest.TestCase):
         self.assertTupleEqual(("foo/libs",), ld_copy_layer.sources)
 
         bb_config_layer = self.check_layer_type(layers[4], UpdateEnv)
-        self.assertTupleEqual(("BB_VARATS_OUTFILE", "/varats_root/results"),
-                              bb_config_layer.env[0])
-        self.assertTupleEqual(("BB_VARATS_RESULT", "/varats_root/BC_files"),
-                              bb_config_layer.env[1])
+        self.assertTupleEqual(
+            ("BB_VARATS_OUTFILE", "/varats_root/results"),
+            bb_config_layer.env[0],
+        )
+        self.assertTupleEqual(
+            ("BB_VARATS_RESULT", "/varats_root/BC_files"),
+            bb_config_layer.env[1],
+        )
         self.assertTupleEqual(("BB_JOBS", "42"), bb_config_layer.env[2])
         self.assertTupleEqual(
             ("BB_ENV", "{LD_LIBRARY_PATH: [/varats_root/libs]}"),
-            bb_config_layer.env[3]
+            bb_config_layer.env[3],
         )
 
         cwd_layer = self.check_layer_type(layers[5], WorkingDirectory)
@@ -211,11 +231,14 @@ class TestContainerSupport(unittest.TestCase):
         self.assertEqual(
             "/varats_root/tools/VaRA_DEBIAN_10", vara_copy_layer.destination
         )
-        self.assertTupleEqual(("tools/VaRA_DEBIAN_10",),
-                              vara_copy_layer.sources)
+        self.assertTupleEqual(
+            ("tools/VaRA_DEBIAN_10",), vara_copy_layer.sources
+        )
 
     @run_in_test_environment()
-    def test_stage_00_with_vara(self,) -> None:
+    def test_stage_00_with_vara(
+        self,
+    ) -> None:
         """Test VaRA install inside container."""
         vara_cfg()["container"]["research_tool"] = "vara"
         vara_cfg()["container"]["from_source"] = False
@@ -253,7 +276,7 @@ class TestContainerSupport(unittest.TestCase):
         bb_config_layer = self.check_layer_type(layers[3], UpdateEnv)
         self.assertTupleEqual(
             ("BB_ENV", "{PATH: [/varats_root/tools/VaRA_DEBIAN_10/bin]}"),
-            bb_config_layer.env[3]
+            bb_config_layer.env[3],
         )
 
     @run_in_test_environment()
@@ -281,7 +304,7 @@ class TestContainerSupport(unittest.TestCase):
     LayerTy = tp.TypeVar("LayerTy", bound=Layer)
 
     def check_layer_type(
-        self, layer: Layer, layer_ty: tp.Type[LayerTy]
+        self, layer: Layer, layer_ty: type[LayerTy]
     ) -> LayerTy:
         self.assertTrue(isinstance(layer, layer_ty))
         return layer

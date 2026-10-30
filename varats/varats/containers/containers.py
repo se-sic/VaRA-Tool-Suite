@@ -7,6 +7,7 @@ from copy import deepcopy
 from enum import Enum
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import TracebackType
 
 from benchbuild.environments import bootstrap
 from benchbuild.environments.adapters.common import buildah_version
@@ -32,8 +33,6 @@ from varats.tools.tool_util import get_research_tool
 from varats.utils.settings import bb_cfg, save_bb_config, vara_cfg
 
 if tp.TYPE_CHECKING:
-    from types import TracebackType
-
     from varats.tools.research_tools.vara_manager import BuildType
 
 LOG = logging.getLogger(__name__)
@@ -42,6 +41,8 @@ LOG = logging.getLogger(__name__)
 class ImageBase(Enum):
     """Container image bases that can be used by projects."""
 
+    # Deprecated: varats requires python >= 3.11, but this image only provides
+    # python 3.10, so installing varats fails. Will be phased out eventually.
     DEBIAN_10 = (Distro.DEBIAN, 10)
     DEBIAN_12 = (Distro.DEBIAN, 12)
 
@@ -98,7 +99,7 @@ class StageBuilder:
         # pylint: disable=consider-using-with
         self.__tmp_dir = TemporaryDirectory()
 
-    def __enter__(self) -> 'StageBuilder':
+    def __enter__(self) -> tp.Self:
         """Opens the stage builder for configuration."""
         return self
 
@@ -106,7 +107,7 @@ class StageBuilder:
         self,
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
-        traceback: 'TracebackType | None',
+        traceback: TracebackType | None,
     ) -> None:
         """Builds the image from this stage builder."""
         bootstrap.bus()(CreateImage(self.image_name, self.layers))
@@ -178,7 +179,6 @@ def _create_stage_00_base_layers(stage_builder: StageBuilder) -> None:
 
 
 def _create_stage_10_varats_layers(stage_builder: StageBuilder) -> None:
-    stage_builder.layers.run('pip', 'install', '--upgrade', 'pip')
     _add_varats_layers(stage_builder)
     if bb_cfg()['container']['from_source']:
         add_benchbuild_layers(stage_builder.layers)
@@ -216,6 +216,7 @@ def _create_layers_helper(
 
 # yapf: disable
 _BASE_IMAGES: dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
+    # Deprecated: python 3.10 is too old for varats (see ImageBase.DEBIAN_10)
     ImageBase.DEBIAN_10:
         _create_layers_helper(lambda ctx: ctx.layers
             .from_("docker.io/library/debian:10")
@@ -251,7 +252,7 @@ _BASE_IMAGES: dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
             .run('apt', 'install', '-y', 'locales', 'wget', 'curl', 'gnupg',
                  'lsb-release', 'software-properties-common', 'musl-dev', 'git',
                  'gcc', 'libgit2-dev', 'libffi-dev', 'libyaml-dev',
-                 'graphviz-dev', 'python3', 'python3-pip', 'python3-virtualenv',
+                 'graphviz-dev', 'python3',
                  'libc++-dev', 'libc++abi-dev', 'libtbb12',
                  'time', 'linux-perf', 'zip')
             # install llvm 20
@@ -365,15 +366,44 @@ def _set_varats_source_mount(image_context: StageBuilder, mnt_src: str) -> None:
 
 def _setup_venv(image_context: StageBuilder) -> None:
     venv_path = "/venv"
-    if image_context.base == ImageBase.DEBIAN_10:
-        image_context.layers.run("pip3", "install", "virtualenv")
+    image_context.layers.run(
+        "sh",
+        "-c",
+        "wget -qO- https://astral.sh/uv/install.sh | "
+        "env UV_INSTALL_DIR=/usr/local/bin UV_NO_MODIFY_PATH=1 sh",
+    )
 
-    image_context.layers.run("virtualenv", venv_path)
+    # seed pip into the venv, as benchbuild's source install relies on it
+    image_context.layers.run("uv", "venv", "--seed", venv_path)
     image_context.layers.env(VIRTUAL_ENV=venv_path)
     image_context.layers.env(PATH=f"{venv_path}/bin:$PATH")
+    # make uv sync install into the venv instead of the project's .venv
+    image_context.layers.env(UV_PROJECT_ENVIRONMENT=venv_path)
 
 
 def _add_varats_layers(image_context: StageBuilder) -> None:
+    """
+    Install varats into the image's venv (see :func:`_setup_venv`).
+
+    Depending on the container config, varats is installed in one of three ways:
+
+    - dev mode: The varats source is bind-mounted into the image and installed
+      in editable mode with ``uv sync``. The mount is also added to the
+      benchbuild config, so the source stays available at runtime and changes
+      to it take effect without rebuilding the image.
+    - from source: Same as dev mode, but varats is installed non-editable, so
+      the source is only mounted while building the image.
+    - from pip: The latest varats release is installed from PyPI with
+      ``uv pip install``.
+
+    Source installs use ``uv sync --locked``, i.e., dependency versions are
+    taken from the ``uv.lock`` file of the mounted source and the build fails
+    if the lock file is out of date. Dependency groups (e.g., ``dev``) are not
+    installed. ``UV_PROJECT_ENVIRONMENT`` makes uv sync into the image's venv
+    instead of a ``.venv`` in the source directory, and ``--inexact`` keeps
+    packages not in the lock file, e.g., the seeded pip that benchbuild uses to
+    install itself from source.
+    """
     crun = bb_cfg()['container']['runtime'].value
 
     def from_source(
@@ -385,21 +415,36 @@ def _add_varats_layers(image_context: StageBuilder) -> None:
         tgt_dir = image_context.varats_source_mount_target
 
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
-        image.run('pip', 'install', 'setuptools', runtime=crun)
 
-        pip_args = ['pip', 'install']
+        uv_args = [
+            'uv',
+            'sync',
+            '--locked',
+            '--no-dev',
+            '--inexact',
+            '--no-cache',
+            '--project',
+            str(tgt_dir),
+        ]
         if editable_install:
-            pip_args.append("-e")
             _set_varats_source_mount(image_context, str(src_dir))
+        else:
+            uv_args.append('--no-editable')
         mount = f'type=bind,src={src_dir},target={tgt_dir}'
         if buildah_version() >= (1, 24, 0):
             mount += ',rw'
-        image.run(*pip_args, str(tgt_dir), mount=mount, runtime=crun)
+        image.run(*uv_args, mount=mount, runtime=crun)
 
     def from_pip(image: ContainerImage) -> None:
         LOG.debug("installing varats from pip release.")
         image.run(
-            'pip', 'install', '--ignore-installed', 'varats', runtime=crun
+            'uv',
+            'pip',
+            'install',
+            '--no-cache',
+            '--reinstall',
+            'varats',
+            runtime=crun,
         )
 
     _unset_varats_source_mount(image_context)

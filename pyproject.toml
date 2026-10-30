@@ -5,7 +5,6 @@ dependencies = [
   "Jinja2>=3.1.6",
   "PyDriller>=2.9",
   "PyGithub>=2.8.1",
-  "PyQt5-stubs>=5.15.6.0",
   "PyQt5>=5.15.11",
   "PyYAML>=6.0.3",
   "benchbuild>=6.9",
@@ -40,6 +39,29 @@ maintainers = [
 ]
 readme = "README.md"
 license = "BSD-2-Clause"
+
+[dependency-groups]
+dev = [
+  "PyQt5-stubs>=5.15.6.0",
+  "pre-commit>=3.2.0",
+  "ruff>=0.17.1",
+  "ty>=0.0.89",
+  "types-PyYAML",
+  "types-requests",
+  "types-tabulate",
+]
+docs = [
+  "Sphinx>=9.0.0",
+  "sphinx-autodoc-typehints>=3.6.1",
+  "sphinxcontrib-programoutput>=0.19",
+]
+jupyter = [
+  "jupyter>=1.1.1",
+]
+test = [
+  "pytest>=9.0.2",
+  "pytest-cov",
+]
 
 [project.scripts]
 vara-art = "varats.tools.driver_artefacts:main"
@@ -241,7 +263,7 @@ indent-style = "space"
 quote-style = "preserve"
 
 [tool.ty.environment]
-root = ["./varats-core", "./varats"]
+root = ["./varats-core", "./varats", "./tests"]
 
 [tool.ty.rules]
 dynamic-function-decorator-return = "error"
@@ -307,45 +329,3 @@ parallel = true
 
 [tool.coverage.report]
 ignore_errors = true
-
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-minversion=3.0.0
-skipsdist=True
-distdir={toxworkdir}/wheel_output
-
-[testenv]
-deps =
-  -rrequirements.txt
-  pytest
-  coverage
-commands =
-  coverage run -m pytest varats/varats/
-  coverage report -m --skip-covered
-
-[testenv:mypy]
-deps =
-  -rrequirements.txt
-  mypy
-commands =
-  mypy --strict -p varats
-
-[testenv:release]
-deps =
-  -rrequirements.txt
-  wheel
-  twine
-commands =
-  pip3 wheel --no-deps -w {distdir} .
-  twine upload --skip-existing -r pypi {distdir}/varats*
-
-[testenv:test-release]
-deps =
-  -rrequirements.txt
-  wheel
-  twine
-commands =
-  pip3 wheel --no-deps -w {distdir} .
-  twine upload --skip-existing -r testpypi {distdir}/varats*
-"""
