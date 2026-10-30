@@ -5,6 +5,7 @@ All settings are stored in a simple dictionary. Each setting should be
 modifiable via environment variable.
 """
 
+import copy
 import sys
 import typing as tp
 from pathlib import Path
@@ -246,7 +247,9 @@ def add_vara_experiment_options(
         "result": {
             "default": "missingPath/annotatedResults",
             "desc": "Path to store already annotated projects.",
-            "value": str(Path(str(vara_cfg()["benchbuild_root"])) / "BC_files"),
+            "value": str(
+                Path(str(varats_config["benchbuild_root"])) / "BC_files"
+            ),
         },
     }
 
@@ -279,6 +282,42 @@ def bb_cfg() -> s.Configuration:
         _BB_CFG = BB_CFG
         create_missing_bb_folders()
     return _BB_CFG
+
+
+class __BBCFG:
+    """Temporarily override the current BenchBuild configuration."""
+
+    def __init__(self, **overrides: tp.Any) -> None:
+        self.__overrides = overrides
+        self.__saved_config: s.Configuration | None = None
+
+    def __enter__(self) -> s.Configuration:
+        """Apply the overrides and return the temporary configuration."""
+        global _BB_CFG  # noqa: PLW0603
+        self.__saved_config = bb_cfg()
+        previous_config = self.__saved_config
+        config = copy.deepcopy(previous_config)
+        _BB_CFG = config
+        self.__apply_overrides(config, self.__overrides)
+        return config
+
+    def __exit__(self, exc_type, exc_value, traceback) -> bool:  # noqa: ANN001
+        """Restore the previous configuration."""
+        global _BB_CFG  # noqa: PLW0603
+        assert self.__saved_config is not None
+        _BB_CFG = self.__saved_config
+        return False
+
+    def __apply_overrides(
+        self, config: s.Configuration, overrides: dict[str, tp.Any]
+    ) -> None:
+        """Apply nested overrides."""
+        for key, value in overrides.items():
+            config_node = config[key]
+            if isinstance(value, dict) and not config_node.is_leaf():
+                self.__apply_overrides(config_node, value)
+            else:
+                config[key] = value
 
 
 def get_value_or_default(
