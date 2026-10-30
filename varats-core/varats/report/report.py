@@ -15,9 +15,11 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from plumbum import colors
-from plumbum.colorlib.styles import Color
 
 from varats.utils.git_util import ShortCommitHash
+
+if tp.TYPE_CHECKING:
+    from plumbum.colorlib.styles import Style
 
 
 class FileStatusExtension(Enum):
@@ -27,19 +29,22 @@ class FileStatusExtension(Enum):
     Specific report files can map these to their own specific representation.
     """
 
-    value: tuple[str, Color]  # pylint: disable=invalid-name
+    def __init__(self, status_name: str, status_color: "Style") -> None:
+        """Creates a new file status extension."""
+        self._status_name = status_name
+        self._status_color = status_color
 
-    SUCCESS = ("success", colors.green)
-    PARTIAL = ("partial", colors.darkturquoise)
-    INCOMPLETE = ("incomplete", colors.orangered1)
-    FAILED = ("failed", colors.lightred)
-    COMPILE_ERROR = ("cerror", colors.red)
-    MISSING = ("###", colors.yellow3a)
-    BLOCKED = ("blocked", colors.blue)
+    SUCCESS = ("success", colors.green)  # ty: ignore[unresolved-attribute]
+    PARTIAL = ("partial", colors.darkturquoise)  # ty: ignore[unresolved-attribute]
+    INCOMPLETE = ("incomplete", colors.orangered1)  # ty: ignore[unresolved-attribute]
+    FAILED = ("failed", colors.lightred)  # ty: ignore[unresolved-attribute]
+    COMPILE_ERROR = ("cerror", colors.red)  # ty: ignore[unresolved-attribute]
+    MISSING = ("###", colors.yellow3a)  # ty: ignore[unresolved-attribute]
+    BLOCKED = ("blocked", colors.blue)  # ty: ignore[unresolved-attribute]
 
     def get_status_extension(self) -> str:
         """Returns the corresponding file ending to the status."""
-        return str(self.value[0])
+        return self._status_name
 
     def nice_name(self) -> str:
         """Returns a nicely formatted name."""
@@ -49,9 +54,9 @@ class FileStatusExtension(Enum):
         return self.name.lower().capitalize()
 
     @property
-    def status_color(self) -> Color:
+    def status_color(self) -> Style:
         """Returns the corresponding color to the status."""
-        return self.value[1]
+        return self._status_color
 
     def get_colored_status(self) -> str:
         """Returns the file status colored in the specific status color."""
@@ -114,7 +119,7 @@ class FileStatusExtension(Enum):
         for fs_enum in FileStatusExtension:
             if (
                 status_name.upper() == fs_enum.name
-                or status_name == fs_enum.value[0]
+                or status_name == fs_enum.get_status_extension()
                 or status_name == fs_enum.nice_name()
             ):
                 return fs_enum
