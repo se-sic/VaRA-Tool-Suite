@@ -241,7 +241,7 @@ indent-style = "space"
 quote-style = "preserve"
 
 [tool.ty.environment]
-root = ["./varats-core", "./varats"]
+root = ["./varats-core", "./varats", "./tests"]
 
 [tool.ty.rules]
 dynamic-function-decorator-return = "error"
