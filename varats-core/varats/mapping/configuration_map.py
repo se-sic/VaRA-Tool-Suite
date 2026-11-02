@@ -40,14 +40,11 @@ class ConfigurationMap:
 
         Args:
             config: the configuration to add
+            config_id: optional unique identifier for the configuration
 
         Returns: unique ID for the added configuration
         """
-        if config_id is not None:
-            next_id = config_id
-        else:
-            next_id = self.__get_next_id()
-
+        next_id = config_id if config_id is not None else self.__get_next_id()
         self.__configurations[next_id] = config
         return next_id
 
@@ -101,7 +98,7 @@ def load_configuration_map(
 
     Returns: a new `ConfigurationMap` based on the parsed file
     """
-    with file_path.open() as stream:
+    with file_path.open(encoding="utf-8") as stream:
         documents = yaml.load_all(stream, Loader=yaml.CLoader)
         version_header = VersionHeader(next(documents))
         version_header.raise_if_not_type("ConfigurationMap")
@@ -122,13 +119,13 @@ def store_configuration_map(
         configuration_map: to store
         file_path: to the file
     """
-    if file_path.suffix not in ["yml", "yaml"]:
+    if file_path.suffix not in {"yml", "yaml"}:
         LOG.warning(
             "ConfigurationMap file path does not end in "
             ".yaml or .yml but dumped file is of type yaml."
         )
 
-    with file_path.open('w') as stream:
+    with file_path.open('w', encoding="utf-8") as stream:
         version_header = VersionHeader.from_version_number(
             "ConfigurationMap", 1
         )

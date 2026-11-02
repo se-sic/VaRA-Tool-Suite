@@ -5,7 +5,6 @@ This module handles command-line parsing and maps the commands to tool suite
 internal functionality.
 """
 
-import getpass
 import itertools
 import logging
 import re
@@ -44,8 +43,8 @@ __INTERACTIVE_ARG_STR = "--interactive"
 
 
 def __validate_project_parameters(
-    ctx: click.Context | None,  # noqa: ARG001
-    param: click.Parameter | None,  # noqa: ARG001
+    ctx: click.Context | None,  # ruff: ignore[unused-function-argument]
+    param: click.Parameter | None,  # ruff: ignore[unused-function-argument]
     value: tuple[str, ...],
 ) -> tuple[str, ...]:
     """
@@ -142,6 +141,8 @@ def main(
     Runs on all projects in the current paper config by default. You can
     restrict this to only certain projects or even revisions using BenchBuild-
     style project selectors: <project>[@<revision>]
+    Project revisions support `*` as a wildcard to select all revisions of the
+    project.
     """
     initialize_cli_tool()
     initialize_projects()
@@ -280,12 +281,10 @@ def _run_benchbuild_non_interactive(
                 stdout=PIPE, stderr=PIPE, env=env
             ) as bb_proc:
                 try:
-                    _, stdout, _ = tee(bb_proc)
-                    return stdout
+                    return tee(bb_proc)[1]
                 except KeyboardInterrupt:
                     # wait for BB to complete when Ctrl-C is pressed
-                    retcode, _, _ = tee(bb_proc)
-                    sys.exit(retcode)
+                    sys.exit(tee(bb_proc)[0])
         except ProcessExecutionError:
             sys.exit(1)
 
@@ -309,9 +308,9 @@ def _handle_slurm_output(stdout: str, submit: bool) -> None:
 
 def __prepare_slurm_for_container() -> None:
     """Prepare the benchbuild slurm config for container use."""
-    template_path = Path(
-        str(vara_cfg()["benchbuild_root"])
-    ) / "slurm_container.sh.j2"
+    template_path = (
+        Path(str(vara_cfg()["benchbuild_root"])) / "slurm_container.sh.j2"
+    )
     node_dir = bb_cfg()["slurm"]["node_dir"].value
     bb_cfg()["jobs"] = 0
     bb_cfg()["slurm"]["template"] = str(template_path)
