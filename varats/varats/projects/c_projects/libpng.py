@@ -8,8 +8,11 @@ from benchbuild.utils.revision_ranges import (
     GoodBadSubgraph,
     SingleRevision,
 )
+from benchbuild.command import Command, SourceRoot, WorkloadSet
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
+
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
@@ -25,6 +28,8 @@ from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 
+KODAK_FILES = [f"{n:02d}.png" for n in range(1, 25)]
+WORKLOAD_PASSES = 10
 
 class Libpng(VProject):
     """
@@ -142,6 +147,18 @@ class Libpng(VProject):
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10
                               ).run('apt', 'install', '-y', 'cmake')
+    
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("libpng") / RSBinary("pngtest"),
+                "-m",
+                *[f"kodak/{name}" for name in KODAK_FILES] * WORKLOAD_PASSES,
+                label="pngtest-kodak",
+                creates=["pngout.png"],
+            )
+        ]
+    }
 
     @staticmethod
     def binaries_for_revision(
