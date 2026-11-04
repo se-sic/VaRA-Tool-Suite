@@ -166,6 +166,7 @@ class Libpng(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_repo(Libpng.NAME))
 
+        binary_map.specify_binary('build/pngtest', BinaryType.EXECUTABLE)
         binary_map.specify_binary('build/libpng.so', BinaryType.SHARED_LIBRARY)
 
         return binary_map[revision]
@@ -190,3 +191,7 @@ class Libpng(VProject):
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("Libpng", "Libpng")]
+
+    def get_dynamic_libs(self) -> tp.List[str]:
+        """Get the dynamic libraries used by the project."""
+        return ["zlib"]
