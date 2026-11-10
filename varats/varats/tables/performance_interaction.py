@@ -78,7 +78,7 @@ class Feature:
         self,
         name: str,
         values: str | list[str],
-    ):
+    ) -> None:
         """Creates a feature."""
         self.name = name
 
@@ -296,8 +296,8 @@ def get_performance_data(
     if isinstance(vals_raw, str):
         return tp.cast("list[float]", ast.literal_eval(vals_raw))
 
-    if isinstance(vals_raw, list[float]):
-        return vals_raw
+    if isinstance(vals_raw, list):
+        return tp.cast("list[float]", vals_raw)
 
     return []
 
@@ -1019,7 +1019,7 @@ class PerformanceInteractionSavingsTable(Table, table_name="perf_inter_cost"):
 
             project_df = pd.DataFrame.from_records(cs_data)
             # write data as csv
-            project_df.to_csv(f"tables/{project_name}_cost.txt", sep=" ")
+            write_cost_csv(project_df, project_name)
             # table contains per-project summary
             predicted_df = project_df[project_df["predicted_regression"]]
             data.append(
@@ -1174,17 +1174,11 @@ class PerformanceRegressionClassificationTableSynth(
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         """Create the table content."""
-        threshold = self.table_kwargs["threshold"]  # % diff
-        sigma = self.table_kwargs["sigma"]  # times std
-
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
         data: list[pd.DataFrame] = []
         for case_study in case_studies:
             project_name = case_study.project_name
-
-            if project_name != "coreutils_wc":
-                continue
 
             configs = load_configuration_map_for_case_study(
                 get_paper_config(), case_study, PlainCommandlineConfiguration
@@ -1289,8 +1283,8 @@ class PerformanceInteractionSavingsTableSynth(
                 for patch_name in sorted(revisions)
                 if patch_name != "base"
             ]
-            performance_data = performance_data.pivot_table(
-                index="config_id", columns="revision", values="wall_clock_time"
+            performance_data = performance_data.pivot(
+                columns="revision", index="config_id", values="wall_clock_time"
             )
             perf_inter_reports = load_synth_perf_inter_reports(case_study)
 
@@ -1332,7 +1326,7 @@ class PerformanceInteractionSavingsTableSynth(
 
             project_df = pd.DataFrame.from_records(cs_data)
             # write data as csv
-            project_df.to_csv(f"tables/{project_name}_cost.txt", sep=" ")
+            write_cost_csv(project_df, project_name)
             # table contains per-project summary
             predicted_df = project_df[project_df["predicted_regression"]]
             data.append(
@@ -1367,6 +1361,54 @@ class PerformanceInteractionSavingsTableSynth(
         return dataframe_to_table(
             df, table_format, style, wrap_table, wrap_landscape=True, **kwargs
         )
+
+
+def write_cost_csv(project_df: pd.DataFrame, project_name: str) -> None:
+    """Writes per-revision cost data as CSV."""
+    c = project_df["configs"]
+    chat = project_df["relevant_configs"]
+    f = project_df["features"]
+    fhat = project_df["relevant_features"]
+
+    df = pd.DataFrame({
+        "idx": range(1, len(project_df) + 1),
+        "name": project_name.removeprefix("coreutils_"),
+        "revision": project_df["revision"],
+        "detected": project_df["detected_regression"].astype(int),
+        "c": c,
+        "chat": chat,
+        "creg": project_df["regressing_configs"],
+        "crelreg": project_df["regressing_relevant_configs"],
+        "f": f,
+        "fhat": fhat,
+        "srel": 1 - chat / c,
+        "sabs": c - chat,
+        "time": project_df["total_time"],
+        "stime": project_df["total_time"] - project_df["relevant_time"],
+    })
+
+    # compute jitter to spread points clustering on fhat/f or chat/c.
+    def close_groups(ratio: pd.Series) -> pd.Series:
+        ratio = ratio.sort_values()
+        return (ratio.diff() > 0.05).cumsum().sort_index()
+
+    f_ratio = close_groups(fhat / f)
+    c_ratio = close_groups(chat / c)
+    cluster = pd.Series(df.index, index=df.index)
+    while True:
+        new_cluster = cluster.groupby(f_ratio).transform("min")
+        new_cluster = new_cluster.groupby(c_ratio).transform("min")
+        if new_cluster.equals(cluster):
+            break
+        cluster = new_cluster
+    groups = df.groupby(cluster)
+    size = groups["idx"].transform("size")
+    bound = size.map(lambda it: 1 if it <= 3 else 2)
+    df["jitter"] = (groups.cumcount() * (2 * bound) / (size - 1).clip(lower=1) - bound).where(
+        size > 1, 0
+    )
+
+    df.to_csv(f"tables/{project_name}_cost.txt", sep=" ", index=False)
 
 
 class PerformanceInteractionSavingsSynth(
