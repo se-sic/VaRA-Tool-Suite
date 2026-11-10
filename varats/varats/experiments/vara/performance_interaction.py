@@ -112,7 +112,7 @@ def create_commit_filter(
         return bool(pair[1].short_hash == project.version_of_primary)
 
     filtered_revs = list(filter(rev_filter, pairwise(revisions)))
-    if len(filtered_revs) < 0:
+    if len(filtered_revs) < 1:
         return None
 
     old_rev, new_rev = filtered_revs[0]
