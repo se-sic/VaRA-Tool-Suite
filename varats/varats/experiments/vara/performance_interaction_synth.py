@@ -9,6 +9,7 @@ import yaml
 from benchbuild import Project
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
+from benchbuild.utils.requirements import SlurmMem, SlurmExclusive, Requirement
 
 from varats.data.filtertree_data import (
     SingleCommitFilter,
@@ -234,6 +235,10 @@ class PerformanceInteractionExperimentSynthetic(
     NAME = "PerfInteractionsSynth"
 
     REPORT_SPEC = ReportSpecification(MPRPerformanceInteractionReport)
+    REQUIREMENTS: list[Requirement] = [  # ruff: ignore[mutable-class-default]
+        SlurmMem("250G"),
+        SlurmExclusive(),
+    ]
 
     @override
     def actions_for_vproject(
