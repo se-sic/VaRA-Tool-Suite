@@ -10,11 +10,13 @@ from click import ParamType
 from varats.data.discover_reports import initialize_reports
 from varats.experiments.discover_experiments import initialize_experiments
 from varats.paper.paper_config import get_paper_config
+from varats.project.project_util import get_loaded_vara_projects
+from varats.projects.discover_projects import initialize_projects
 from varats.report.report import BaseReport
 from varats.ts_utils.artefact_util import (
     CaseStudyConverter,
-    ReportTypeConverter,
     ExperimentTypeConverter,
+    ReportTypeConverter,
 )
 from varats.ts_utils.cli_util import CLIOptionTy, convert_value, make_cli_option
 from varats.utils.exceptions import ConfigurationLookupError
@@ -34,18 +36,21 @@ class TypedChoice(click.Choice, tp.Generic[ChoiceTy]):
     name = "typed choice"
 
     def __init__(
-        self, choices: tp.Dict[str, ChoiceTy], case_sensitive: bool = True
+        self, choices: dict[str, ChoiceTy], case_sensitive: bool = True
     ):
         self.__choices = choices
         super().__init__(list(choices.keys()), case_sensitive)
 
     def convert(
-        self, value: tp.Any, param: tp.Optional[click.Parameter],
-        ctx: tp.Optional[click.Context]
+        self,
+        value: tp.Any,
+        param: click.Parameter | None,
+        ctx: click.Context | None,
     ) -> ChoiceTy:
         return self.__choices[
             #  pylint: disable=super-with-arguments
-            super(TypedChoice, self).convert(value, param, ctx)]
+            super().convert(value, param, ctx)
+        ]
 
 
 class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
@@ -59,25 +64,28 @@ class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
     name = "typed multi choice"
 
     def __init__(
-        self,
-        choices: tp.Dict[str, tp.List[ChoiceTy]],
-        case_sensitive: bool = True
+        self, choices: dict[str, list[ChoiceTy]], case_sensitive: bool = True
     ):
         self.__choices = choices
         super().__init__(list(choices.keys()), case_sensitive)
 
     def convert(
-        self, value: tp.Any, param: tp.Optional[click.Parameter],
-        ctx: tp.Optional[click.Context]
-    ) -> tp.List[ChoiceTy]:
+        self,
+        value: tp.Any,
+        param: click.Parameter | None,
+        ctx: click.Context | None,
+    ) -> list[ChoiceTy]:
         values = [value]
         if isinstance(value, str):
             values = list(map(str.strip, value.split(",")))
 
         return [
-            item for v in values for item in self.__choices[
+            item
+            for v in values
+            for item in self.__choices[
                 #  pylint: disable=super-with-arguments
-                super(TypedMultiChoice, self).convert(v, param, ctx)]
+                super(TypedMultiChoice, self).convert(v, param, ctx)
+            ]
         ]
 
 
@@ -91,13 +99,15 @@ class EnumChoice(click.Choice, tp.Generic[EnumTy]):
     This type can be used with click to specify a choice from the given enum.
     """
 
-    def __init__(self, enum: tp.Type[EnumTy], case_sensitive: bool = True):
+    def __init__(self, enum: type[EnumTy], case_sensitive: bool = True):
         self.__enum = enum
         super().__init__(list(dict(enum.__members__).keys()), case_sensitive)
 
     def convert(
-        self, value: tp.Union[str, EnumTy], param: tp.Optional[click.Parameter],
-        ctx: tp.Optional[click.Context]
+        self,
+        value: str | EnumTy,
+        param: click.Parameter | None,
+        ctx: click.Context | None,
     ) -> EnumTy:
         if isinstance(value, str):
             return self.__enum[super().convert(value, param, ctx)]
@@ -115,7 +125,7 @@ def create_multi_case_study_choice() -> TypedMultiChoice['CaseStudy']:
     try:
         paper_config = get_paper_config()
     except ConfigurationLookupError:
-        empty_cs_dict: tp.Dict[str, tp.List['CaseStudy']] = {}
+        empty_cs_dict: dict[str, list[CaseStudy]] = {}
         return TypedMultiChoice(empty_cs_dict)
     value_dict = {
         f"{cs.project_name}_{cs.version}": [cs]
@@ -126,12 +136,14 @@ def create_multi_case_study_choice() -> TypedMultiChoice['CaseStudy']:
 
 
 def create_single_case_study_choice() -> TypedChoice['CaseStudy']:
-    """Create a choice parameter type that allows selecting exactly one case
-    study from the current paper config."""
+    """
+    Create a choice parameter type that allows selecting exactly one case
+    study from the current paper config.
+    """
     try:
         paper_config = get_paper_config()
     except ConfigurationLookupError:
-        empty_cs_dict: tp.Dict[str, 'CaseStudy'] = {}
+        empty_cs_dict: dict[str, CaseStudy] = {}
         return TypedChoice(empty_cs_dict)
     value_dict = {
         f"{cs.project_name}_{cs.version}": cs
@@ -140,34 +152,44 @@ def create_single_case_study_choice() -> TypedChoice['CaseStudy']:
     return TypedChoice(value_dict)
 
 
-def create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
+def create_report_type_choice() -> TypedChoice[type[BaseReport]]:
     """Create a choice parameter type that allows selecting a report type."""
     initialize_reports()
     return TypedChoice(BaseReport.REPORT_TYPES)
 
 
+def create_project_choice() -> click.Choice[str]:
+    initialize_projects()
+    projects = [proj.NAME for proj in get_loaded_vara_projects()]
+    return click.Choice(projects)
+
+
 def is_experiment_excluded(experiment_name: str) -> bool:
-    """Checks if an experiment should be excluded, as we don't want to show/use
-    standard BB experiments."""
+    """
+    Checks if an experiment should be excluded, as we don't want to show/use
+    standard BB experiments.
+    """
     if experiment_name in ('raw', 'empty', 'no-measurement'):
         return True
 
     return False
 
 
-def create_experiment_type_choice(
-) -> TypedChoice[tp.Type['VersionExperiment']]:
+def create_experiment_type_choice() -> TypedChoice[type['VersionExperiment']]:
     """Create a choice parameter type that allows selecting a report type."""
     initialize_experiments()
-    return TypedChoice({
-        k: v
-        for k, v in ExperimentRegistry.experiments.items()
-        if not is_experiment_excluded(k)
-    })
+    return TypedChoice(
+        {
+            k: v
+            for k, v in ExperimentRegistry.experiments.items()
+            if not is_experiment_excluded(k)
+        }
+    )
 
 
-def create_multi_experiment_type_choice(
-) -> TypedMultiChoice['VersionExperiment']:
+def create_multi_experiment_type_choice() -> TypedMultiChoice[
+    'VersionExperiment'
+]:
     """
     Create a choice parameter type that allows selecting multiple experiments.
 
@@ -188,11 +210,14 @@ def create_multi_experiment_type_choice(
 
 class ShortCommitHashParamType(ParamType):
     """Click parameter type for commit hashes."""
+
     name = "ShortCommitHash"
 
     def convert(
-        self, value: tp.Union[str, ShortCommitHash],
-        param: tp.Optional[click.Parameter], ctx: tp.Optional[click.Context]
+        self,
+        value: str | ShortCommitHash,
+        param: click.Parameter | None,
+        ctx: click.Context | None,
     ) -> ShortCommitHash:
         if isinstance(value, ShortCommitHash):
             return value
@@ -213,7 +238,7 @@ REQUIRE_CASE_STUDY: CLIOptionTy = convert_value(
         type=create_single_case_study_choice(),
         required=True,
         metavar="NAME",
-        help="The case study to use."
+        help="The case study to use.",
     )
 )
 REQUIRE_MULTI_CASE_STUDY: CLIOptionTy = convert_value(
@@ -225,7 +250,7 @@ REQUIRE_MULTI_CASE_STUDY: CLIOptionTy = convert_value(
         type=create_multi_case_study_choice(),
         required=True,
         metavar="NAMES",
-        help="One or more case studies to use."
+        help="One or more case studies to use.",
     )
 )
 REQUIRE_REVISION: CLIOptionTy = make_cli_option(
@@ -234,7 +259,7 @@ REQUIRE_REVISION: CLIOptionTy = make_cli_option(
     type=str,
     required=True,
     metavar="SHORT_COMMIT_HASH",
-    help="The revision to use."
+    help="The revision to use.",
 )
 REQUIRE_REPORT_TYPE: CLIOptionTy = convert_value(
     "report_type", ReportTypeConverter
@@ -243,7 +268,7 @@ REQUIRE_REPORT_TYPE: CLIOptionTy = convert_value(
         "--report-type",
         type=create_report_type_choice(),
         required=True,
-        help="The report type to use."
+        help="The report type to use.",
     )
 )
 OPTIONAL_REPORT_TYPE: CLIOptionTy = convert_value(
@@ -253,7 +278,7 @@ OPTIONAL_REPORT_TYPE: CLIOptionTy = convert_value(
         "--report-type",
         type=create_report_type_choice(),
         required=False,
-        help="The report type to use."
+        help="The report type to use.",
     )
 )
 REQUIRE_EXPERIMENT_TYPE: CLIOptionTy = convert_value(
@@ -263,7 +288,7 @@ REQUIRE_EXPERIMENT_TYPE: CLIOptionTy = convert_value(
         "--experiment-type",
         type=create_experiment_type_choice(),
         required=True,
-        help="The experiment type to use."
+        help="The experiment type to use.",
     )
 )
 REQUIRE_MULTI_EXPERIMENT_TYPE: CLIOptionTy = convert_value(
@@ -273,6 +298,6 @@ REQUIRE_MULTI_EXPERIMENT_TYPE: CLIOptionTy = convert_value(
         "--experiment-type",
         type=create_multi_experiment_type_choice(),
         required=True,
-        help="One or more experiment types to use."
+        help="One or more experiment types to use.",
     )
 )
