@@ -307,4 +307,4 @@ class TestContainerSupport(unittest.TestCase):
         self, layer: Layer, layer_ty: type[LayerTy]
     ) -> LayerTy:
         self.assertTrue(isinstance(layer, layer_ty))
-        return tp.cast("layer_ty", layer)
+        return tp.cast(layer_ty, layer)  # noqa: TC006
