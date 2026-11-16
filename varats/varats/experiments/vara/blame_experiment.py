@@ -1,28 +1,30 @@
-"""Implements the base blame experiment, making it easier to create different
-blame experiments that have a similar experiment setup."""
-
-import typing as tp
+"""
+Implements the base blame experiment, making it easier to create different
+blame experiments that have a similar experiment setup.
+"""
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 
 from varats.experiment.experiment_util import (
+    PEErrorHandler,
     VersionExperiment,
     get_default_compile_error_wrapped,
-    PEErrorHandler,
 )
 from varats.experiment.wllvm import (
-    RunWLLVM,
     BCFileExtensions,
+    RunWLLVM,
     get_bc_cache_actions,
 )
+from varats.provider.patch.patch_provider import Patch
 from varats.report.report import BaseReport
 
 
 def setup_basic_blame_experiment(
-    experiment: VersionExperiment, project: Project,
-    report_type: tp.Type[BaseReport]
+    experiment: VersionExperiment,
+    project: Project,
+    report_type: type[BaseReport],
 ) -> None:
     """
     Setup the project for a blame experiment.
@@ -33,13 +35,16 @@ def setup_basic_blame_experiment(
     - configure C/CXX flags
     """
     # Add the required runtime extensions to the project(s).
-    project.runtime_extension = run.RuntimeExtension(project, experiment) \
-        << time.RunWithTime()
+    project.runtime_extension = (
+        run.RuntimeExtension(project, experiment) << time.RunWithTime()
+    )
 
     # Add the required compiler extensions to the project(s).
-    project.compiler_extension = compiler.RunCompiler(project, experiment) \
-        << RunWLLVM() \
+    project.compiler_extension = (
+        compiler.RunCompiler(project, experiment)
+        << RunWLLVM()
         << run.WithTimeout()
+    )
 
     # Add own error handler to compile step.
     project.compile = get_default_compile_error_wrapped(
@@ -53,9 +58,10 @@ def setup_basic_blame_experiment(
 
 def generate_basic_blame_experiment_actions(
     project: Project,
-    bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
-    extraction_error_handler: tp.Optional[PEErrorHandler] = None
-) -> tp.List[actions.Step]:
+    bc_file_extensions: list[BCFileExtensions] | None = None,
+    patches: list[Patch] | None = None,
+    extraction_error_handler: PEErrorHandler | None = None,
+) -> list[actions.Step]:
     """
     Generate the basic actions for a blame experiment.
 
@@ -65,9 +71,10 @@ def generate_basic_blame_experiment_actions(
     Args:
         project: reference to the BB project
         bc_file_extensions: list of bitcode file extensions (e.g. opt, no opt)
+        patches: a list of patches applied to the project
         extraction_error_handler: handler to manage errors during the
                                   extraction process
     """
     return get_bc_cache_actions(
-        project, bc_file_extensions, extraction_error_handler
+        project, bc_file_extensions, patches, extraction_error_handler
     )
