@@ -1,4 +1,5 @@
 """Utility module for BenchBuild experiments."""
+
 import os
 import random
 import shutil
@@ -8,6 +9,7 @@ import traceback
 import typing as tp
 from abc import abstractmethod
 from collections import defaultdict
+from contextlib import ExitStack
 from pathlib import Path
 from types import TracebackType
 
@@ -16,8 +18,8 @@ from benchbuild.experiment import Experiment
 from benchbuild.extensions import base
 from benchbuild.project import Project
 from benchbuild.source import enumerate_revisions
-from benchbuild.utils.actions import Step, MultiStep, StepResult, ProjectStep
-from benchbuild.utils.cmd import prlimit, mkdir
+from benchbuild.utils.actions import MultiStep, ProjectStep, Step, StepResult
+from benchbuild.utils.cmd import mkdir, prlimit
 from plumbum.commands import ProcessExecutionError
 from plumbum.commands.base import BoundCommand
 
@@ -28,13 +30,13 @@ from varats.project.varats_project import VProject
 from varats.report.report import (
     BaseReport,
     FileStatusExtension,
+    ReportFilename,
     ReportFilepath,
     ReportSpecification,
-    ReportFilename,
 )
 from varats.utils.config import get_config_patches
 from varats.utils.git_util import ShortCommitHash
-from varats.utils.settings import vara_cfg, bb_cfg
+from varats.utils.settings import bb_cfg, vara_cfg
 
 if tp.TYPE_CHECKING:
     TempDir = tempfile.TemporaryDirectory[str]
@@ -56,7 +58,7 @@ def get_varats_result_folder(project: Project) -> Path:
 
     vara_result_folder = result_folder_template.format(
         result_dir=str(bb_cfg()["varats"]["outfile"]),
-        project_dir=str(project.name)
+        project_dir=str(project.name),
     )
 
     mkdir("-p", vara_result_folder)
@@ -64,15 +66,15 @@ def get_varats_result_folder(project: Project) -> Path:
     return Path(vara_result_folder)
 
 
-class PEErrorHandler():
+class PEErrorHandler:
     """Error handler for process execution errors."""
 
     def __init__(
         self,
         result_folder: Path,
         error_file_name: str,
-        timeout_duration: tp.Optional[str] = None,
-        delete_files: tp.Optional[tp.List[Path]] = None
+        timeout_duration: str | None = None,
+        delete_files: list[Path] | None = None,
     ):
         self.__result_folder = result_folder
         self.__error_file_name = error_file_name
@@ -96,7 +98,7 @@ class PEErrorHandler():
                 if ex.retcode == 124:
                     timeout_duration = str(self.__timeout_duration)
                     extra_error = f"""Command:
-{str(func)}
+{func!s}
 Timeout after: {timeout_duration}
 
 """
@@ -109,7 +111,7 @@ Timeout after: {timeout_duration}
         raise ex
 
 
-class FunctionPEErrorWrapper():
+class FunctionPEErrorWrapper:
     """
     Wrap a function call with an exception handler.
 
@@ -146,8 +148,9 @@ def exec_func_with_pe_error_handler(
 
 
 def get_default_compile_error_wrapped(
-    experiment_handle: 'ExperimentHandle', project: Project,
-    report_type: tp.Type[BaseReport]
+    experiment_handle: 'ExperimentHandle',
+    project: Project,
+    report_type: type[BaseReport],
 ) -> FunctionPEErrorWrapper:
     """
     Setup the default project compile function with an error handler.
@@ -164,15 +167,15 @@ def get_default_compile_error_wrapped(
         project.compile,
         create_default_compiler_error_handler(
             experiment_handle, project, report_type
-        )
+        ),
     )
 
 
 def create_default_compiler_error_handler(
     experiment_handle: 'ExperimentHandle',
     project: Project,
-    report_type: tp.Type[BaseReport],
-    binary: tp.Optional[ProjectBinaryWrapper] = None
+    report_type: type[BaseReport],
+    binary: ProjectBinaryWrapper | None = None,
 ) -> PEErrorHandler:
     """
     Create a default PEErrorHandler for compile errors, based on the `project`,
@@ -187,17 +190,20 @@ def create_default_compiler_error_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        experiment_handle, project, report_type,
-        FileStatusExtension.COMPILE_ERROR, binary
+        experiment_handle,
+        project,
+        report_type,
+        FileStatusExtension.COMPILE_ERROR,
+        binary,
     )
 
 
 def create_default_analysis_failure_handler(
     experiment_handle: 'ExperimentHandle',
     project: Project,
-    report_type: tp.Type[BaseReport],
-    binary: tp.Optional[ProjectBinaryWrapper] = None,
-    timeout_duration: tp.Optional[str] = None,
+    report_type: type[BaseReport],
+    binary: ProjectBinaryWrapper | None = None,
+    timeout_duration: str | None = None,
 ) -> PEErrorHandler:
     """
     Create a default PEErrorHandler for analysis failures, based on the
@@ -213,18 +219,22 @@ def create_default_analysis_failure_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        experiment_handle, project, report_type, FileStatusExtension.FAILED,
-        binary, timeout_duration
+        experiment_handle,
+        project,
+        report_type,
+        FileStatusExtension.FAILED,
+        binary,
+        timeout_duration,
     )
 
 
 def create_default_error_handler(
     experiment_handle: 'ExperimentHandle',
     project: Project,
-    report_type: tp.Type[BaseReport],
+    report_type: type[BaseReport],
     error_type: FileStatusExtension,
-    binary: tp.Optional[ProjectBinaryWrapper] = None,
-    timeout_duration: tp.Optional[str] = None,
+    binary: ProjectBinaryWrapper | None = None,
+    timeout_duration: str | None = None,
 ) -> PEErrorHandler:
     """
     Create a default PEErrorHandler based on the `project`, `report_type`.
@@ -250,10 +260,10 @@ def create_default_error_handler(
                 binary_name=binary.name if binary else "all",
                 project_revision=ShortCommitHash(project.version_of_primary),
                 project_uuid=str(project.run_uuid),
-                extension_type=error_type
+                extension_type=error_type,
             )
         ),
-        timeout_duration=timeout_duration
+        timeout_duration=timeout_duration,
     )
 
 
@@ -288,9 +298,11 @@ class WithUnlimitedStackSize(base.Extension):  # type: ignore
 VersionType = tp.TypeVar('VersionType')
 
 
-class ExperimentHandle():
-    """Handle to an experiment that provides helper interfaces for analysis
-    steps to utilize experiment specific data."""
+class ExperimentHandle:
+    """
+    Handle to an experiment that provides helper interfaces for analysis
+    steps to utilize experiment specific data.
+    """
 
     def __init__(self, experiment: 'VersionExperiment') -> None:
         self.__experiment = experiment
@@ -303,7 +315,7 @@ class ExperimentHandle():
         project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
-        config_id: tp.Optional[int] = None
+        config_id: int | None = None,
     ) -> ReportFilename:
         """
         Generates a filename for a report file that is generated by the
@@ -321,10 +333,18 @@ class ExperimentHandle():
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return self.__experiment.report_spec(
-        ).get_report_type(report_shorthand).get_file_name(
-            self.__experiment.shorthand(), project_name, binary_name,
-            project_revision, project_uuid, extension_type, config_id
+        return (
+            self.__experiment.report_spec()
+            .get_report_type(report_shorthand)
+            .get_file_name(
+                self.__experiment.shorthand(),
+                project_name,
+                binary_name,
+                project_revision,
+                project_uuid,
+                extension_type,
+                config_id,
+            )
         )
 
     def report_spec(self) -> ReportSpecification:
@@ -333,8 +353,10 @@ class ExperimentHandle():
 
 
 class VersionExperiment(Experiment):  # type: ignore
-    """Base class for experiments that want to analyze different project
-    revisions."""
+    """
+    Base class for experiments that want to analyze different project
+    revisions.
+    """
 
     REPORT_SPEC: ReportSpecification
     SHORTHAND: str
@@ -387,23 +409,23 @@ class VersionExperiment(Experiment):  # type: ignore
         """Get the actions a project wants to run."""
 
     @staticmethod
-    def _sample_num_versions(
-        versions: tp.List[VersionType]
-    ) -> tp.List[VersionType]:
+    def _sample_num_versions(versions: list[VersionType]) -> list[VersionType]:
         if vara_cfg()["experiment"]["sample_limit"].value is None:
             return versions
 
         sample_size = int(vara_cfg()["experiment"]["sample_limit"])
         versions = [
-            versions[i] for i in sorted(
-                random.
-                sample(range(len(versions)), min(sample_size, len(versions)))
+            versions[i]
+            for i in sorted(
+                random.sample(
+                    range(len(versions)), min(sample_size, len(versions))
+                )
             )
         ]
         return versions
 
     @classmethod
-    def sample(cls, prj_cls: tp.Type[Project]) -> tp.List[source.Revision]:
+    def sample(cls, prj_cls: type[Project]) -> list[source.Revision]:
         """
         Adapt version sampling process if needed, otherwise fallback to default
         implementation.
@@ -434,26 +456,30 @@ class VersionExperiment(Experiment):  # type: ignore
                 for x in fs_whitelist
             }
 
-            report_specific_bad_revs: tp.Dict[
-                str, tp.Set[tp.Optional[int]]] = defaultdict(set)
+            report_specific_bad_revs: dict[str, set[int | None]] = defaultdict(
+                set
+            )
             for report_type in cls.report_spec():
                 for revision, file_states in revs.get_tagged_revisions(
                     prj_cls, cls, report_type
                 ).items():
-                    bad_config_ids: tp.Set[tp.Optional[int]] = set()
+                    bad_config_ids: set[int | None] = set()
                     for config_id, file_status in file_states.items():
                         if file_status not in fs_good:
                             bad_config_ids.add(config_id)
 
                     if bad_config_ids:
-                        report_specific_bad_revs[revision.hash
-                                                ].update(bad_config_ids)
+                        report_specific_bad_revs[revision.hash].update(
+                            bad_config_ids
+                        )
 
             def keep_variant(variant: source.Revision) -> bool:
                 var_version = str(variant.primary.version)
-                var_config_id = int(
-                    variant.variant_by_name("config_info").version
-                ) if variant.has_variant("config_info") else None
+                var_config_id = (
+                    int(variant.variant_by_name("config_info").version)
+                    if variant.has_variant("config_info")
+                    else None
+                )
 
                 if var_version in report_specific_bad_revs:
                     if var_config_id in report_specific_bad_revs[var_version]:
@@ -490,9 +516,10 @@ class ZippedReportFolder(TempDir):
         self.__result_report_name: Path = result_report_path.with_suffix('')
 
     def __exit__(
-        self, exc_type: tp.Optional[tp.Type[BaseException]],
-        exc_value: tp.Optional[BaseException],
-        exc_traceback: tp.Optional[TracebackType]
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
     ) -> None:
         # Don't create an empty zip archive.
         if os.listdir(self.name):
@@ -513,61 +540,93 @@ class OutputFolderStep(ProjectStep):  # type: ignore
     def __call__(self) -> StepResult:
         raise WrongStepCall()
 
-    @abstractmethod
+    def call_with_output_folders(
+        self, tmp_dirs: dict[type[BaseReport], Path]
+    ) -> StepResult:
+        """Call implementation that gets a temp folder per requested report."""
+
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         """Actual call implementation that gets a path to tmp_folder."""
 
 
-ZippedStepTy = tp.TypeVar(
-    "ZippedStepTy", bound=tp.Union[OutputFolderStep, ProjectStep]
-)
+ZippedStepTy = tp.TypeVar("ZippedStepTy", bound=OutputFolderStep | ProjectStep)
 
 
 class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
-    """Runs multiple actions, providing them a shared tmp folder that afterwards
-    is zipped into an archive."""
+    """
+    Runs multiple actions, providing them a shared tmp folder that afterwards
+    is zipped into an archive.
+    """
 
     NAME = "ZippedSteps"
     DESCRIPTION = "Run multiple actions with a shared tmp folder"
 
     def __init__(
-        self, output_filepath: ReportFilepath,
-        actions: tp.Optional[tp.List[ZippedStepTy]]
+        self,
+        output_filepaths: dict[type[BaseReport], ReportFilepath]
+        | ReportFilepath,
+        actions: list[ZippedStepTy] | None,
     ) -> None:
         super().__init__(actions)
-        self.__output_filepath = output_filepath
+        if isinstance(output_filepaths, ReportFilepath):
+            # Use BaseReport as dummy key if only one path is given
+            # This key is never seen from the outside
+            self.__output_filepaths = {BaseReport: output_filepaths}
+        else:
+            self.__output_filepaths = output_filepaths
 
-    def __run_children(self, tmp_folder: Path) -> tp.List[StepResult]:
-        results: tp.List[StepResult] = []
+    def __run_children(
+        self, tmp_folders: dict[type[BaseReport], Path]
+    ) -> list[StepResult]:
+        results: list[StepResult] = []
 
         for child in self.actions:
             if isinstance(child, OutputFolderStep):
-                results.append(child.call_with_output_folder(tmp_folder))
+                # Backwards compatibility:
+                # use call_with_output_folder() if only one path is given
+                if len(tmp_folders) == 1:
+                    results.append(
+                        child.call_with_output_folder(
+                            next(iter(tmp_folders.values()))
+                        )
+                    )
+                else:
+                    results.append(child.call_with_output_folders(tmp_folders))
             else:
                 results.append(child())
 
         return results
 
     def __call__(self) -> StepResult:
-        results: tp.List[StepResult] = []
+        results: list[StepResult] = []
 
         exception_raised_during_exec = False
-        with ZippedReportFolder(self.__output_filepath.full_path()) as tmp_dir:
+
+        with ExitStack() as stack:
+            tmp_folders = {
+                report_ty: Path(
+                    stack.enter_context(
+                        ZippedReportFolder(report_path.full_path())
+                    )
+                )
+                for report_ty, report_path in self.__output_filepaths.items()
+            }
             try:
-                results = self.__run_children(Path(tmp_dir))
-            except:  # noqa: E722
+                results = self.__run_children(tmp_folders)
+            except:
                 exception_raised_during_exec = True
                 raise
 
         overall_step_result = max(results) if results else StepResult.OK
-        if overall_step_result is not StepResult.OK \
-                or exception_raised_during_exec:
-            error_filepath = self.__output_filepath.with_status(
-                FileStatusExtension.FAILED
-            )
-            self.__output_filepath.full_path().rename(
-                error_filepath.full_path()
-            )
+        if (
+            overall_step_result is not StepResult.OK
+            or exception_raised_during_exec
+        ):
+            for report_filepath in self.__output_filepaths.values():
+                error_filepath = report_filepath.with_status(
+                    FileStatusExtension.FAILED
+                )
+                report_filepath.full_path().rename(error_filepath.full_path())
 
         return overall_step_result
 
@@ -580,11 +639,11 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
 
 def __create_new_result_filepath_impl(
     exp_handle: ExperimentHandle,
-    report_type: tp.Type[BaseReport],
+    report_type: type[BaseReport],
     project: VProject,
     binary: ProjectBinaryWrapper,
     extension_type: FileStatusExtension,
-    config_id: tp.Optional[int] = None
+    config_id: int | None = None,
 ) -> ReportFilepath:
     """
     Create a result filepath for the specified file extension and report of the
@@ -611,8 +670,8 @@ def __create_new_result_filepath_impl(
             project_revision=ShortCommitHash(project.version_of_primary),
             project_uuid=str(project.run_uuid),
             extension_type=extension_type,
-            config_id=config_id
-        )
+            config_id=config_id,
+        ),
     )
 
     if config_id is not None:
@@ -626,10 +685,10 @@ def __create_new_result_filepath_impl(
 
 def create_new_success_result_filepath(
     exp_handle: ExperimentHandle,
-    report_type: tp.Type[BaseReport],
+    report_type: type[BaseReport],
     project: VProject,
     binary: ProjectBinaryWrapper,
-    config_id: tp.Optional[int] = None
+    config_id: int | None = None,
 ) -> ReportFilepath:
     """
     Create a result filepath for a successfull report of the executed
@@ -645,17 +704,21 @@ def create_new_success_result_filepath(
     Returns: formatted success filepath
     """
     return __create_new_result_filepath_impl(
-        exp_handle, report_type, project, binary, FileStatusExtension.SUCCESS,
-        config_id
+        exp_handle,
+        report_type,
+        project,
+        binary,
+        FileStatusExtension.SUCCESS,
+        config_id,
     )
 
 
 def create_new_failed_result_filepath(
     exp_handle: ExperimentHandle,
-    report_type: tp.Type[BaseReport],
+    report_type: type[BaseReport],
     project: VProject,
     binary: ProjectBinaryWrapper,
-    config_id: tp.Optional[int] = None
+    config_id: int | None = None,
 ) -> ReportFilepath:
     """
     Create a result filepath for a failed report of the executed
@@ -671,8 +734,12 @@ def create_new_failed_result_filepath(
     Returns: formatted fail filepath
     """
     return __create_new_result_filepath_impl(
-        exp_handle, report_type, project, binary, FileStatusExtension.FAILED,
-        config_id
+        exp_handle,
+        report_type,
+        project,
+        binary,
+        FileStatusExtension.FAILED,
+        config_id,
     )
 
 
@@ -689,6 +756,6 @@ def get_config_patch_steps(project: VProject) -> tp.MutableSequence[Step]:
     return list(
         map(
             lambda patch: ApplyPatch(project, patch),
-            get_config_patches(project)
+            get_config_patches(project),
         )
     )
