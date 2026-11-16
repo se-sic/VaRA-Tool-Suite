@@ -16,6 +16,7 @@ from varats.project.project_util import (
     get_local_project_repo,
     verify_binaries,
 )
+from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
@@ -46,7 +47,8 @@ class Cmark(VProject):
                 limit=None,
                 shallow=False,
             )
-        )
+        ),
+        FeatureSource(),
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
