@@ -9,6 +9,7 @@ import typing as tp
 from functools import wraps
 from pathlib import Path
 from threading import Lock
+from types import TracebackType
 from typing import Protocol
 
 import benchbuild.utils.settings as bb_settings
@@ -27,7 +28,7 @@ from varats.utils import settings
 
 TEST_INPUTS_DIR = Path(__file__).parent / 'TEST_INPUTS'
 
-TestFunctionTy = tp.Callable[..., tp.Any]
+TestFunctionTy = tp.TypeVar("TestFunctionTy", bound=tp.Callable[..., tp.Any])
 
 
 class UnitTestFixture(Protocol):
@@ -53,7 +54,7 @@ class UnitTestFixture(Protocol):
 class FileFixture(UnitTestFixture):
     """A file or directory that is copied into the test environment."""
 
-    def __init__(self, src: Path, dst: Path):
+    def __init__(self, src: Path, dst: Path) -> None:
         self._src = src
         self._dst = dst
 
@@ -77,7 +78,7 @@ class RepoFixture(UnitTestFixture):
     The clone uses a local reference to avoid unnecessary traffic.
     """
 
-    def __init__(self, source: Git):
+    def __init__(self, source: Git) -> None:
         self.__repo_name = source.local
         self.__local = source.fetch()
         self.__remote = source.remote
@@ -106,7 +107,7 @@ class RepoFixture(UnitTestFixture):
 class ExternalRepoFixture(FileFixture):
     """A git repository that is cloned into test environment and registered."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             TEST_INPUTS_DIR / "external_repo_template", Path("external_repo")
         )
@@ -190,7 +191,7 @@ class UnitTestFixtures:
                 f"Primary source of project {project.NAME}"
                 "is not a git repository."
             )
-        return RepoFixture(source)
+        return RepoFixture(tp.cast("Git", source))
 
 
 class TestEnvironment:
@@ -235,7 +236,7 @@ class TestEnvironment:
             with self._decoration_helper():
                 return func(*args, **kwargs)
 
-        return wrapper
+        return tp.cast("TestFunctionTy", wrapper)
 
     def __enter__(self) -> Path:
         os.chdir(self.__tmp_dir.name)
@@ -258,7 +259,12 @@ class TestEnvironment:
 
         return self.__tmp_path
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         # pylint: disable=protected-access
         settings._CFG = self.__old_config
         # pylint: disable=protected-access
@@ -274,7 +280,7 @@ class TestEnvironment:
 
 def run_in_test_environment(
     *required_test_inputs: UnitTestFixture,
-) -> TestFunctionTy:
+) -> tp.Callable[[TestFunctionTy], TestFunctionTy]:
     """
     Run a test in an isolated test environment.
 
@@ -349,7 +355,7 @@ class BBTestSource(FetchableSource):
 
     def __init__(
         self, test_versions: list[str], local: str, remote: str | dict[str, str]
-    ):
+    ) -> None:
         super().__init__(local, remote)
         self.test_versions = test_versions
 
@@ -366,7 +372,7 @@ class BBTestSource(FetchableSource):
         return Variant(owner=self, version=self.test_versions[0])
 
     def version(self, target_dir: str, version: str) -> pb.LocalPath:  # noqa: ARG002
-        return pb.local.path('.') / f'varats-test-{version}'
+        return pb.LocalPath(f'./varats-test-{version}')
 
-    def versions(self) -> tp.Iterable[Variant]:
+    def versions(self) -> tp.Sequence[Variant]:
         return [Variant(self, v) for v in self.test_versions]

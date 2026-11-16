@@ -32,16 +32,19 @@ class ConfigurationMap:
         """Initialize an empty configuration map."""
         self.__configurations: dict[int, Configuration] = {}
 
-    def add_configuration(self, config: Configuration) -> int:
+    def add_configuration(
+        self, config: Configuration, config_id: int | None = None
+    ) -> int:
         """
         Add a new configuration to the map.
 
         Args:
             config: the configuration to add
+            config_id: optional unique identifier for the configuration
 
         Returns: unique ID for the added configuration
         """
-        next_id = self.__get_next_id()
+        next_id = config_id if config_id is not None else self.__get_next_id()
         self.__configurations[next_id] = config
         return next_id
 
@@ -79,7 +82,7 @@ class ConfigurationMap:
         return str(self.__configurations)
 
     def __get_next_id(self) -> int:
-        return len(self.__configurations.keys())
+        return max(self.__configurations.keys(), default=-1) + 1
 
 
 def load_configuration_map(
@@ -171,7 +174,9 @@ def create_configuration_map_from_yaml_doc(
             yaml_doc[config_id]
         )
 
-        actual_id = new_config_map.add_configuration(parsed_config)
+        actual_id = new_config_map.add_configuration(
+            parsed_config, int(config_id)
+        )
         if actual_id != int(config_id):
             raise ConfigurationMapConfigIDMissmatch
 
