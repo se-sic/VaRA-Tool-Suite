@@ -22,9 +22,9 @@ from benchbuild.utils.settings import to_yaml
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
 
+from varats.experiments.discover_experiments import initialize_experiments
 from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
-from varats.experiments.discover_experiments import initialize_experiments
 from varats.report.report import FileStatusExtension
 from varats.ts_utils.cli_util import initialize_cli_tool, tee
 from varats.ts_utils.click_param_types import (
@@ -185,7 +185,7 @@ def main(
 
 
 def _build_bb_extra_args(
-        container: bool, debug: bool, slurm: bool
+    container: bool, debug: bool, slurm: bool
 ) -> list[str]:
     bb_extra_args: list[str] = []
     if container:
@@ -291,9 +291,7 @@ def _run_benchbuild_non_interactive(
             sys.exit(1)
 
 
-def _handle_slurm_output(
-    stdout: str, pythonpath: str, submit: bool
-) -> None:
+def _handle_slurm_output(stdout: str, pythonpath: str, submit: bool) -> None:
     """Handle slurm script output and submission."""
     if match := __SLURM_SCRIPT_PATTERN.search(stdout):
         slurm_script = match.group(1)
@@ -312,7 +310,7 @@ def _handle_slurm_output(
 
 
 def _add_pythonpath_to_slurm_script(
-        slurm_script: Path, pythonpath: str
+    slurm_script: Path, pythonpath: str
 ) -> None:
     """Add the Python path to a generated Slurm script."""
     script = slurm_script.read_text()
