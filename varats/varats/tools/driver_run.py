@@ -9,6 +9,7 @@ import getpass
 import itertools
 import logging
 import re
+import shlex
 import sys
 import typing as tp
 from pathlib import Path
@@ -23,6 +24,7 @@ from plumbum.commands import ProcessExecutionError
 
 from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
+from varats.experiments.discover_experiments import initialize_experiments
 from varats.report.report import FileStatusExtension
 from varats.ts_utils.cli_util import initialize_cli_tool, tee
 from varats.ts_utils.click_param_types import (
@@ -141,7 +143,7 @@ def main(
     """
     initialize_cli_tool()
     initialize_projects()
-
+    initialize_experiments()
     if pretend:
         click.echo("Running in pretend mode. No experiments will be executed.")
         # benchbuild only supports pretend in the normal run command
@@ -173,13 +175,17 @@ def main(
         _run_benchbuild_interactive(bb_args)
     else:
         env = _get_environment_variables(black_list, white_list)
-        stdout = _run_benchbuild_non_interactive(bb_args, env)
         if slurm:
-            _handle_slurm_output(stdout, submit)
+            bb_cfg()["env"]["PYTHONPATH"] = env["PYTHONPATH"]
+            bb_cfg()["PYTHONPATH"] = env["PYTHONPATH"]
+            stdout = _run_benchbuild_non_interactive(bb_args, env)
+            _handle_slurm_output(stdout, env["PYTHONPATH"], submit)
+        else:
+            stdout = _run_benchbuild_non_interactive(bb_args, env)
 
 
 def _build_bb_extra_args(
-    container: bool, debug: bool, slurm: bool
+        container: bool, debug: bool, slurm: bool
 ) -> list[str]:
     bb_extra_args: list[str] = []
     if container:
@@ -285,10 +291,13 @@ def _run_benchbuild_non_interactive(
             sys.exit(1)
 
 
-def _handle_slurm_output(stdout: str, submit: bool) -> None:
+def _handle_slurm_output(
+    stdout: str, pythonpath: str, submit: bool
+) -> None:
     """Handle slurm script output and submission."""
     if match := __SLURM_SCRIPT_PATTERN.search(stdout):
         slurm_script = match.group(1)
+        _add_pythonpath_to_slurm_script(Path(slurm_script), pythonpath)
         if submit:
             click.echo(f"Submitting slurm script via sbatch: {slurm_script}")
             sbatch(slurm_script)
@@ -300,6 +309,30 @@ def _handle_slurm_output(stdout: str, submit: bool) -> None:
     else:
         click.echo("Could not find slurm script.")
         sys.exit(1)
+
+
+def _add_pythonpath_to_slurm_script(
+        slurm_script: Path, pythonpath: str
+) -> None:
+    """Add the Python path to a generated Slurm script."""
+    script = slurm_script.read_text()
+    pythonpath_export = f"export PYTHONPATH={shlex.quote(pythonpath)}"
+    if pythonpath_export in script:
+        return
+
+    configuration_end = "# End of configuration\n"
+    if configuration_end not in script:
+        raise RuntimeError(
+            f"Could not find configuration section in {slurm_script}."
+        )
+
+    slurm_script.write_text(
+        script.replace(
+            configuration_end,
+            f"{configuration_end}{pythonpath_export}\n",
+            1,
+        )
+    )
 
 
 def __prepare_slurm_for_container() -> None:
