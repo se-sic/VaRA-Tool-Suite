@@ -91,11 +91,9 @@ class TestDriverRun(unittest.TestCase):
         self.assertEqual(0, result.exit_code, result.exception)
         self.assertTrue(Path(str(bb_cfg()["slurm"]["template"])).exists())
         slurm_script = (
-                Path(str(vara_cfg()["benchbuild_root"])) / "JustCompile-slurm.sh"
+            Path(str(vara_cfg()["benchbuild_root"])) / "JustCompile-slurm.sh"
         )
-        self.assertTrue(
-            slurm_script.exists()
-        )
+        self.assertTrue(slurm_script.exists())
         self.assertIn("export PYTHONPATH=", slurm_script.read_text())
 
     @run_in_test_environment(
