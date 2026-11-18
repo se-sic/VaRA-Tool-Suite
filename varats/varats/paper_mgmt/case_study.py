@@ -1,7 +1,4 @@
-"""
-A case study is used to pin down the exact set of revisions that should be
-analysed for a project.
-"""
+"""Module for managing and modifying case studies."""
 
 import logging
 import random
@@ -303,8 +300,10 @@ def get_newest_result_files_for_case_study(
     case_study: CaseStudy, result_dir: Path, report_type: type[BaseReport]
 ) -> list[Path]:
     """
-    Return all result files of a specific type that belong to a given case
-    study. For revision with multiple files, the newest file will be selected.
+    Get the newest result files for a case study.
+
+    Returns all result files of a specific type that belong to a given case
+    study. For revisions with multiple files, the newest file is selected.
 
     Args:
         case_study: to load
@@ -363,8 +362,10 @@ def get_case_study_file_name_filter(
     case_study: CaseStudy | None,
 ) -> tp.Callable[[str], bool]:
     """
-    Generate a case study specific file-name filter function that allows the
-    user to check if a file name is related to this case study.
+    Get a case study file-name filter.
+
+    Generates a case study specific file-name filter function that allows the
+    user to check if a file name belongs to this case study.
 
     Returns:
         a filter function that returns ``True`` in cases where a revision of
@@ -416,9 +417,9 @@ def get_unique_cs_name(case_studies: list[CaseStudy]) -> list[str]:
     ['xz_1', 'gzip', 'xz_2']
     """
     sorted_cs = sorted(case_studies, key=lambda cs: cs.project_name)
-    cs_names = dict(
-        (k, list(v)) for k, v in groupby(sorted_cs, lambda cs: cs.project_name)
-    )
+    cs_names = {
+        k: list(v) for k, v in groupby(sorted_cs, lambda cs: cs.project_name)
+    }
 
     return [
         cs.project_name
@@ -469,8 +470,9 @@ def extend_with_extra_revs(
     merge_stage: int,
 ) -> None:
     """
-    Extend a case_study with extra revisions, specified by the caller with
-    kwargs['extra_revs'].
+    Extend a case_study with extra revisions.
+
+    Revisions are specified by the caller with kwargs['extra_revs'].
 
     Args:
         case_study: to extend
@@ -504,7 +506,7 @@ def extend_with_revs_per_year(
         cmap: commit map to map revisions to unique IDs
         merge_stage: stage to add the new revisions to
         ignore_blocked: ignore blocked revisions'
-        git_path: git path to the project
+        repo: repo handle for the case_study's project
         revs_per_year:  revisions to add per year
         revs_year_sep: put revisions in separate stages for each year
     """
@@ -588,8 +590,10 @@ def extend_with_distrib_sampling(
     only_code_commits: bool,
 ) -> None:
     """
-    Extend a case study by sampling 'num_rev' new revisions, according to
-    distribution specified with kwargs['distribution'].
+    Extend a case study by sampling 'num_rev' new revisions.
+
+    Sampling is done according to the distribution specified with
+     kwargs['distribution'].
 
     Args:
         case_study: to extend
@@ -600,13 +604,20 @@ def extend_with_distrib_sampling(
         ignore_blocked: ignore_blocked revisions
         only_code_commits: exclude commits which don't change code
     """
-    is_blocked: tp.Callable[[ShortCommitHash, type[Project]], bool] = (
-        lambda rev, _: False
-    )
+
+    def block_none(_rev: ShortCommitHash, _: type[Project]) -> bool:
+        return False
+
+    is_blocked = block_none
+
     if ignore_blocked:
         is_blocked = is_revision_blocked
 
-    is_code_commit: tp.Callable[[ShortCommitHash], bool] = lambda rev: True
+    def everything_is_code(_rev: ShortCommitHash) -> bool:
+        return True
+
+    is_code_commit = everything_is_code
+
     if only_code_commits:
         churn_conf = ChurnConfig.create_c_style_languages_config()
         repo = get_local_project_repo(case_study.project_name)
@@ -621,9 +632,7 @@ def extend_with_distrib_sampling(
     project_cls = get_project_cls_by_name(case_study.project_name)
     revision_list = [
         (FullCommitHash(rev), idx)
-        for rev, idx in sorted(
-            list(cmap.mapping_items_master()), key=lambda x: x[1]
-        )
+        for rev, idx in sorted(cmap.mapping_items_master(), key=lambda x: x[1])
         if not case_study.has_revision_in_stage(
             ShortCommitHash(rev), merge_stage
         )
@@ -645,9 +654,10 @@ def extend_with_smooth_revs(
     merge_stage: int,
 ) -> None:
     """
-    Extend a case study with extra revisions that could smooth plot curves. This
-    can remove steep gradients that result from missing certain revisions when
-    sampling.
+    Extend a case study with extra revisions that could smooth plot curves.
+
+    This can remove steep gradients that result from missing certain revisions
+    when sampling.
 
     Args:
         case_study: to extend
@@ -666,7 +676,7 @@ def extend_with_smooth_revs(
     try:
         new_revisions = plot.calc_missing_revisions(gradient)
     except UnsupportedOperation:
-        LOG.warning("Plot {} does not support revision sampling", plot.name)
+        LOG.warning("Plot %s does not support revision sampling", plot.name)
 
     if ignore_blocked:
         new_revisions = set(
@@ -700,8 +710,9 @@ def extend_with_release_revs(
     merge_stage: int,
 ) -> None:
     """
-    Extend a case study with revisions marked as a release. This extender relies
-    on the project to determine appropriate revisions.
+    Extend a case study with revisions marked as a release.
+
+    This extender relies on the project to determine appropriate revisions.
 
     Args:
         case_study: to extend
@@ -738,8 +749,9 @@ def extend_with_bug_commits(
     ignore_blocked: bool,
 ) -> None:
     """
-    Extend a case study with revisions that either introduced or fixed a bug as
-    determined by the given SZZ tool.
+    Extend a case study with revisions that either introduced or fixed a bug.
+
+    Uses the given SZZ tool to determine bug introducers and fixes.
 
     Args:
         case_study: to extend
