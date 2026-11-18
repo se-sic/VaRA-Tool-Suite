@@ -243,8 +243,12 @@ def get_revisions_status_for_case_study(
                         tag = __conf_specific_filestatus(
                             case_study, tagged_rev, conf_tag_map
                         )
-                    else:
+                    elif None in conf_tag_map:
                         tag = conf_tag_map[None]
+                    else:
+                        # Only config-specific results exist, treat the
+                        # revision as having no matching result.
+                        break
                     filtered_revisions.append((tagged_rev, tag))
                     found = True
                     break
