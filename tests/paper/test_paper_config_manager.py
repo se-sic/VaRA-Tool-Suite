@@ -40,8 +40,8 @@ b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"""
 
 class MockCommitMap(CommitMap):
     def __init__(self, stream: tp.Iterable[str]) -> None:
-        self._hash_to_id: CharTrie = CharTrie()
-        self._hash_to_id_master: CharTrie = CharTrie()
+        self._hash_to_id: CharTrie[int] = CharTrie()
+        self._hash_to_id_master: CharTrie[int] = CharTrie()
         for line in stream:
             slices = line.strip().split(', ')
             self._hash_to_id[slices[1]] = int(slices[0])
