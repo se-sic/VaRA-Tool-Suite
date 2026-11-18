@@ -1,4 +1,0 @@
-numpy>=2.4.1
-Sphinx>=9.0.0
-sphinx-autodoc-typehints>=3.6.1
-sphinxcontrib-programoutput>=0.19

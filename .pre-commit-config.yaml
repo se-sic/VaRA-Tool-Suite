@@ -8,7 +8,7 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
-      - id: requirements-txt-fixer
+        exclude: ^uv.lock$
       - id: name-tests-test
         args: ['--django']
         exclude: 'tests/helper_utils.py'
