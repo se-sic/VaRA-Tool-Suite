@@ -1,6 +1,7 @@
 """
-Module for interacting and managing paper configs and case studies, e.g.,
-this module provides functionality to visualize the status of case studies or to
+Module for interacting and managing paper configs and case studies.
+
+This module provides functionality to visualize the status of case studies or to
 package a whole paper config into a zip folder.
 """
 
@@ -10,9 +11,9 @@ from collections import defaultdict
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from plumbum import colors
+from plumbum.colorlib import ansicolors as colors
 
-import varats.paper.paper_config as PC
+import varats.paper.paper_config as pc
 from varats.experiment.experiment_util import VersionExperiment
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
@@ -29,6 +30,9 @@ from varats.report.report import (
 from varats.revision.revisions import get_all_revisions_files
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
+
+if tp.TYPE_CHECKING:
+    from plumbum.colorlib.styles import Style
 
 
 def show_status_of_case_studies(
@@ -55,7 +59,7 @@ def show_status_of_case_studies(
         print_legend: print a legend for the different types
         ignore_configs: show status for configuration-independent results only
     """
-    current_config = PC.get_paper_config()
+    current_config = pc.get_paper_config()
 
     longest_cs_name = 0
     output_case_studies = []
@@ -114,8 +118,9 @@ def show_status_of_case_studies(
 
 def get_revision_list(case_study: CaseStudy) -> str:
     """
-    Returns a string with a list of revsion from the case-study, group by case-
-    study stages.
+    Returns a list of revisions from the case-study as a string.
+
+    Revisions are grouped by case-study stages.
 
     Args:
         case_study: to print revisions for
@@ -160,7 +165,7 @@ def get_result_files(
 
     def file_name_filter(file_name: str) -> bool:
         file_commit_hash = ReportFilename(file_name).commit_hash
-        return not file_commit_hash == commit_hash
+        return file_commit_hash != commit_hash
 
     return get_all_revisions_files(
         project_name,
@@ -191,7 +196,7 @@ def get_occurrences(
     num_succ_rev = len(status_occurrences[FileStatusExtension.SUCCESS])
     num_rev = sum(map(len, status_occurrences.values()))
 
-    color = None
+    color: Style | None = None
     if use_color:
         if num_succ_rev == num_rev:
             color = colors.green
@@ -201,7 +206,9 @@ def get_occurrences(
             color = colors.orange3
 
     if color is not None:
-        status += "(" + color[f"{num_succ_rev:3}/{num_rev}"] + ") processed "
+        status += (
+            "(" + str(color[f"{num_succ_rev:3}/{num_rev}"]) + ") processed "
+        )
     else:
         status += "(" + f"{num_succ_rev:3}/{num_rev}" + ") processed "
 
@@ -209,9 +216,11 @@ def get_occurrences(
     for file_status in FileStatusExtension:
         if use_color:
             status += (
-                file_status.status_color[
-                    str(len(status_occurrences[file_status]))
-                ]
+                str(
+                    file_status.status_color[
+                        str(len(status_occurrences[file_status]))
+                    ]
+                )
                 + "/"
             )
         else:
@@ -260,8 +269,7 @@ def get_short_status(
     ignore_configs: bool = False,
 ) -> str:
     """
-    Return a short string representation that describes the current status of
-    the case study.
+    Return a short string describing the current case study status.
 
     Args:
         case_study: to print
@@ -313,8 +321,7 @@ def get_status(
     ignore_configs: bool = False,
 ) -> str:
     """
-    Return a string representation that describes the current status of the case
-    study.
+    Return a string describing the current case study status.
 
     Args:
         case_study: to print the status for
@@ -390,8 +397,7 @@ def get_status(
 
 def get_legend(use_color: bool = False) -> str:
     """
-    Builds up a complete legend that explains all status numbers and their
-    colors.
+    Builds a complete legend explaining all status numbers and their colors.
 
     Args:
         use_color: add color escape sequences for highlighting
@@ -426,7 +432,7 @@ def package_paper_config(
                          case studies to be included in the zip archive
         experiment_types: list of report names that should be added
     """
-    current_config = PC.get_paper_config()
+    current_config = pc.get_paper_config()
     result_dir = Path(str(vara_cfg()['result_dir']))
     report_types: list[type[BaseReport]] = []
     if experiment_types:
@@ -472,12 +478,12 @@ def _combine_tagged_revs_for_experiment(
     ignore_configs: bool = False,
 ) -> list[tuple[ShortCommitHash, FileStatusExtension]]:
     """
-    Combines the tagged revision results from all reports that are specified in
-    the experiment.
+    Combines tagged results from all reports specified in an experiment.
 
     Args:
         case_study: to print
         experiment_type: experiment type to print files for
+        stage_num: if specified, only consider revisions from this stage
         ignore_configs: if true, ignore configuration for file status
 
     Returns:
