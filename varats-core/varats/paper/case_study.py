@@ -2,7 +2,7 @@
 Implementation of case studies for VaRA-TS.
 
 A case study is used to pin down the exact set of revisions that should be
-analysed for a project.
+analyzed for a project.
 """
 
 import typing as tp
@@ -14,7 +14,6 @@ from varats.base.configuration import Configuration
 from varats.base.sampling_method import (
     NormalSamplingMethod,
     SamplingMethod,
-    SamplingMethodBase,
 )
 from varats.base.version_header import VersionHeader
 from varats.mapping.configuration_map import (
@@ -572,9 +571,9 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
         sampling_method_name = raw_stage.get('sampling_method') or None
 
         if sampling_method_name:
-            sampling_method: SamplingMethod | None = SamplingMethodBase[
-                SamplingMethod
-            ].get_sampling_method_type(sampling_method_name)()
+            sampling_method: SamplingMethod | None = (
+                SamplingMethod.get_sampling_method_type(sampling_method_name)()
+            )
         else:
             sampling_method = None
 
