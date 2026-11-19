@@ -1,7 +1,6 @@
 import unittest
 from copy import deepcopy
 from pathlib import Path
-from shutil import copytree
 
 import benchbuild as bb
 from benchbuild.source.base import target_prefix
@@ -39,7 +38,7 @@ class TestPatchProvider(unittest.TestCase):
 
     @staticmethod
     def _create_patch_provider(
-        repositories: list[Path], local_folders: list[str]
+        repositories: list[Path], local_folders: list[dict[str, str]]
     ) -> PatchProvider:
         """Create a provider with the given Git and local patch sources."""
         vara_cfg()["patch_provider"]["repositories"] = [
@@ -82,7 +81,10 @@ class TestPatchProvider(unittest.TestCase):
     def test_reads_patches_from_two_local_sources(self) -> None:
         provider = self._create_patch_provider(
             [],
-            ["patch_subdirectories"],
+            [
+                {"path": "patch_subdirectories/local_source_one"},
+                {"path": "patch_subdirectories/local_source_two"},
+            ],
         )
 
         for shortname in ("local-source-one", "local-source-two"):
@@ -96,21 +98,40 @@ class TestPatchProvider(unittest.TestCase):
         UnitTestFixtures.create_project_repo_fixture(FeaturePerfCSCollection),
     )
     def test_reads_patches_from_local_repository_symlink(self) -> None:
-        """Test that local repositories are linked into patch-sources."""
-        local_folder = Path("patch_subdirectories")
-        local_repository = local_folder / "local_source_one"
-        vara_cfg()["patch_provider"]["repositories"] = []
-        vara_cfg()["patch_provider"]["local_folders"] = [str(local_folder)]
+        """Test that a local patch source is linked into patch-sources."""
+        local_source = Path("patch_subdirectories/local_source_one")
 
-        provider = PatchProvider(FeaturePerfCSCollection)
-
-        repository_link = (
-            Path(str(bb_cfg()["tmp_dir"]))
-            / "patch-sources"
-            / local_repository.name
+        provider = self._create_patch_provider(
+            [], [{"path": str(local_source)}]
         )
-        self.assertTrue(repository_link.is_symlink())
-        self.assertEqual(repository_link.resolve(), local_repository.resolve())
+
+        source_link = (
+            Path(str(bb_cfg()["tmp_dir"])) / "patch-sources" / local_source.name
+        )
+        self.assertTrue(source_link.is_symlink())
+        self.assertEqual(source_link.resolve(), local_source.resolve())
+        self.assertIsNotNone(provider.get_by_shortname("local-source-one"))
+
+    @run_in_test_environment(
+        UnitTestFixtures.create_file_fixture(
+            TEST_INPUTS_DIR / "patch_subdirectories",
+            Path("patch_subdirectories"),
+        ),
+        UnitTestFixtures.create_project_repo_fixture(FeaturePerfCSCollection),
+    )
+    def test_uses_custom_symlink_name(self) -> None:
+        """Test that link_name controls the name of the symlink."""
+        local_source = Path("patch_subdirectories/local_source_one")
+
+        provider = self._create_patch_provider(
+            [], [{"path": str(local_source), "link_name": "custom-link"}]
+        )
+
+        patch_sources = Path(str(bb_cfg()["tmp_dir"])) / "patch-sources"
+        source_link = patch_sources / "custom-link"
+        self.assertTrue(source_link.is_symlink())
+        self.assertEqual(source_link.resolve(), local_source.resolve())
+        self.assertFalse((patch_sources / local_source.name).exists())
         self.assertIsNotNone(provider.get_by_shortname("local-source-one"))
 
     @run_in_test_environment(
@@ -124,14 +145,9 @@ class TestPatchProvider(unittest.TestCase):
         repository = self._initialize_patch_repository(
             Path("patch_subdirectories/git_source_one")
         )
-        local_folder = Path("local_patch_repositories")
-        copytree(
-            "patch_subdirectories/local_source_one",
-            local_folder / "local_source_one",
-        )
         provider = self._create_patch_provider(
             [repository],
-            [str(local_folder)],
+            [{"path": "patch_subdirectories/local_source_one"}],
         )
 
         for shortname in ("git-source-one", "local-source-one"):
