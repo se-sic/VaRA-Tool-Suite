@@ -26,7 +26,7 @@ from varats.paper.case_study import (
     store_case_study,
 )
 from varats.paper.paper_config import get_paper_config
-from varats.paper_mgmt import paper_config_manager as PCM
+from varats.paper_mgmt import paper_config_manager as pcm
 from varats.paper_mgmt.case_study import (
     extend_with_bug_commits,
     extend_with_distrib_sampling,
@@ -75,11 +75,6 @@ from varats.utils.git_util import (
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
-
-
-def create_plot_type_choice() -> TypedChoice[type[Plot]]:
-    initialize_plots()
-    return TypedChoice(Plot.PLOTS)
 
 
 @click.group()
@@ -155,7 +150,7 @@ def __casestudy_status(
         raise click.UsageError(
             "At most one argument of: --short, --ws can be used."
         )
-    PCM.show_status_of_case_studies(
+    pcm.show_status_of_case_studies(
         experiment_type,
         filter_regex,
         short,
@@ -165,6 +160,41 @@ def __casestudy_status(
         legend,
         ignore_configs,
     )
+
+
+def __select_named_merge_stage(
+    case_study: CaseStudy, merge_stage: str, new_stage: bool
+) -> int:
+    """Return the index of the named merge stage, creating it if necessary."""
+    if not new_stage:
+        stage_index_opt = case_study.get_stage_index_by_name(merge_stage)
+        if stage_index_opt is not None:
+            return stage_index_opt
+
+        selected_stage = CSStage(merge_stage)
+
+        def set_merge_stage(stage: CSStage) -> None:
+            nonlocal selected_stage
+            selected_stage = stage
+
+        stage_choices = [selected_stage]
+        stage_choices.extend(
+            [stage for stage in case_study.stages if stage.name]
+        )
+        cli_list_choice(
+            f"The given stage({merge_stage}) does not exist,"
+            f" do you want to create it or select an existing one",
+            stage_choices,
+            lambda x: x.name or "",
+            set_merge_stage,
+        )
+        if selected_stage.name != merge_stage:
+            return case_study.stages.index(selected_stage)
+
+    stage_index = case_study.num_stages
+    case_study.insert_empty_stage(stage_index)
+    case_study.name_stage(stage_index, merge_stage)
+    return stage_index
 
 
 @main.group("gen")
@@ -212,8 +242,10 @@ def __casestudy_gen(
     update: bool,
 ) -> None:
     """
-    Generate or extend a CaseStudy Sub commands can be chained to for example
-    sample revisions but also add the latest.
+    Generate or extend a CaseStudy.
+
+    Subcommands can be chained to, for example, sample revisions but also add
+    the latest revision.
     """
     ctx.ensure_object(dict)
     ctx.obj['project'] = project
@@ -242,42 +274,9 @@ def __casestudy_gen(
         case_study = load_case_study_from_file(ctx.obj['path'])
         ctx.obj['custom_stage'] = bool(merge_stage)
         if merge_stage:
-            if new_stage:
-                stage_index = case_study.num_stages
-                case_study.insert_empty_stage(stage_index)
-                case_study.name_stage(stage_index, merge_stage)
-            else:
-                stage_index_opt = case_study.get_stage_index_by_name(
-                    merge_stage
-                )
-                if not stage_index_opt:
-                    selected_stage = CSStage(merge_stage)
-
-                    def set_merge_stage(stage: CSStage) -> None:
-                        nonlocal selected_stage
-                        selected_stage = stage
-
-                    stage_choices = [selected_stage]
-                    stage_choices.extend(
-                        [stage for stage in case_study.stages if stage.name]
-                    )
-                    cli_list_choice(
-                        f"The given stage({merge_stage}) does not exist,"
-                        f" do you want to create it or select an existing one",
-                        stage_choices,
-                        lambda x: x.name or "",
-                        set_merge_stage,
-                    )
-                    if selected_stage.name == merge_stage:
-                        stage_index = case_study.num_stages
-                        case_study.insert_empty_stage(stage_index)
-                        case_study.name_stage(stage_index, selected_stage.name)
-                    else:
-                        stage_index = case_study.stages.index(selected_stage)
-                else:
-                    stage_index = stage_index_opt
-            ctx.obj['merge_stage'] = stage_index
-
+            ctx.obj['merge_stage'] = __select_named_merge_stage(
+                case_study, merge_stage, new_stage
+            )
         else:
             if new_stage:
                 ctx.obj['merge_stage'] = max(case_study.num_stages, 0)
@@ -412,17 +411,21 @@ def __gen_per_year(
 class SmoothPlotCLI(click.Group):
     """Command factory for plots."""
 
-    def __init__(self, **attrs: tp.Any):
+    def __init__(self, **attrs: tp.Any) -> None:
+        """Initialize plots before creating the group."""
         initialize_plots()
         super().__init__(**attrs)
 
-    def list_commands(self, ctx: click.Context) -> list[str]:
+    def list_commands(self, ctx: click.Context) -> list[str]:  # noqa: ARG002
+        """List all available plot generators."""
         return list(PlotGenerator.GENERATORS.keys())
 
     def get_command(
-        self, ctx: click.Context, cmd_name: str
+        self,
+        ctx: click.Context,  # noqa: ARG002
+        cmd_name: str,
     ) -> click.Command | None:
-
+        """Create a command for the given plot generator."""
         generator_cls = PlotGenerator.GENERATORS[cmd_name]
 
         @click.pass_context
@@ -492,8 +495,9 @@ def __gen_smooth_plot(ctx: click.Context, boundary_gradient: int) -> None:
 @click.pass_context
 def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
     """
-    Extend a case study with revisions marked as a release. This relies on the
-    project to determine appropriate revisions.
+    Extend a case study with revisions marked as a release.
+
+    This relies on the project to determine appropriate revisions.
 
     release_type: Release type to consider
     """
@@ -525,8 +529,9 @@ def __gen_bug_commits(
     ctx: click.Context, experiment_type: type['VersionExperiment']
 ) -> None:
     """
-    Extend a case study with revisions that either introduced or fixed a bug as
-    determined by the given SZZ tool.
+    Extend a case study with bug introducing or fixing revisions.
+
+    Revisions are determined by the given SZZ tool.
 
     REPORT_TYPE: report to use for determining bug regions
     """
@@ -566,14 +571,14 @@ def __casestudy_package(
         output_path = Path(str(output_path) + ".zip")
     if output_path.suffix == '.zip':
         vara_root = Path(str(vara_cfg()["config_file"])).parent
-        if Path(os.getcwd()) != vara_root:
+        if Path.cwd() != vara_root:
             LOG.info(
                 f"Packaging needs to be called from VaRA root dir, "
                 f"changing dir to {vara_root}"
             )
             os.chdir(vara_root)
 
-        PCM.package_paper_config(
+        pcm.package_paper_config(
             output_path, re.compile(filter_regex), experiment_names
         )
     else:
@@ -625,7 +630,7 @@ def __casestudy_view(
     except LookupError:
         return
 
-    result_files = PCM.get_result_files(
+    result_files = pcm.get_result_files(
         project, experiment_type, report_type, commit_hash, newest_only
     )
     result_files.sort(
