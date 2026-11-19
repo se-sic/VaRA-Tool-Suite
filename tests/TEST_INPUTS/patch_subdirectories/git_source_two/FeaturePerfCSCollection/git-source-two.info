@@ -1,0 +1,6 @@
+project_name: FeaturePerfCSCollection
+shortname: git-source-two
+description: Patch supplied by the second Git source.
+path: git-source-two.patch
+include_revisions:
+  single_revision: "0000000000000000000000000000000000000000"

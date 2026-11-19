@@ -5,8 +5,10 @@ All settings are stored in a simple dictionary. Each setting should be
 modifiable via environment variable.
 """
 
+import copy
 import sys
 import typing as tp
+from contextlib import contextmanager
 from pathlib import Path
 
 import benchbuild.utils.settings as s
@@ -213,6 +215,23 @@ def create_new_varats_config() -> s.Configuration:
     cfg['sampling'] = {}
 
     cfg['ml'] = {}
+    cfg['patch_provider'] = {
+        "repositories": {
+            "desc": "Git repositories that provide project patches.",
+            "default": [
+                {
+                    "remote": "https://github.com/se-sic/vara-project-patches.git",
+                    "local": "patch-configurations",
+                    "refspec": "origin/HEAD",
+                }
+            ],
+        },
+        "local_folders": {
+            "desc": "Local folders that provide project patches.",
+            "default": [],  # e.g. [{"path": "/home/.../local_patches",
+            # "link_name": "local_patches"}]
+        },
+    }
     return cfg
 
 
@@ -246,7 +265,9 @@ def add_vara_experiment_options(
         "result": {
             "default": "missingPath/annotatedResults",
             "desc": "Path to store already annotated projects.",
-            "value": str(Path(str(vara_cfg()["benchbuild_root"])) / "BC_files"),
+            "value": str(
+                Path(str(varats_config["benchbuild_root"])) / "BC_files"
+            ),
         },
     }
 
@@ -279,6 +300,34 @@ def bb_cfg() -> s.Configuration:
         _BB_CFG = BB_CFG
         create_missing_bb_folders()
     return _BB_CFG
+
+
+def _apply_bb_cfg_overrides(
+    config: s.Configuration, overrides: dict[str, tp.Any]
+) -> None:
+    """Apply nested BenchBuild configuration overrides."""
+    for key, value in overrides.items():
+        config_node = config[key]
+        if isinstance(value, dict) and not config_node.is_leaf():
+            _apply_bb_cfg_overrides(config_node, value)
+        else:
+            config[key] = value
+
+
+@contextmanager
+def bb_cfg_context(
+    **overrides: tp.Any,
+) -> tp.Generator[s.Configuration, None, None]:
+    """Temporarily override the current BenchBuild configuration."""
+    global _BB_CFG  # noqa: PLW0603
+    previous_config = bb_cfg()
+    temporary_config = copy.deepcopy(previous_config)
+    _BB_CFG = temporary_config
+    try:
+        _apply_bb_cfg_overrides(temporary_config, overrides)
+        yield temporary_config
+    finally:
+        _BB_CFG = previous_config
 
 
 def get_value_or_default(

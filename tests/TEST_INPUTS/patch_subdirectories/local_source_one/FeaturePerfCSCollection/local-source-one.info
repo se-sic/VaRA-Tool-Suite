@@ -1,0 +1,6 @@
+project_name: FeaturePerfCSCollection
+shortname: local-source-one
+description: Patch supplied by the first local source.
+path: local-source-one.patch
+include_revisions:
+  single_revision: "0000000000000000000000000000000000000000"
