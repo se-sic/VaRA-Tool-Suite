@@ -387,7 +387,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         load_paper_config()
 
         with mock.patch.object(
-            driver_casestudy.PCM, 'show_status_of_case_studies'
+            driver_casestudy.pcm, 'show_status_of_case_studies'
         ) as mock_show_status:
             result = runner.invoke(
                 driver_casestudy.main, ['status', 'JustCompile']
