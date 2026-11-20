@@ -1,3 +1,5 @@
+"""Experiment steps for applying and reverting patches."""
+
 import logging
 import textwrap
 from pathlib import Path
@@ -21,10 +23,12 @@ class ApplyPatch(actions.ProjectStep):
     DESCRIPTION = "Apply a Git patch to a project."
 
     def __init__(self, project: VProject, patch: Patch) -> None:
+        """Create a step for the given project and patch."""
         super().__init__(project)
         self.__patch = patch
 
     def __call__(self) -> StepResult:
+        """Apply the patch to the project's primary source."""
         self.status = StepResult.OK
         try:
             print(
@@ -43,6 +47,7 @@ class ApplyPatch(actions.ProjectStep):
         return self.status
 
     def __str__(self, indent: int = 0) -> str:
+        """Return a textual description of this step."""
         return textwrap.indent(
             f"* {self.project.name}: Apply patch {self.__patch.shortname}",
             " " * indent,
@@ -56,10 +61,12 @@ class RevertPatch(actions.ProjectStep):
     DESCRIPTION = "Revert a Git patch from a project."
 
     def __init__(self, project: VProject, patch: Patch) -> None:
+        """Create a step for the given project and patch."""
         super().__init__(project)
         self.__patch = patch
 
     def __call__(self) -> StepResult:
+        """Revert the patch from the project's primary source."""
         self.status = StepResult.OK
         try:
             print(
@@ -78,6 +85,7 @@ class RevertPatch(actions.ProjectStep):
         return self.status
 
     def __str__(self, indent: int = 0) -> str:
+        """Return a textual description of this step."""
         return textwrap.indent(
             f"* {self.project.name}: Revert patch {self.__patch.shortname}",
             " " * indent,

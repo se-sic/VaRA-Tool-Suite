@@ -172,7 +172,7 @@ def download_repo(
     url: str,
     repo_name: str | None = None,
     remote_name: str | None = None,
-    post_out: tp.Callable[[str], None] = lambda x: None,
+    post_out: tp.Callable[[str], None] = lambda _: None,
 ) -> None:
     """Download a repo into the specified folder."""
     if not dl_folder.exists():
