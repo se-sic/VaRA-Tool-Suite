@@ -83,7 +83,7 @@ file=$(mktemp -q) && {
 #SBATCH --nice={{ nice_clean }}
 #SBATCH -o /dev/null
 export XDG_RUNTIME_DIR=/tmp/slurm-runtime-${SLURM_JOBID}
-export HOME=$INFOSAAR_LOCAL
+export HOME=${node_dir}
 exec 1>> {{ log }}-$_project
 exec 2>&1
 echo "$(date) [$(hostname)] node cleanup begin"
