@@ -253,6 +253,10 @@ class RepositoryHandle:
 
         return commit
 
+    def get_submodule(self, submodule_path: str) -> 'RepositoryHandle':
+        """Get a repository handle for the submodule at the given path."""
+        return RepositoryHandle(self.worktree_path / submodule_path)
+
     def __eq__(self, other: object) -> bool:
         """Check equality based on the repository path."""
         if not isinstance(other, RepositoryHandle):
@@ -294,6 +298,23 @@ def get_head_commit(repo: RepositoryHandle) -> FullCommitHash:
     return FullCommitHash(repo("rev-parse", "HEAD").strip())
 
 
+def get_parent_commit(
+    repo: RepositoryHandle, commit: CommitHash
+) -> FullCommitHash:
+    """
+    Get the parent of a given commit.
+
+    Args:
+        repo: repository handle
+        commit: commit to get the parent for
+
+    Returns: parent commit hash
+    """
+    return FullCommitHash(
+        repo("log", "--pretty=%P", "-1", commit.hash).strip().split(" ")[0]
+    )
+
+
 def get_initial_commit(repo: RepositoryHandle) -> FullCommitHash:
     """
     Get the initial commit of a repository, i.e., the first commit made.
@@ -330,6 +351,52 @@ def get_submodule_commits(
         if match:
             result[match.group("name")] = FullCommitHash(match.group("hash"))
     return result
+
+
+def get_submodule_updates(
+    repo: RepositoryHandle, submodule_path: str
+) -> list[FullCommitHash]:
+    """
+    Get all commits that update the given submodule.
+
+    Args:
+        repo: repository handle
+        submodule_path: path of the submodule to find upgrades for
+
+    Returns:
+        a list of submodule upgrading commits
+    """
+    submodule_log = repo("log", "--pretty=%H", "--", submodule_path)
+    return [FullCommitHash(c) for c in submodule_log.strip().split()]
+
+
+def get_submodule_update_commits(
+    repo: RepositoryHandle,
+    submodule: RepositoryHandle,
+    update_commit: FullCommitHash,
+) -> list[FullCommitHash]:
+    """
+    Get all new submodule commits introduced by the given submodule update.
+
+    Args:
+        repo: main repository handle
+        submodule: submodule repository handle
+        update_commit: the commit that upgraded the submodule
+
+    Returns:
+        a list of submodule commits
+    """
+    new_submodule_head = get_submodule_head(repo, submodule, update_commit)
+    old_submodule_head = get_submodule_head(
+        repo, submodule, get_parent_commit(repo, update_commit)
+    )
+    # get_all_revisions_between includes the old head, which is not new
+    return get_all_revisions_between(
+        submodule,
+        old_submodule_head.hash,
+        new_submodule_head.hash,
+        FullCommitHash,
+    )[1:]
 
 
 def get_all_revisions_between(
