@@ -5,7 +5,6 @@ This module handles command-line parsing and maps the commands to tool suite
 internal functionality.
 """
 
-import getpass
 import itertools
 import logging
 import re
@@ -200,6 +199,7 @@ def _build_bb_extra_args(
             bb_extra_args = ["--", "container", "run"]
             if bb_cfg()["container"]["import"].value:
                 bb_extra_args.append("--import")
+            bb_extra_args.append("--replace")
         else:
             if debug:
                 bb_extra_args.append("--debug")
@@ -341,13 +341,12 @@ def _add_pythonpath_to_slurm_script(
 
 def __prepare_slurm_for_container() -> None:
     """Prepare the benchbuild slurm config for container use."""
-    node_dir = f"/tmp/{getpass.getuser()}"
     template_path = (
-        Path(str(vara_cfg()["benchbuild_root"])) / "slurm_container.sh.inc"
+        Path(str(vara_cfg()["benchbuild_root"])) / "slurm_container.sh.j2"
     )
+    node_dir = bb_cfg()["slurm"]["node_dir"].value
     bb_cfg()["jobs"] = 0
     bb_cfg()["slurm"]["template"] = str(template_path)
-    bb_cfg()["slurm"]["node_dir"] = node_dir
     bb_cfg()["slurm"]["container_root"] = f"{node_dir}/containers/lib"
     bb_cfg()["slurm"]["container_runroot"] = f"{node_dir}/containers/run"
 
@@ -368,7 +367,7 @@ def __render_slurm_script_template(
     env = jinja2.Environment(
         trim_blocks=True, lstrip_blocks=True, loader=loader
     )
-    template = env.get_template("slurm_container.sh.inc")
+    template = env.get_template("slurm_container.sh.j2")
 
     with Path.open(output_path, 'w') as slurm2:
         slurm2.write(
