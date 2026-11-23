@@ -1,3 +1,6 @@
+"""Experiment steps for applying and reverting patches."""
+
+import logging
 import textwrap
 from pathlib import Path
 
@@ -10,6 +13,8 @@ from varats.provider.patch.patch_provider import Patch
 from varats.utils.git_commands import apply_patch, revert_patch
 from varats.utils.git_util import RepositoryHandle
 
+LOG = logging.Logger(__name__)
+
 
 class ApplyPatch(actions.ProjectStep):
     """Apply a patch to a project."""
@@ -18,10 +23,12 @@ class ApplyPatch(actions.ProjectStep):
     DESCRIPTION = "Apply a Git patch to a project."
 
     def __init__(self, project: VProject, patch: Patch) -> None:
+        """Create a step for the given project and patch."""
         super().__init__(project)
         self.__patch = patch
 
     def __call__(self) -> StepResult:
+        """Apply the patch to the project's primary source."""
         self.status = StepResult.OK
         try:
             print(
@@ -30,18 +37,20 @@ class ApplyPatch(actions.ProjectStep):
             )
             apply_patch(
                 RepositoryHandle(Path(self.project.source_of_primary)),
-                self.__patch.path
+                self.__patch.path,
             )
 
-        except ProcessExecutionError:
+        except ProcessExecutionError as e:
+            LOG.error(e)
             self.status = StepResult.ERROR
 
         return self.status
 
     def __str__(self, indent: int = 0) -> str:
+        """Return a textual description of this step."""
         return textwrap.indent(
-            f"* {self.project.name}: Apply patch "
-            f"{self.__patch.shortname}", " " * indent
+            f"* {self.project.name}: Apply patch {self.__patch.shortname}",
+            " " * indent,
         )
 
 
@@ -52,10 +61,12 @@ class RevertPatch(actions.ProjectStep):
     DESCRIPTION = "Revert a Git patch from a project."
 
     def __init__(self, project: VProject, patch: Patch) -> None:
+        """Create a step for the given project and patch."""
         super().__init__(project)
         self.__patch = patch
 
     def __call__(self) -> StepResult:
+        """Revert the patch from the project's primary source."""
         self.status = StepResult.OK
         try:
             print(
@@ -64,16 +75,18 @@ class RevertPatch(actions.ProjectStep):
             )
             revert_patch(
                 RepositoryHandle(Path(self.project.source_of_primary)),
-                self.__patch.path
+                self.__patch.path,
             )
 
-        except ProcessExecutionError:
+        except ProcessExecutionError as e:
+            LOG.error(e)
             self.status = StepResult.ERROR
 
         return self.status
 
     def __str__(self, indent: int = 0) -> str:
+        """Return a textual description of this step."""
         return textwrap.indent(
-            f"* {self.project.name}: Revert patch "
-            f"{self.__patch.shortname}", " " * indent
+            f"* {self.project.name}: Revert patch {self.__patch.shortname}",
+            " " * indent,
         )
