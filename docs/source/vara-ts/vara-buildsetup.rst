@@ -10,7 +10,7 @@ Installation
 Install dependencies
 ********************
 
-To use the VaRA Tool Suite, your system has to have at least `python3.7`. Make sure you have the necessary packages installed.
+To use the VaRA Tool Suite, your system has to have at least `python3.11`. Make sure you have the necessary packages installed.
 
 For ubuntu:
 
@@ -41,53 +41,36 @@ Then, the simplest way to install VaRA-TS is by using pip.
     pip3 install varats
 
 
-Making an editable install from source to python user-directory (easier)
-************************************************************************
+Install from source with uv
+***************************
 
-First, you need to clone the VaRA-Tool-Suite repository.
+For development, we use `uv <https://docs.astral.sh/uv/>`_ to manage VaRA-TS's python environment and dependencies.
+First, `install uv <https://docs.astral.sh/uv/getting-started/installation/>`_ and clone the VaRA-Tool-Suite repository.
 
 .. code-block:: console
 
     git clone git@github.com:se-sic/VaRA-Tool-Suite.git
     cd VaRA-Tool-Suite
 
-
-To install VaRA-TS from the repository into the user directory use the
-following command.  The same command can be used to update an existing
-installation (if necessary).
+Then, create a virtual environment in ``.venv`` with an editable install of VaRA-TS.
+The same command can be used to update an existing installation (if necessary).
 
 .. code-block:: console
 
     # cd to VaRA-TS directory
-    python3 -m pip install --user --upgrade -e .
+    uv sync
 
-    # developers also need to execute the next command
+    # developers also need the test and development tools
     # (if you want to contribute to VaRA/VaRA-TS):
-    python3 -m pip install -r requirements.txt
+    uv sync --group test --group dev
 
 This initializes `VaRA-TS` and installs a collection of helpful :ref:`tools <Tools Overview>`, e.g., to produce and visualize VaRA results.
 
-Install to python virtualenv (advanced)
-***************************************
+To use the tools, either prefix the commands with ``uv run`` (e.g., ``uv run vara-graphview``) or activate the virtual environment once per shell session:
 
 .. code-block:: console
 
-    # create virtualenv
-    python3 -m venv /where/you/want/your/virtualenv/to/live
-
-    # activate virtualenv
-    source /path/to/virtualenv/bin/activate
-
-    # cd to VaRA-TS directory
-    python3 -m pip install --upgrade -e .
-
-    # developers also need to execute the next command
-    # (if you want to contribute to VaRA/VaRA-TS):
-    python3 -m pip install -r requirements.txt
-
-The virtualenv method has the advantage that it does not mess with your local python user
-directory. With this method you have to execute the `source` command every time before
-you can execute the `vara-graphview` program.
+    source .venv/bin/activate
 
 Usage
 -----

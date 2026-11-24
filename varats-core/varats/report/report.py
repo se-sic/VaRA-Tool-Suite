@@ -15,8 +15,8 @@ from os import stat_result
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from plumbum import colors
-from plumbum.colorlib.styles import Color
+from plumbum.colorlib import ansicolors as colors
+from plumbum.colorlib.styles import Style
 
 from varats.utils.git_util import ShortCommitHash
 
@@ -28,7 +28,7 @@ class FileStatusExtension(Enum):
     Specific report files can map these to their own specific representation.
     """
 
-    value: tuple[str, Color]  # pylint: disable=invalid-name
+    value: tuple[str, Style]  # pylint: disable=invalid-name
 
     SUCCESS = ("success", colors.green)
     PARTIAL = ("partial", colors.darkturquoise)
@@ -50,16 +50,16 @@ class FileStatusExtension(Enum):
         return self.name.lower().capitalize()
 
     @property
-    def status_color(self) -> Color:
+    def status_color(self) -> Style:
         """Returns the corresponding color to the status."""
-        return self.value[1]
+        return tp.cast("Style", self.value[1])
 
     def get_colored_status(self) -> str:
         """Returns the file status colored in the specific status color."""
         return tp.cast("str", self.status_color[self.nice_name()])
 
     def num_color_characters(self) -> int:
-        """Returns the number of non printable color characters."""
+        """Returns the number of non-printable color characters."""
         return len(self.status_color[''])
 
     @staticmethod

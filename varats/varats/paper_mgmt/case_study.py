@@ -1,7 +1,6 @@
-"""Utility module for working with case studies."""
+"""Module for managing and modifying case studies."""
 
 import logging
-import operator
 import random
 import typing as tp
 from collections import defaultdict
@@ -11,6 +10,7 @@ from itertools import groupby
 from pathlib import Path
 
 import pygit2
+from benchbuild import Project
 
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.reports.szz_report import SZZReport
@@ -62,8 +62,6 @@ from varats.utils.git_util import (
 )
 
 if tp.TYPE_CHECKING:
-    from benchbuild import Project
-
     from varats.experiment.experiment_util import VersionExperiment
 
 LOG = logging.Logger(__name__)
@@ -245,11 +243,12 @@ def get_revisions_status_for_case_study(
                         tag = __conf_specific_filestatus(
                             case_study, tagged_rev, conf_tag_map
                         )
+                    elif None in conf_tag_map:
+                        tag = conf_tag_map[None]
                     else:
-                        tag = (
-                            conf_tag_map.get(None)
-                            or FileStatusExtension.MISSING
-                        )
+                        # Only config-specific results exist, treat the
+                        # revision as having no matching result.
+                        break
                     filtered_revisions.append((tagged_rev, tag))
                     found = True
                     break
@@ -305,9 +304,10 @@ def get_newest_result_files_for_case_study(
     case_study: CaseStudy, result_dir: Path, report_type: type[BaseReport]
 ) -> list[Path]:
     """
-    Returns result files of a specific type for a given case study.
+    Get the newest result files for a case study.
 
-    For revision with multiple files, the newest file will be selected.
+    Returns all result files of a specific type that belong to a given case
+    study. For revisions with multiple files, the newest file is selected.
 
     Args:
         case_study: to load
@@ -340,7 +340,11 @@ def get_newest_result_files_for_case_study(
                 )
                 if current_file is None:
                     files_to_store[
-                        commit_hash, report_file.experiment_shorthand, config_id
+                        (
+                            commit_hash,
+                            report_file.experiment_shorthand,
+                            config_id,
+                        )
                     ] = opt_res_file
                 else:
                     if (
@@ -348,9 +352,11 @@ def get_newest_result_files_for_case_study(
                         < opt_res_file.stat().st_mtime
                     ):
                         files_to_store[
-                            commit_hash,
-                            report_file.experiment_shorthand,
-                            config_id,
+                            (
+                                commit_hash,
+                                report_file.experiment_shorthand,
+                                config_id,
+                            )
                         ] = opt_res_file
 
     return list(files_to_store.values())
@@ -360,10 +366,10 @@ def get_case_study_file_name_filter(
     case_study: CaseStudy | None,
 ) -> tp.Callable[[str], bool]:
     """
-    Generate a case study specific file-name filter.
+    Get a case study file-name filter.
 
-    The filter is a function that allows the user to check if a file name is
-     related to this case study.
+    Generates a case study specific file-name filter function that allows the
+    user to check if a file name belongs to this case study.
 
     Returns:
         a filter function that returns ``True`` in cases where a revision of
@@ -468,7 +474,9 @@ def extend_with_extra_revs(
     merge_stage: int,
 ) -> None:
     """
-    Extend a case_study with a set of extra revisions.
+    Extend a case_study with extra revisions.
+
+    Revisions are specified by the caller with kwargs['extra_revs'].
 
     Args:
         case_study: to extend
@@ -502,7 +510,7 @@ def extend_with_revs_per_year(
         cmap: commit map to map revisions to unique IDs
         merge_stage: stage to add the new revisions to
         ignore_blocked: ignore blocked revisions'
-        repo: repository for the project
+        repo: repo handle for the case_study's project
         revs_per_year:  revisions to add per year
         revs_year_sep: put revisions in separate stages for each year
     """
@@ -552,7 +560,7 @@ def extend_with_revs_per_year(
 
     new_rev_items = []  # new revisions that get added to case_study
     for year, commits_in_year in sorted(
-        commits.items(), key=operator.itemgetter(0)
+        commits.items(), key=lambda entry: entry[0]
     ):
         samples = min(len(commits_in_year), revs_per_year)
         sample_commit_indices = sorted(
@@ -588,7 +596,8 @@ def extend_with_distrib_sampling(
     """
     Extend a case study by sampling 'num_rev' new revisions.
 
-    Uses the specified distribution for sampling.
+    Sampling is done according to the distribution specified with
+     kwargs['distribution'].
 
     Args:
         case_study: to extend
@@ -599,28 +608,40 @@ def extend_with_distrib_sampling(
         ignore_blocked: ignore_blocked revisions
         only_code_commits: exclude commits which don't change code
     """
-    churn_conf = ChurnConfig.create_c_style_languages_config()
-    repo = get_local_project_repo(case_study.project_name)
 
-    def is_code_commit(commit: ShortCommitHash) -> bool:
-        return contains_source_code(repo, commit, churn_conf)
+    def block_none(_rev: ShortCommitHash, _: type[Project]) -> bool:
+        return False
+
+    is_blocked = block_none
+
+    if ignore_blocked:
+        is_blocked = is_revision_blocked
+
+    def everything_is_code(_rev: ShortCommitHash) -> bool:
+        return True
+
+    is_code_commit = everything_is_code
+
+    if only_code_commits:
+        churn_conf = ChurnConfig.create_c_style_languages_config()
+        repo = get_local_project_repo(case_study.project_name)
+
+        def is_c_cpp_code_commit(commit: ShortCommitHash) -> bool:
+            return contains_source_code(repo, commit, churn_conf)
+
+        is_code_commit = is_c_cpp_code_commit
 
     # Needs to be sorted so the propability distribution over the length
     # of the list is the same as the distribution over the commits age history
     project_cls = get_project_cls_by_name(case_study.project_name)
     revision_list = [
         (FullCommitHash(rev), idx)
-        for rev, idx in sorted(
-            cmap.mapping_items_master(), key=operator.itemgetter(1)
-        )
+        for rev, idx in sorted(cmap.mapping_items_master(), key=lambda x: x[1])
         if not case_study.has_revision_in_stage(
             ShortCommitHash(rev), merge_stage
         )
-        and (
-            not ignore_blocked
-            or not is_revision_blocked(ShortCommitHash(rev), project_cls)
-        )
-        and (not only_code_commits or is_code_commit(ShortCommitHash(rev)))
+        and not is_blocked(ShortCommitHash(rev), project_cls)
+        and is_code_commit(ShortCommitHash(rev))
     ]
 
     case_study.include_revisions(
@@ -734,7 +755,7 @@ def extend_with_bug_commits(
     """
     Extend a case study with revisions that either introduced or fixed a bug.
 
-    Uses the given SZZ tool to determine bug introducing/fixing revisions.
+    Uses the given SZZ tool to determine bug introducers and fixes.
 
     Args:
         case_study: to extend

@@ -5,6 +5,7 @@ All settings are stored in a simple dictionary. Each setting should be
 modifiable via environment variable.
 """
 
+import os
 import sys
 import typing as tp
 from pathlib import Path
@@ -324,14 +325,23 @@ def create_missing_bb_folders() -> None:
     def create_missing_folder_for_cfg(
         cfg_varname: str, local_cfg: s.Configuration = bb_cfg()
     ) -> None:
-        """Create missing folders for a specific config path."""
+        """
+        Create missing folders for a specific config path.
+
+        Paths may reference environment variables (e.g., ``$TMPDIR/bb``),
+        which are expanded first. If a referenced variable is not set in the
+        current environment (e.g., a node-local variable only available on
+        a slurm node), the folder is not created.
+        """
         config_node = local_cfg[cfg_varname]
-        if (
-            config_node.has_value()
-            and config_node.value is not None
-            and not Path(str(config_node.value)).is_dir()
-        ):
-            Path(str(config_node.value)).mkdir(parents=True, exist_ok=True)
+        if not config_node.has_value() or config_node.value is None:
+            return
+
+        folder = os.path.expandvars(str(config_node.value))
+        if "$" in folder:
+            return
+
+        Path(folder).mkdir(parents=True, exist_ok=True)
 
     create_missing_folder_for_cfg("outfile", bb_cfg()["varats"])
     create_missing_folder_for_cfg("result", bb_cfg()["varats"])

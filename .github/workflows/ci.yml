@@ -21,24 +21,21 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    - uses: ./.github/actions/dependenciesActions
       with:
         python-version: ${{ matrix.python-version }}
-
-    - uses: ./.github/actions/dependenciesActions
 
     - name: Run unittests
       run: |
         echo $BB_TMP_DIR
         mkdir -p benchbuild
-        coverage run -p -m pytest varats varats-core tests --ignore=tests/TEST_INPUTS
+        uv run coverage run -p -m pytest varats varats-core tests --ignore=tests/TEST_INPUTS
         rm -rf benchbuild
 
     - name: Combine Coverage
       run: |
-        coverage combine -a --rcfile=.coveragerc
-        coverage xml
+        uv run coverage combine -a --rcfile=.coveragerc
+        uv run coverage xml
     - name: Upload coverage report
       uses: codecov/codecov-action@v5
       with:
