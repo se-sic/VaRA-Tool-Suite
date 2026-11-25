@@ -1,11 +1,12 @@
 """Module for config specific utilities."""
+
 import typing as tp
 from pathlib import Path
 
 from varats.base.configuration import (
     Configuration,
-    PlainCommandlineConfiguration,
     PatchConfiguration,
+    PlainCommandlineConfiguration,
 )
 from varats.mapping.configuration_map import ConfigurationMap
 from varats.paper.case_study import (
@@ -14,7 +15,7 @@ from varats.paper.case_study import (
 )
 from varats.paper.paper_config import PaperConfig, get_paper_config
 from varats.project.sources import FeatureSource
-from varats.provider.patch.patch_provider import PatchSet, PatchProvider
+from varats.provider.patch.patch_provider import PatchProvider, PatchSet
 from varats.utils.git_util import ShortCommitHash
 
 if tp.TYPE_CHECKING:
@@ -22,13 +23,15 @@ if tp.TYPE_CHECKING:
 
 
 def load_configuration_map_for_case_study(
-    paper_config: PaperConfig, case_study: CaseStudy,
-    concrete_config_type: tp.Type[Configuration]
+    paper_config: PaperConfig,
+    case_study: CaseStudy,
+    concrete_config_type: type[Configuration],
 ) -> ConfigurationMap:
     """
-    Loads the \a ConfigurationMap attached to the specified \a CaseStudy. The
-    configuration map is assumed to contain configurations of the type \a
-    concrete_config_type.
+    Loads the :class:`ConfigurationMap` attached to a :class:`CaseStudy`.
+
+    The configuration map is assumed to contain configurations of the type
+    ``concrete_config_type``.
 
     Args:
         paper_config: in which the case study is
@@ -40,16 +43,18 @@ def load_configuration_map_for_case_study(
     """
     return load_configuration_map_from_case_study_file(
         Path(
-            paper_config.path /
-            f"{case_study.project_name}_{case_study.version}.case_study"
-        ), concrete_config_type
+            paper_config.path
+            / f"{case_study.project_name}_{case_study.version}.case_study"
+        ),
+        concrete_config_type,
     )
 
 
-def get_current_config_id(project: 'VProject') -> tp.Optional[int]:
+def get_current_config_id(project: 'VProject') -> int | None:
     """
-    Get, if available, the current config id of project. Should the project be
-    not configuration specific ``None`` is returned.
+    Get, if available, the current config id of project.
+
+    Should the project be not configuration specific ``None`` is returned.
 
     Args:
         project: to extract the config id from
@@ -59,16 +64,27 @@ def get_current_config_id(project: 'VProject') -> tp.Optional[int]:
     """
     if project.active_revision.has_variant(FeatureSource.LOCAL_KEY):
         return int(
-            project.active_revision.variant_by_name(FeatureSource.LOCAL_KEY
-                                                   ).version
+            project.active_revision.variant_by_name(
+                FeatureSource.LOCAL_KEY
+            ).version
         )
 
     return None
 
 
 def get_config(
-    project: 'VProject', config_type: tp.Type[Configuration]
-) -> tp.Optional[Configuration]:
+    project: 'VProject', config_type: type[Configuration]
+) -> Configuration | None:
+    """
+    Get the configuration of the current project variant.
+
+    Args:
+        project: to get the configuration for
+        config_type: type of the configuration to load
+
+    Returns:
+        the configuration or ``None`` if the project is not configured
+    """
     config_id = get_current_config_id(project)
     if config_id is None:
         return None
@@ -87,15 +103,12 @@ def get_config(
         paper_config, case_study, config_type
     )
 
-    config = config_map.get_configuration(config_id)
-
-    return config
+    return config_map.get_configuration(config_id)
 
 
-def get_extra_config_options(project: 'VProject') -> tp.List[str]:
+def get_extra_config_options(project: 'VProject') -> list[str]:
     """
-    Get extra program options that were specified in the particular
-    configuration of \a Project.
+    Get extra options specified in the configuration of a Project.
 
     Args:
         project: to get the extra options for
@@ -106,12 +119,12 @@ def get_extra_config_options(project: 'VProject') -> tp.List[str]:
     config = get_config(project, PlainCommandlineConfiguration)
     if not config:
         return []
-    return list(map(lambda option: option.value, config.options()))
+    return [str(option.value) for option in config.options()]
 
 
 def get_config_patches(project: 'VProject') -> PatchSet:
     """
-    Get required patches for the particular configuration of \a Project.
+    Get required patches for the particular configuration of a Project.
 
     Args:
         project: to get the patches for
@@ -126,8 +139,6 @@ def get_config_patches(project: 'VProject') -> PatchSet:
     patch_provider = PatchProvider.create_provider_for_project(project)
     revision = ShortCommitHash(project.revision.primary.version)
     feature_tags = {opt.value for opt in config.options()}
-    patches = patch_provider.get_patches_for_revision(revision).all_of_features(
+    return patch_provider.get_patches_for_revision(revision).all_of_features(
         feature_tags
     )
-
-    return patches
