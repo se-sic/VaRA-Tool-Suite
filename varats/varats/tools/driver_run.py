@@ -182,12 +182,10 @@ def main(
     else:
         env = _get_environment_variables(black_list, white_list)
         if slurm:
-            bb_cfg()["env"]["PYTHONPATH"] = env["PYTHONPATH"]
-            bb_cfg()["PYTHONPATH"] = env["PYTHONPATH"]
             stdout = _run_benchbuild_non_interactive(bb_args, env)
             _handle_slurm_output(stdout, env["PYTHONPATH"], submit)
         else:
-            stdout = _run_benchbuild_non_interactive(bb_args, env)
+            _run_benchbuild_non_interactive(bb_args, env)
 
 
 def _build_bb_extra_args(
