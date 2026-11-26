@@ -316,9 +316,7 @@ def _handle_slurm_output(stdout: str, submit: bool) -> None:
 def __prepare_slurm_script(container: bool) -> None:
     """Prepare the benchbuild slurm config for container use."""
     template_filename = "slurm_container.sh.j2" if container else "slurm.sh.j2"
-    template_path = (
-        Path(str(vara_cfg()["benchbuild_root"])) / template_filename
-    )
+    template_path = Path(str(vara_cfg()["benchbuild_root"])) / template_filename
     node_dir = bb_cfg()["slurm"]["node_dir"].value
     bb_cfg()["jobs"] = 0
     bb_cfg()["slurm"]["template"] = str(template_path)
@@ -338,11 +336,7 @@ def __prepare_slurm_script(container: bool) -> None:
         env_vars.append(repr(vara_cfg()["paper_config"]["current_config"]))
         env_vars.append(repr(vara_cfg()["container"]["research_tool"]))
 
-    __render_slurm_script_template(
-        template_path,
-        template_filename,
-        env_vars
-    )
+    __render_slurm_script_template(template_path, template_filename, env_vars)
 
 
 def __render_slurm_script_template(
