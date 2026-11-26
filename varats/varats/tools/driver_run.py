@@ -182,7 +182,7 @@ def main(
         env = _get_environment_variables(black_list, white_list)
         if slurm:
             stdout = _run_benchbuild_non_interactive(bb_args, env)
-            _handle_slurm_output(stdout, env["PYTHONPATH"], submit)
+            _handle_slurm_output(stdout, submit)
         else:
             _run_benchbuild_non_interactive(bb_args, env)
 
@@ -193,7 +193,7 @@ def _build_bb_extra_args(
     bb_extra_args: list[str] = []
     if container:
         if slurm:
-            __prepare_slurm_for_container()
+            __prepare_slurm_script(True)
             bb_extra_args = ["--", "container", "run"]
             if bb_cfg()["container"]["import"].value:
                 bb_extra_args.append("--import")
@@ -202,6 +202,8 @@ def _build_bb_extra_args(
             if debug:
                 bb_extra_args.append("--debug")
                 bb_extra_args.append(__INTERACTIVE_ARG_STR)
+    else:
+        __prepare_slurm_script(False)
     return bb_extra_args
 
 
@@ -295,11 +297,10 @@ def _run_benchbuild_non_interactive(
             sys.exit(1)
 
 
-def _handle_slurm_output(stdout: str, pythonpath: str, submit: bool) -> None:
+def _handle_slurm_output(stdout: str, submit: bool) -> None:
     """Handle slurm script output and submission."""
     if match := __SLURM_SCRIPT_PATTERN.search(stdout):
         slurm_script = match.group(1)
-        _add_pythonpath_to_slurm_script(Path(slurm_script), pythonpath)
         if submit:
             click.echo(f"Submitting slurm script via sbatch: {slurm_script}")
             sbatch(slurm_script)
@@ -337,10 +338,11 @@ def _add_pythonpath_to_slurm_script(
     )
 
 
-def __prepare_slurm_for_container() -> None:
+def __prepare_slurm_script(container: bool) -> None:
     """Prepare the benchbuild slurm config for container use."""
+    template_filename = "slurm_container.sh.j2" if container else "slurm.sh.j2"
     template_path = (
-        Path(str(vara_cfg()["benchbuild_root"])) / "slurm_container.sh.j2"
+        Path(str(vara_cfg()["benchbuild_root"])) / template_filename
     )
     node_dir = bb_cfg()["slurm"]["node_dir"].value
     bb_cfg()["jobs"] = 0
@@ -348,24 +350,34 @@ def __prepare_slurm_for_container() -> None:
     bb_cfg()["slurm"]["container_root"] = f"{node_dir}/containers/lib"
     bb_cfg()["slurm"]["container_runroot"] = f"{node_dir}/containers/run"
 
+    PYTHONPATH = ":".join(sys.path)
+
+    env_vars = [
+        # Add pythonpath to slurm script so benchbuild can find external repositories
+        "PYTHONPATH=" + shlex.quote(PYTHONPATH)
+    ]
+
+    # Add container specific environment variables to slurm script
+    if container:
+        env_vars.append(repr(vara_cfg()["paper_config"]["folder"]))
+        env_vars.append(repr(vara_cfg()["paper_config"]["current_config"]))
+        env_vars.append(repr(vara_cfg()["container"]["research_tool"]))
+
     __render_slurm_script_template(
         template_path,
-        [
-            repr(vara_cfg()["paper_config"]["folder"]),
-            repr(vara_cfg()["paper_config"]["current_config"]),
-            repr(vara_cfg()["container"]["research_tool"]),
-        ],
+        template_filename,
+        env_vars
     )
 
 
 def __render_slurm_script_template(
-    output_path: Path, env_vars: list[str]
+    output_path: Path, template_filename: str, env_vars: list[str]
 ) -> None:
     loader = jinja2.PackageLoader('varats.tools', 'templates')
     env = jinja2.Environment(
         trim_blocks=True, lstrip_blocks=True, loader=loader
     )
-    template = env.get_template("slurm_container.sh.j2")
+    template = env.get_template(template_filename)
 
     with Path.open(output_path, 'w') as slurm2:
         slurm2.write(
