@@ -44,7 +44,7 @@ exec 2>&1
 node_dir=$(dirname "{{ prefix }}")
 
 # set environment for buildah/podman
-export XDG_RUNTIME_DIR=/tmp/slurm-runtime-${SLURM_JOBID}
+export XDG_RUNTIME_DIR=/tmp/slurm-runtime-${SLURM_ARRAY_JOB_ID}
 export HOME=${node_dir}
 export BB_CONTAINER_ROOT="${node_dir}/containers/lib"
 export BB_CONTAINER_RUNROOT="${node_dir}/containers/run"
@@ -55,8 +55,8 @@ flock -x 9 && {
   if [ ! -d "{{ prefix }}" ]; then
     echo "$(date) [$(hostname)] prepare local node"
     mkdir -p "{{ prefix }}"
-    mkdir -p ${XDG_RUNTIME_DIR}
   fi
+  mkdir -p -m 700 ${XDG_RUNTIME_DIR}
   rm "{{ lockfile }}"
 }
 exec 9>&-
@@ -82,7 +82,7 @@ file=$(mktemp -q) && {
 #!/bin/sh
 #SBATCH --nice={{ nice_clean }}
 #SBATCH -o /dev/null
-export XDG_RUNTIME_DIR=/tmp/slurm-runtime-${SLURM_JOBID}
+export XDG_RUNTIME_DIR=/tmp/slurm-runtime-${SLURM_ARRAY_JOB_ID}
 export HOME=${node_dir}
 exec 1>> {{ log }}-$_project
 exec 2>&1
