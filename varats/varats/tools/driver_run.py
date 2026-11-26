@@ -313,6 +313,7 @@ def _handle_slurm_output(stdout: str, submit: bool) -> None:
         click.echo("Could not find slurm script.")
         sys.exit(1)
 
+
 def __prepare_slurm_script(container: bool) -> None:
     """Prepare the benchbuild slurm config for container use."""
     template_filename = "slurm_container.sh.j2" if container else "slurm.sh.j2"
