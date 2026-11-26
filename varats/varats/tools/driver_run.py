@@ -313,31 +313,6 @@ def _handle_slurm_output(stdout: str, submit: bool) -> None:
         click.echo("Could not find slurm script.")
         sys.exit(1)
 
-
-def _add_pythonpath_to_slurm_script(
-    slurm_script: Path, pythonpath: str
-) -> None:
-    """Add the Python path to a generated Slurm script."""
-    script = slurm_script.read_text()
-    pythonpath_export = f"export PYTHONPATH={shlex.quote(pythonpath)}"
-    if pythonpath_export in script:
-        return
-
-    configuration_end = "# End of configuration\n"
-    if configuration_end not in script:
-        raise RuntimeError(
-            f"Could not find configuration section in {slurm_script}."
-        )
-
-    slurm_script.write_text(
-        script.replace(
-            configuration_end,
-            f"{configuration_end}{pythonpath_export}\n",
-            1,
-        )
-    )
-
-
 def __prepare_slurm_script(container: bool) -> None:
     """Prepare the benchbuild slurm config for container use."""
     template_filename = "slurm_container.sh.j2" if container else "slurm.sh.j2"
