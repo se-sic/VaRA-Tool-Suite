@@ -103,7 +103,7 @@ class BenchBuildConfig(unittest.TestCase):
         self.assertEqual(cfg, settings._BB_CFG)
 
     def test_change_value_kwargs(self) -> None:
-        """Test if the change_value function updates the config correctly."""
+        """Test if the context manager updates value of the config correctly."""
         with bb_cfg_context(tmp_dir="/new/tmp/dir") as cfg:
             self.assertEqual(str(cfg["tmp_dir"]), "/new/tmp/dir")
 
