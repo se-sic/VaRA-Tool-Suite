@@ -1,12 +1,14 @@
 """
-The PaperConfig pins down a specific set of case studies, one or more for each
-project, where each encapsulates a fixed set of revision to evaluate.
+Paper configs pin down a specific set of case studies to evaluate.
 
-This allows users to specify which revisions of what project have to be
-analyzed. Furthermore, it allows other users to reproduce the exact same set of
-projects and revisions, either with the old experiment automatically or with a
-new experiment to compare the results.
+A PaperConfig holds one or more case studies for each project, where each
+encapsulates a fixed set of revisions to evaluate. This allows users to specify
+which revisions of what project have to be analyzed. Furthermore, it allows
+other users to reproduce the exact same set of projects and revisions, either
+with the old experiment automatically or with a new experiment to compare the
+results.
 """
+
 import logging
 import typing as tp
 from pathlib import Path
@@ -28,7 +30,7 @@ from varats.utils.settings import vara_cfg
 LOG = logging.getLogger(__name__)
 
 
-class PaperConfig():
+class PaperConfig:
     """
     Paper config, a specific set of case studies, e.g.,  for a publication.
 
@@ -41,13 +43,14 @@ class PaperConfig():
     __ARTEFACTS_FILE_NAME = 'artefacts.yaml'
 
     def __init__(self, folder_path: Path) -> None:
+        """Load all case studies from ``folder_path``."""
         self.__path = Path(folder_path)
-        self.__case_studies: tp.Dict[str, tp.List[CaseStudy]] = {}
-        for case_study_path in \
-                [x for x in self.__path.iterdir()
-                 if x.suffix == ".case_study"]:
+        self.__case_studies: dict[str, list[CaseStudy]] = {}
+        for case_study_path in [
+            x for x in self.__path.iterdir() if x.suffix == ".case_study"
+        ]:
             case_study = load_case_study_from_file(case_study_path)
-            if case_study.project_name in self.__case_studies.keys():
+            if case_study.project_name in self.__case_studies:
                 self.__case_studies[case_study.project_name].append(case_study)
             else:
                 self.__case_studies[case_study.project_name] = [case_study]
@@ -57,7 +60,7 @@ class PaperConfig():
         """Path to the paper config folder."""
         return self.__path
 
-    def get_case_studies(self, cs_name: str) -> tp.List[CaseStudy]:
+    def get_case_studies(self, cs_name: str) -> list[CaseStudy]:
         """
         Lookup all case studies with a given name.
 
@@ -69,7 +72,7 @@ class PaperConfig():
         """
         return self.__case_studies[cs_name]
 
-    def get_all_case_studies(self) -> tp.List[CaseStudy]:
+    def get_all_case_studies(self) -> list[CaseStudy]:
         """
         Generate a list of all case studies in the paper config.
 
@@ -77,7 +80,8 @@ class PaperConfig():
             full list of all case studies with all different version.
         """
         return [
-            case_study for case_study_list in self.__case_studies.values()
+            case_study
+            for case_study_list in self.__case_studies.values()
             for case_study in case_study_list
         ]
 
@@ -91,15 +95,17 @@ class PaperConfig():
         Returns:
             ``True``, if a case study with ``cs_name`` was loaded
         """
-        return cs_name in self.__case_studies.keys()
+        return cs_name in self.__case_studies
 
-    def get_filter_for_case_study(self,
-                                  cs_name: str) -> tp.Callable[[str], bool]:
+    def get_filter_for_case_study(
+        self, cs_name: str
+    ) -> tp.Callable[[str], bool]:
         """
-        Return a case study specific revision filter. If one case study includes
-        a revision the filter function will return ``True``. This can be used to
-        automatically filter out revisions that are not part of a case study,
-        loaded by this paper config.
+        Return a case study specific revision filter.
+
+        If one case study includes a revision the filter function will return
+        ``True``. This can be used to automatically filter out revisions that
+        are not part of a case study, loaded by this paper config.
 
         Args:
             cs_name: name of the case study
@@ -122,7 +128,7 @@ class PaperConfig():
 
             return multi_case_study_rev_filter
 
-        return lambda x: False
+        return lambda _: False
 
     def add_case_study(self, case_study: CaseStudy) -> None:
         """
@@ -134,13 +140,18 @@ class PaperConfig():
         self.__case_studies[case_study.project_name] += [case_study]
 
     def store(self) -> None:
-        """Persist the current state of the paper config saving all case studies
-        to their corresponding files in the paper config path."""
+        """
+        Persist the current state of the paper config.
+
+        Saves all case studies to their corresponding files in the paper config
+        path.
+        """
         for case_study_list in self.__case_studies.values():
             for case_study in case_study_list:
                 store_case_study(case_study, self.__path)
 
     def __str__(self) -> str:
+        """List the project names of all loaded case studies."""
         string = "Loaded case studies:\n"
         for case_study_list in self.__case_studies.values():
             for case_study in case_study_list:
@@ -148,7 +159,7 @@ class PaperConfig():
         return string
 
 
-_G_PAPER_CONFIG: tp.Optional[PaperConfig] = None
+_G_PAPER_CONFIG: PaperConfig | None = None
 
 
 def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
@@ -166,13 +177,14 @@ def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
         project is included in one of the related case studies.
     """
     if vara_cfg()["paper_config"]["current_config"].value is None:
-        return lambda x: True
+        return lambda _: True
 
     if not is_paper_config_loaded():
         load_paper_config(
             Path(
-                str(vara_cfg()["paper_config"]["folder"]) + "/" +
-                str(vara_cfg()["paper_config"]["current_config"])
+                str(vara_cfg()["paper_config"]["folder"])
+                + "/"
+                + str(vara_cfg()["paper_config"]["current_config"])
             )
         )
 
@@ -181,8 +193,9 @@ def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
 
 def get_loaded_paper_config() -> PaperConfig:
     """
-    Returns the currently active paper config, this requires a config to be
-    loaded before use.
+    Returns the currently active paper config.
+
+    This requires a config to be loaded before use.
 
     Returns:
         currently active paper config
@@ -202,11 +215,12 @@ def is_paper_config_loaded() -> bool:
     return _G_PAPER_CONFIG is not None
 
 
-def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
+def load_paper_config(config_path: Path | None = None) -> None:
     """
-    Loads a paper config from a yaml file, initializes the paper config and sets
-    it to the currently active paper config. If no config path is provided, the
-    paper config set in the vara settings yaml is loaded.
+    Loads a paper config and sets it as the currently active paper config.
+
+    If no config path is provided, the paper config set in the vara settings
+    yaml is loaded.
 
     Note:
         Only one paper config can be active at a time
@@ -215,26 +229,29 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
         config_path: path to a paper config folder
     """
     if config_path is None:
-        if vara_cfg()["paper_config"]["folder"].value is None or \
-                vara_cfg()["paper_config"][
-                    "current_config"].value is None:
+        if (
+            vara_cfg()["paper_config"]["folder"].value is None
+            or vara_cfg()["paper_config"]["current_config"].value is None
+        ):
             raise ConfigurationLookupError(
                 f"No paper config was set in VaRA config file "
                 f"{vara_cfg()['config_file']}"
             )
         config_path = Path(
-            str(vara_cfg()["paper_config"]["folder"]) + "/" +
-            str(vara_cfg()["paper_config"]["current_config"])
+            str(vara_cfg()["paper_config"]["folder"])
+            + "/"
+            + str(vara_cfg()["paper_config"]["current_config"])
         )
 
-    global _G_PAPER_CONFIG  # pylint: disable=global-statement
+    global _G_PAPER_CONFIG  # noqa: PLW0603
     _G_PAPER_CONFIG = PaperConfig(config_path)
 
 
 def get_paper_config() -> PaperConfig:
     """
-    Returns the current paper config and loads one if there is currently no
-    active paper config.
+    Returns the current paper config.
+
+    Loads one if there is currently no active paper config.
 
     Returns:
         currently active paper config
@@ -244,7 +261,7 @@ def get_paper_config() -> PaperConfig:
     return get_loaded_paper_config()
 
 
-class PaperConfigSpecificGit(bb.source.git.Git):  # type: ignore
+class PaperConfigSpecificGit(bb.source.git.Git):
     """
     Paper config specific git to reduce the available versions.
 
@@ -255,19 +272,34 @@ class PaperConfigSpecificGit(bb.source.git.Git):  # type: ignore
     def __init__(
         self, project_name: str, *args: tp.Any, **kwargs: tp.Any
     ) -> None:
+        """Create a git source filtered by the case studies of a project."""
         super().__init__(*args, **kwargs)
         self.__project_name = project_name
 
-    def versions(self) -> tp.List[bb.source.base.Variant]:
+    def fetch(self) -> pb.LocalPath:
+        """Clone the repository into the cache, if needed."""
+        cache_path = super().fetch()
+        if self.submodule_set_urls:
+            # benchbuild applies the URLs via `git submodule set-url`, which
+            # also edits the tracked .gitmodules and blocks later checkouts.
+            # The new URLs are already synced to .git/config, so restoring
+            # .gitmodules keeps them in effect.
+            with pb.local.cwd(cache_path):
+                git("checkout", "--", ".gitmodules")
+        return cache_path
+
+    def versions(self) -> list[bb.source.base.Variant]:
+        """Return all revisions that are part of the project's case studies."""
         cache_path = self.fetch()
-        git_rev_list = git['rev-list', '--abbrev-commit', '--abbrev=10',
-                           '--all']
-        rev_list: tp.List[str] = []
+        git_rev_list = git[
+            'rev-list', '--abbrev-commit', '--abbrev=10', '--all'
+        ]
+        rev_list: list[str] = []
         with pb.local.cwd(cache_path):
             rev_list = list(git_rev_list(self.refspec).strip().split('\n'))
 
         rev_list = list(filter(self.version_filter, rev_list))
-        rev_list = rev_list[:self.limit] if self.limit else rev_list
+        rev_list = rev_list[: self.limit] if self.limit else rev_list
 
         proj_filter = project_filter_generator(self.__project_name)
         return [
