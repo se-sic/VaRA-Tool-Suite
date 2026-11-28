@@ -8,6 +8,7 @@ internal functionality.
 import itertools
 import logging
 import re
+import shlex
 import sys
 import typing as tp
 from pathlib import Path
@@ -20,6 +21,7 @@ from benchbuild.utils.settings import to_yaml
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
 
+from varats.experiments.discover_experiments import initialize_experiments
 from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension
@@ -146,7 +148,7 @@ def main(
     """
     initialize_cli_tool()
     initialize_projects()
-
+    initialize_experiments()
     if pretend:
         click.echo("Running in pretend mode. No experiments will be executed.")
         # benchbuild only supports pretend in the normal run command
@@ -178,9 +180,11 @@ def main(
         _run_benchbuild_interactive(bb_args)
     else:
         env = _get_environment_variables(black_list, white_list)
-        stdout = _run_benchbuild_non_interactive(bb_args, env)
         if slurm:
+            stdout = _run_benchbuild_non_interactive(bb_args, env)
             _handle_slurm_output(stdout, submit)
+        else:
+            _run_benchbuild_non_interactive(bb_args, env)
 
 
 def _build_bb_extra_args(
@@ -189,7 +193,7 @@ def _build_bb_extra_args(
     bb_extra_args: list[str] = []
     if container:
         if slurm:
-            __prepare_slurm_for_container()
+            __prepare_slurm_script(True)
             bb_extra_args = ["--", "container", "run"]
             if bb_cfg()["container"]["import"].value:
                 bb_extra_args.append("--import")
@@ -198,6 +202,8 @@ def _build_bb_extra_args(
             if debug:
                 bb_extra_args.append("--debug")
                 bb_extra_args.append(__INTERACTIVE_ARG_STR)
+    else:
+        __prepare_slurm_script(False)
     return bb_extra_args
 
 
@@ -308,35 +314,52 @@ def _handle_slurm_output(stdout: str, submit: bool) -> None:
         sys.exit(1)
 
 
-def __prepare_slurm_for_container() -> None:
+def __prepare_slurm_script(container: bool) -> None:
     """Prepare the benchbuild slurm config for container use."""
-    template_path = (
-        Path(str(vara_cfg()["benchbuild_root"])) / "slurm_container.sh.j2"
-    )
+    template_filename = "slurm_container.sh.j2" if container else "slurm.sh.j2"
+    template_path = Path(str(vara_cfg()["benchbuild_root"])) / template_filename
     node_dir = bb_cfg()["slurm"]["node_dir"].value
     bb_cfg()["jobs"] = 0
     bb_cfg()["slurm"]["template"] = str(template_path)
     bb_cfg()["slurm"]["container_root"] = f"{node_dir}/containers/lib"
     bb_cfg()["slurm"]["container_runroot"] = f"{node_dir}/containers/run"
 
-    __render_slurm_script_template(
-        template_path,
-        [
-            repr(vara_cfg()["paper_config"]["folder"]),
-            repr(vara_cfg()["paper_config"]["current_config"]),
-            repr(vara_cfg()["container"]["research_tool"]),
-        ],
-    )
+    # Add external repositories to PYTHONPATH so benchbuild can find external repositories
+    pythonpath = __pythonpath_for_external_repositories(container)
+    env_vars = [
+        # Add pythonpath to slurm script so benchbuild can find external repositories
+        f'PYTHONPATH="${{PYTHONPATH:+$PYTHONPATH:}}"{shlex.quote(pythonpath)}'
+    ]
+
+    # Add container specific environment variables to slurm script
+    if container:
+        env_vars.append(repr(vara_cfg()["paper_config"]["folder"]))
+        env_vars.append(repr(vara_cfg()["paper_config"]["current_config"]))
+        env_vars.append(repr(vara_cfg()["container"]["research_tool"]))
+
+    __render_slurm_script_template(template_path, template_filename, env_vars)
+
+
+def __pythonpath_for_external_repositories(container: bool) -> str:
+    """Get the PYTHONPATH for external repositories."""
+    external_repos = vara_cfg()['external_source_repositories'].value
+    if container:
+        # Map to their container mounts
+        container_mounts = [
+            f"/varats_external/{Path(repo).name}" for repo in external_repos
+        ]
+        return ":".join(container_mounts)
+    return ":".join(external_repos)
 
 
 def __render_slurm_script_template(
-    output_path: Path, env_vars: list[str]
+    output_path: Path, template_filename: str, env_vars: list[str]
 ) -> None:
     loader = jinja2.PackageLoader('varats.tools', 'templates')
     env = jinja2.Environment(
         trim_blocks=True, lstrip_blocks=True, loader=loader
     )
-    template = env.get_template("slurm_container.sh.j2")
+    template = env.get_template(template_filename)
 
     with Path.open(output_path, 'w') as slurm2:
         slurm2.write(
