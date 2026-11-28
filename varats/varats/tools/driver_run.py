@@ -349,8 +349,7 @@ def __pythonpath_for_external_repositories(container: bool) -> str:
             f"/varats_external/{Path(repo).name}" for repo in external_repos
         ]
         return ":".join(container_mounts)
-    else:
-        return ":".join(external_repos)
+    return ":".join(external_repos)
 
 
 def __render_slurm_script_template(
