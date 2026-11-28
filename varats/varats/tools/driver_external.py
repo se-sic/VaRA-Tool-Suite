@@ -83,12 +83,16 @@ def _external_plugin_modules(repo_path: Path, folder_name: str) -> list[str]:
         for _, module_name, _ in pkgutil.iter_modules([str(folder)])
     ]
 
-
 def register_external_repository(repo_path: Path) -> None:
     """Add repo_path to config and save. Raises on failure."""
     current_repos = vara_cfg()['external_source_repositories'].value
     current_repos.append(str(repo_path))
     vara_cfg()['external_source_repositories'] = current_repos
+
+    # Add repository to container mounts
+    mounts = bb_cfg()['container']['mounts'].value
+    mounts.append(_create_container_mount_entry(repo_path))
+    bb_cfg()['container']['mounts'] = mounts
 
     for folder_name, plugin_key in _BB_PLUGIN_FOLDERS.items():
         plugin_conf = bb_cfg()["plugins"][plugin_key]
@@ -107,6 +111,13 @@ def unregister_external_repository(repo_path: Path) -> None:
     current_repos.remove(str(repo_path))
     vara_cfg()['external_source_repositories'] = current_repos
 
+    # Remove repository from container mounts
+    mounts = bb_cfg()['container']['mounts'].value
+    entry = _create_container_mount_entry(repo_path)
+    if entry in mounts:
+        mounts.remove(entry)
+        bb_cfg()['container']['mounts'] = mounts
+
     for folder_name, plugin_key in _BB_PLUGIN_FOLDERS.items():
         plugin_conf = bb_cfg()["plugins"][plugin_key]
         modules_to_remove = set(
@@ -120,6 +131,16 @@ def unregister_external_repository(repo_path: Path) -> None:
 
     save_config()
     save_bb_config()
+
+def _create_container_mount_entry(repo_path: Path) -> list[str]:
+    """
+    Create a container mount entry for the external repository.
+    """
+    repo_name = repo_path.name
+    return [
+        str(repo_path),
+        f"/varats_external/{repo_name}",
+    ]
 
 
 @click.group("vara-external")

@@ -323,11 +323,11 @@ def __prepare_slurm_script(container: bool) -> None:
     bb_cfg()["slurm"]["container_root"] = f"{node_dir}/containers/lib"
     bb_cfg()["slurm"]["container_runroot"] = f"{node_dir}/containers/run"
 
-    PYTHONPATH = ":".join(sys.path)
-
+    # Add external repositories to PYTHONPATH so benchbuild can find external repositories
+    pythonpath = __pythonpath_for_external_repositories(container)
     env_vars = [
         # Add pythonpath to slurm script so benchbuild can find external repositories
-        "PYTHONPATH=" + shlex.quote(PYTHONPATH)
+        f'PYTHONPATH="${{PYTHONPATH:+$PYTHONPATH:}}"{shlex.quote(pythonpath)}'
     ]
 
     # Add container specific environment variables to slurm script
@@ -337,6 +337,19 @@ def __prepare_slurm_script(container: bool) -> None:
         env_vars.append(repr(vara_cfg()["container"]["research_tool"]))
 
     __render_slurm_script_template(template_path, template_filename, env_vars)
+
+
+def __pythonpath_for_external_repositories(container: bool) -> str:
+    """Get the PYTHONPATH for external repositories."""
+    external_repos = vara_cfg()['external_source_repositories'].value
+    if container:
+        # Map to their container mounts
+        container_mounts = [
+            f"/varats_external/{Path(repo).name}" for repo in external_repos
+        ]
+        return ":".join(container_mounts)
+    else:
+        return ":".join(external_repos)
 
 
 def __render_slurm_script_template(
